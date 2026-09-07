@@ -1,8 +1,10 @@
-const CACHE_NAME = 'yongin-issue-cache-v2';
+const CACHE_NAME = 'yongin-issue-cache-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './apple-touch-icon.png',
+  './icon-512.png'
 ];
 
 // Service Worker Install - Pre-cache shell assets
@@ -77,8 +79,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%232563eb"/><text x="50" y="65" font-size="50" font-weight="bold" text-anchor="middle" fill="white">🔔</text></svg>',
-    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%232563eb"/><text x="50" y="65" font-size="50" font-weight="bold" text-anchor="middle" fill="white">🔔</text></svg>',
+    icon: './apple-touch-icon.png',
+    badge: './apple-touch-icon.png',
     vibrate: [200, 100, 200],
     data: { url: './index.html' }
   };
