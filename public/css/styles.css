@@ -794,3 +794,34 @@ input:checked + .slider:before { transform: translateX(20px); }
 .demo-btn-secondary:hover {
   background: #475569;
 }
+
+/* Mobile Viewport & PWA Standalone Native Layout */
+@media (max-width: 768px), (display-mode: standalone) {
+  body {
+    padding: 0 !important;
+    margin: 0 !important;
+    background-color: #F8FAFC !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+    justify-content: flex-start !important;
+    overflow: hidden;
+  }
+
+  .demo-header,
+  .controls-panel,
+  .phone-notch,
+  .phone-status-bar {
+    display: none !important;
+  }
+
+  .phone-container {
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
