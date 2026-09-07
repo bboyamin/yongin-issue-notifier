@@ -1,7 +1,6 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/collect", "destination": "/api/collect.py" },
-    { "source": "/", "destination": "/index.html" }
+    { "source": "/api/collect", "destination": "/api/collect.py" }
   ]
 }
