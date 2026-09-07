@@ -21,9 +21,11 @@ function renderKeywordChips() {
     let html = '';
     userKeywords.forEach(kw => {
       const isActive = currentKeyword === kw;
+      const kwCount = currentIssues.filter(item => item.keyword === kw || (item.title && item.title.includes(kw))).length;
+      const countStr = currentIssues.length > 0 ? ` (${kwCount})` : '';
       html += `
         <span class="chip ${isActive ? 'active' : ''}" onclick="selectKeyword('${kw}')">
-          # ${kw}
+          # ${kw}${countStr}
           <span class="chip-delete" onclick="removeKeyword('${kw}', event)" title="${kw} 삭제">✕</span>
         </span>
       `;
@@ -50,6 +52,7 @@ function renderKeywordChips() {
 async function fetchKeywordIssues(keywordsList) {
   try {
     currentIssues = await IssueApi.fetchKeywordIssues(keywordsList);
+    renderKeywordChips();
     renderIssues();
     showToast(`✅ 최신 소식 수집이 완료되었습니다.`);
   } catch (err) {
@@ -243,18 +246,17 @@ function renderIssues() {
 
   if (!currentIssues.length) return;
 
-  const filtered = currentIssues.filter(item => {
-    const matchCat = (currentCategory === 'all' || item.type === currentCategory);
-    const matchKw = (currentKeyword === '전체' || item.keyword === currentKeyword || (item.title && item.title.includes(currentKeyword)));
-    return matchCat && matchKw;
+  // Filter issues by currently selected keyword first
+  const keywordFiltered = currentIssues.filter(item => {
+    return currentKeyword === '전체' || item.keyword === currentKeyword || (item.title && item.title.includes(currentKeyword));
   });
 
-  // Update category tab counts
+  // Calculate category tab counts based strictly on the selected keyword's contents
   const counts = {
-    all: currentIssues.length,
-    news: currentIssues.filter(i => i.type === 'news').length,
-    youtube: currentIssues.filter(i => i.type === 'youtube').length,
-    sns: currentIssues.filter(i => i.type === 'sns').length
+    all: keywordFiltered.length,
+    news: keywordFiltered.filter(i => i.type === 'news').length,
+    youtube: keywordFiltered.filter(i => i.type === 'youtube').length,
+    sns: keywordFiltered.filter(i => i.type === 'sns').length
   };
 
   const tabs = document.querySelectorAll('.tab-btn');
@@ -264,6 +266,11 @@ function renderIssues() {
     tabs[2].textContent = `🎥 유튜브 (${counts.youtube})`;
     tabs[3].textContent = `📱 SNS (${counts.sns})`;
   }
+
+  // Filter list by current category tab
+  const filtered = keywordFiltered.filter(item => {
+    return currentCategory === 'all' || item.type === currentCategory;
+  });
 
   let html = `
     <div class="realtime-bar">
