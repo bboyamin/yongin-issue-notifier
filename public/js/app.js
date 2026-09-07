@@ -121,8 +121,20 @@ function updateScrapBadge() {
   }
 }
 
-function switchNavTab(tab, btn) {
+async function refreshFeed() {
+  showToast('🔄 최신 소식 수집 및 업데이트 중...');
+  const userKeywords = StorageManager.getKeywords();
+  if (userKeywords.length > 0) {
+    await fetchKeywordIssues(userKeywords);
+  } else {
+    renderIssues();
+  }
+}
+
+async function switchNavTab(tab, btn) {
+  const isAlreadyFeed = (currentNavTab === 'feed' && tab === 'feed');
   currentNavTab = tab;
+
   const navBtns = document.querySelectorAll('.app-bottom-nav .nav-item');
   navBtns.forEach(b => {
     if (!b.innerText.includes('설정')) {
@@ -136,12 +148,17 @@ function switchNavTab(tab, btn) {
   if (tab === 'bookmark') {
     if (categoryTabs) categoryTabs.style.display = 'none';
     if (keywordChips) keywordChips.style.display = 'none';
+    renderIssues();
   } else {
     if (categoryTabs) categoryTabs.style.display = 'flex';
     if (keywordChips) keywordChips.style.display = 'flex';
-  }
 
-  renderIssues();
+    if (isAlreadyFeed) {
+      await refreshFeed();
+    } else {
+      renderIssues();
+    }
+  }
 }
 
 function renderIssues() {
@@ -272,12 +289,12 @@ function renderIssues() {
   });
 
   let html = `
-    <div class="realtime-bar">
+    <div class="realtime-bar" onclick="refreshFeed()" style="cursor: pointer;" title="클릭 시 최신 소식 실시간 새로고침">
       <div class="realtime-indicator">
         <div class="live-dot"></div>
-        <span>접속 시점 기준 실시간 이슈 피드</span>
+        <span>실시간 이슈 피드 🔄 <strong>새로고침</strong></span>
       </div>
-      <span style="font-size: 11px; opacity: 0.8;" id="updateTimestamp">방금 업데이트</span>
+      <span style="font-size: 11px; opacity: 0.9;" id="updateTimestamp">방금 업데이트</span>
     </div>
   `;
 
