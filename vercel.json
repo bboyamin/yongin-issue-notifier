@@ -1,8 +1,7 @@
 {
   "version": 2,
-  "outputDirectory": ".",
-  "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/collect", "destination": "/api/collect.py" }
+    { "source": "/api/collect", "destination": "/api/collect.py" },
+    { "source": "/", "destination": "/index.html" }
   ]
 }
