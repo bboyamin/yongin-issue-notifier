@@ -394,37 +394,38 @@ function switchCategory(cat, btn) {
   renderIssues();
 }
 
-function triggerNotificationTest() {
+function triggerRealPushNotification(title, body) {
   const push = document.getElementById('pushBanner');
   if (push) {
+    const titleElem = push.querySelector('.push-title span:first-child');
     const descElem = push.querySelector('.push-desc');
-    if (descElem) {
-      descElem.textContent = `[${currentKeyword || '용인시'}] 실시간 주요 이슈 수집 및 AI 3줄 요약 수신 완료!`;
-    }
+    if (titleElem) titleElem.textContent = title;
+    if (descElem) descElem.textContent = body;
     push.classList.add('show');
-    setTimeout(() => push.classList.remove('show'), 4500);
+    setTimeout(() => push.classList.remove('show'), 5000);
   }
 
-  showToast('🔔 푸시 알림 테스트가 실행되었습니다.');
+  showToast(`🔔 ${title}`);
 
-  if ('Notification' in window) {
-    Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification('🔔 용인 핫이슈 실시간 알림', {
-              body: `[${currentKeyword || '용인시'}] 실시간 주요 이슈 수집 및 AI 3줄 요약 수신 완료`,
-              vibrate: [200, 100, 200]
-            });
-          });
-        } else {
-          new Notification('🔔 용인 핫이슈 실시간 알림', {
-            body: `[${currentKeyword || '용인시'}] 실시간 주요 이슈 수집 및 AI 3줄 요약 수신 완료`
-          });
-        }
-      }
-    });
+  if ('Notification' in window && Notification.permission === 'granted') {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.showNotification(title, {
+          body: body,
+          vibrate: [200, 100, 200]
+        });
+      });
+    } else {
+      new Notification(title, { body: body });
+    }
   }
+}
+
+function triggerNotificationTest() {
+  triggerRealPushNotification(
+    `🔔 [속보 알림] #${currentKeyword || '용인시'} 주요 이슈`,
+    `[${currentKeyword || '용인시'}] 실시간 주요 소식 수집 및 FactChat AI 3줄 요약 수신완료`
+  );
 }
 
 function toggleSettingsModal() {
@@ -529,6 +530,56 @@ function updateNotifySetting(key, inputElem) {
   StorageManager.saveNotifySettings(settings);
   const labelStr = key === 'realtime' ? '실시간 속보' : (key === 'negative' ? '관심/위험 이슈' : '정기 브리핑');
   showToast(`${labelStr} 알림이 ${inputElem.checked ? 'ON 설정' : 'OFF 해제'}되었습니다.`);
+}
+
+function updateNotifyInterval(selectElem) {
+  const val = parseInt(selectElem.value, 10) || 15;
+  const settings = StorageManager.getNotifySettings();
+  settings.intervalMinutes = val;
+  StorageManager.saveNotifySettings(settings);
+
+  startAutoPolling();
+  showToast(`⏱️ 푸시 알림 주기가 ${val}분 마다로 설정되었습니다.`);
+}
+
+let autoPollingTimer = null;
+
+function startAutoPolling() {
+  if (autoPollingTimer) clearInterval(autoPollingTimer);
+
+  const settings = StorageManager.getNotifySettings();
+  const intervalMin = settings.intervalMinutes || 15;
+  const intervalMs = intervalMin * 60 * 1000;
+
+  autoPollingTimer = setInterval(async () => {
+    const notifySettings = StorageManager.getNotifySettings();
+    if (!notifySettings || !notifySettings.realtime) return;
+
+    const userKeywords = StorageManager.getKeywords();
+    if (!userKeywords || userKeywords.length === 0) return;
+
+    try {
+      const latestIssues = await IssueApi.fetchKeywordIssues(userKeywords);
+      if (latestIssues && latestIssues.length > 0) {
+        const previousTitles = new Set(currentIssues.map(i => i.title));
+        const newItems = latestIssues.filter(i => !previousTitles.has(i.title));
+
+        currentIssues = latestIssues;
+        renderKeywordChips();
+        renderIssues();
+
+        if (newItems.length > 0) {
+          const topItem = newItems[0];
+          triggerRealPushNotification(
+            `🔔 [신규 속보] #${topItem.keyword || '용인시'} 새 이슈`,
+            topItem.title
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('Auto polling check error:', err);
+    }
+  }, intervalMs);
 }
 
 function togglePasswordVisibility() {
@@ -693,11 +744,21 @@ document.addEventListener('DOMContentLoaded', () => {
     deferredPrompt = e;
   });
 
+  // Initialize notification interval UI
+  const notifySettings = StorageManager.getNotifySettings();
+  const selectElem = document.getElementById('notifyIntervalSelect');
+  if (selectElem && notifySettings.intervalMinutes) {
+    selectElem.value = String(notifySettings.intervalMinutes);
+  }
+
   // Clock Timer
   setInterval(updateClock, 1000);
   updateClock();
 
-  // Load Issues
+  // Start auto-polling with user preferred interval (default 15 min)
+  startAutoPolling();
+
+  // Initial Load Issues
   IssueApi.loadDefaultIssues().then(issues => {
     currentIssues = issues;
     renderKeywordChips();
