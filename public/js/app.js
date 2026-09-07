@@ -21,11 +21,9 @@ function renderKeywordChips() {
     let html = '';
     userKeywords.forEach(kw => {
       const isActive = currentKeyword === kw;
-      const kwCount = currentIssues.filter(item => item.keyword === kw || (item.title && item.title.includes(kw))).length;
-      const countStr = currentIssues.length > 0 ? ` (${kwCount})` : '';
       html += `
         <span class="chip ${isActive ? 'active' : ''}" onclick="selectKeyword('${kw}')">
-          # ${kw}${countStr}
+          # ${kw}
           <span class="chip-delete" onclick="removeKeyword('${kw}', event)" title="${kw} 삭제">✕</span>
         </span>
       `;
@@ -353,20 +351,31 @@ function switchCategory(cat, btn) {
 function triggerNotificationTest() {
   const push = document.getElementById('pushBanner');
   if (push) {
+    const descElem = push.querySelector('.push-desc');
+    if (descElem) {
+      descElem.textContent = `[${currentKeyword || '용인시'}] 실시간 주요 이슈 수집 및 AI 3줄 요약 수신 완료!`;
+    }
     push.classList.add('show');
     setTimeout(() => push.classList.remove('show'), 4500);
   }
 
+  showToast('🔔 푸시 알림 테스트가 실행되었습니다.');
+
   if ('Notification' in window) {
     Notification.requestPermission().then(permission => {
-      if (permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification('🔔 용인 핫이슈 실시간 알림', {
-            body: '[처인구] 반도체 클러스터 우회도로 확장 착공 공식 발표 - FactChat 3줄 요약 수신완료',
-            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%232563eb"/><text x="50" y="65" font-size="50" font-weight="bold" text-anchor="middle" fill="white">🔔</text></svg>',
-            vibrate: [200, 100, 200]
+      if (permission === 'granted') {
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification('🔔 용인 핫이슈 실시간 알림', {
+              body: `[${currentKeyword || '용인시'}] 실시간 주요 이슈 수집 및 AI 3줄 요약 수신 완료`,
+              vibrate: [200, 100, 200]
+            });
           });
-        });
+        } else {
+          new Notification('🔔 용인 핫이슈 실시간 알림', {
+            body: `[${currentKeyword || '용인시'}] 실시간 주요 이슈 수집 및 AI 3줄 요약 수신 완료`
+          });
+        }
       }
     });
   }
