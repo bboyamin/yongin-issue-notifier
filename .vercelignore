@@ -1,0 +1,7 @@
+# Ignore local python server script and cache from Vercel deployment detection
+server.py
+.env
+__pycache__/
+*.pyc
+.DS_Store
+.vercel/
