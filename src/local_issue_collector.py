@@ -278,7 +278,7 @@ def fetch_naver_blog(keyword, limit=3):
 # ----------------------------------------------------
 # 3. 구글 뉴스 RSS 수집기
 # ----------------------------------------------------
-def fetch_google_news_rss(keyword, limit=3):
+def fetch_google_news_rss(keyword, limit=15):
     encoded_kw = urllib.parse.quote(keyword)
     rss_url = f"https://news.google.com/rss/search?q={encoded_kw}+when:7d&hl=ko&gl=KR&ceid=KR:ko"
     headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
@@ -356,16 +356,16 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
     raw_issues = []
     
     for kw in keywords:
-        # 1. 네이버 뉴스 API 수집
-        n_news = fetch_naver_news(kw, limit=4)
+        # 1. 네이버 뉴스 API 수집 (최신 속보 15건)
+        n_news = fetch_naver_news(kw, limit=15)
         raw_issues.extend(n_news)
         
-        # 2. 네이버 블로그 API 수집 (실제 블로그 포스트 직링크)
-        n_blogs = fetch_naver_blog(kw, limit=3)
+        # 2. 네이버 블로그 API 수집 (10건)
+        n_blogs = fetch_naver_blog(kw, limit=10)
         raw_issues.extend(n_blogs)
 
-        # 3. 구글 뉴스 RSS 수집
-        g_items = fetch_google_news_rss(kw, limit=3)
+        # 3. 구글 뉴스 RSS 수집 (10건)
+        g_items = fetch_google_news_rss(kw, limit=10)
         raw_issues.extend(g_items)
 
     # 4. 유튜브 & 쓰레드 수집
