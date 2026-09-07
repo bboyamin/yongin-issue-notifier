@@ -122,12 +122,36 @@ function updateScrapBadge() {
 }
 
 async function refreshFeed() {
+  const realtimeBar = document.querySelector('.realtime-bar');
+  const feedContainer = document.getElementById('feedContainer');
+  
   showToast('🔄 최신 소식 수집 및 업데이트 중...');
+  
+  if (realtimeBar) {
+    realtimeBar.style.opacity = '0.7';
+    const textElem = realtimeBar.querySelector('.realtime-indicator span');
+    if (textElem) textElem.innerHTML = '실시간 이슈 피드 <span class="spin-icon">🔄</span> <strong>수집 중...</strong>';
+  }
+  if (feedContainer) {
+    feedContainer.style.opacity = '0.5';
+  }
+
   const userKeywords = StorageManager.getKeywords();
-  if (userKeywords.length > 0) {
-    await fetchKeywordIssues(userKeywords);
-  } else {
+  try {
+    if (userKeywords.length > 0) {
+      currentIssues = await IssueApi.fetchKeywordIssues(userKeywords);
+    }
+  } catch (err) {
+    console.warn('Refresh error:', err);
+  } finally {
+    renderKeywordChips();
     renderIssues();
+    if (feedContainer) {
+      feedContainer.style.opacity = '1';
+    }
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    showToast(`✅ 실시간 피드 업데이트 완료 (${timeStr})`);
   }
 }
 
@@ -288,13 +312,16 @@ function renderIssues() {
     return currentCategory === 'all' || item.type === currentCategory;
   });
 
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
   let html = `
     <div class="realtime-bar" onclick="refreshFeed()" style="cursor: pointer;" title="클릭 시 최신 소식 실시간 새로고침">
       <div class="realtime-indicator">
         <div class="live-dot"></div>
         <span>실시간 이슈 피드 🔄 <strong>새로고침</strong></span>
       </div>
-      <span style="font-size: 11px; opacity: 0.9;" id="updateTimestamp">방금 업데이트</span>
+      <span style="font-size: 11px; opacity: 0.9;" id="updateTimestamp">${timeStr} 갱신 완료</span>
     </div>
   `;
 
@@ -617,10 +644,13 @@ function updateClock() {
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
   const timeElem = document.getElementById('liveTime');
   const tsElem = document.getElementById('updateTimestamp');
   if (timeElem) timeElem.textContent = `${hours}:${minutes}`;
-  if (tsElem) tsElem.textContent = `${hours}:${minutes} 기준 최신`;
+  if (tsElem && !tsElem.textContent.includes('갱신 완료')) {
+    tsElem.textContent = `${hours}:${minutes}:${seconds} 갱신 완료`;
+  }
 }
 
 function installPWA() {
