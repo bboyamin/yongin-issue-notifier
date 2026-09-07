@@ -183,6 +183,7 @@ function renderIssues() {
 
         const titleAttr = (item.title || '').replace(/"/g, '&quot;');
         const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
+        const urlAttr = (item.url || '#').replace(/'/g, "\\'");
 
         html += `
           <div class="issue-card" data-category="${item.type}" data-title="${titleAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}">
@@ -206,7 +207,7 @@ function renderIssues() {
             <div class="card-footer">
               <div class="card-btns">
                 <button class="card-action-btn scrapped" onclick="toggleScrap(this, '${titleAttr}')">★ 스크랩됨</button>
-                <button class="card-action-btn" onclick="shareArticle('${(item.title || '').replace(/'/g, "")}')">🔗 공유</button>
+                <button class="card-action-btn" onclick="shareArticle('${titleAttr}', '${urlAttr}')">🔗 공유</button>
               </div>
               <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn" onclick="openContentUrl('${item.url || '#'}', event)">${linkText}</a>
             </div>
@@ -301,6 +302,7 @@ function renderIssues() {
 
       const titleAttr = (item.title || '').replace(/"/g, '&quot;');
       const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
+      const urlAttr = (item.url || '#').replace(/'/g, "\\'");
       const isScrapped = StorageManager.isScrapped(item.title);
       const scrapBtnHtml = isScrapped
         ? `<button class="card-action-btn scrapped" onclick="toggleScrap(this, '${titleAttr}')">★ 스크랩됨</button>`
@@ -328,7 +330,7 @@ function renderIssues() {
           <div class="card-footer">
             <div class="card-btns">
               ${scrapBtnHtml}
-              <button class="card-action-btn" onclick="shareArticle('${(item.title || '').replace(/'/g, "")}')">🔗 공유</button>
+              <button class="card-action-btn" onclick="shareArticle('${titleAttr}', '${urlAttr}')">🔗 공유</button>
             </div>
             <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="link-btn" onclick="openContentUrl('${item.url}', event)">${linkText}</a>
           </div>
@@ -441,17 +443,40 @@ function showToast(msg) {
   }, 2500);
 }
 
-function shareArticle(title, url) {
-  const shareUrl = url || window.location.href;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      showToast(`🔗 링크가 클립보드에 복사되었습니다.`);
-    }).catch(() => {
-      showToast(`🔗 공유 링크 복사 완료`);
-    });
-  } else {
-    showToast(`🔗 '${(title || '').slice(0, 15)}...' 링크가 복사되었습니다.`);
+async function shareArticle(title, url) {
+  const articleUrl = (url && url !== '#') ? url : window.location.href;
+  const cleanTitle = (title || '용인 핫이슈').replace(/&quot;/g, '"');
+  const shareData = {
+    title: cleanTitle,
+    text: `[용인 핫이슈 모니터] ${cleanTitle}`,
+    url: articleUrl
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      showToast('🔗 원문 링크 공유가 완료되었습니다.');
+      return;
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.warn('Web Share API error:', err);
+      } else {
+        return;
+      }
+    }
   }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(articleUrl);
+      showToast('🔗 콘텐츠 원문 링크가 클립보드에 복사되었습니다!');
+      return;
+    } catch (err) {
+      console.warn('Clipboard write error:', err);
+    }
+  }
+
+  prompt('아래 콘텐츠 원문 링크를 복사하여 공유하세요:', articleUrl);
 }
 
 function updateNotifySetting(key, inputElem) {
