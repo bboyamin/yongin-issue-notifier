@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yongin-issue-cache-v3';
+const CACHE_NAME = 'yongin-issue-cache-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -68,7 +68,7 @@ self.addEventListener('fetch', (event) => {
 
 // Push Notification Listener
 self.addEventListener('push', (event) => {
-  let data = { title: '🔔 용인 핫이슈 새 알림', body: '관심 키워드의 새로운 이슈가 등록되었습니다.' };
+  let data = { title: '🔔 용인 핫이슈 새 알림', body: '관심 키워드의 새로운 이슈가 등록되었습니다.', url: './index.html' };
   if (event.data) {
     try {
       data = event.data.json();
@@ -77,12 +77,13 @@ self.addEventListener('push', (event) => {
     }
   }
 
+  const targetUrl = data.url || './index.html';
   const options = {
     body: data.body,
     icon: './apple-touch-icon.png',
     badge: './apple-touch-icon.png',
     vibrate: [200, 100, 200],
-    data: { url: './index.html' }
+    data: { url: targetUrl }
   };
 
   event.waitUntil(
@@ -90,18 +91,24 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification Click Handler
+// Notification Click Handler - Open Target Article URL Directly!
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : './index.html';
+
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((clientList) => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes('index.html') && 'focus' in client) {
-          return client.focus();
+        if ('focus' in client) {
+          client.focus();
+          if (targetUrl && targetUrl.startsWith('http')) {
+            if (client.navigate) client.navigate(targetUrl);
+          }
+          return;
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('./index.html');
+        return clients.openWindow(targetUrl);
       }
     })
   );
