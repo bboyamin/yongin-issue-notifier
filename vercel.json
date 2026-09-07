@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "routes": [
-    { "src": "/api/collect", "dest": "/api/collect.py" },
-    { "src": "/", "dest": "/index.html" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/collect", "destination": "/api/collect.py" }
   ]
 }
