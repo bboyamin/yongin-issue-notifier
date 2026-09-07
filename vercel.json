@@ -1,6 +1,8 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/api/collect", "destination": "/api/collect.py" }
+  "routes": [
+    { "src": "/api/collect", "dest": "/api/collect.py" },
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
