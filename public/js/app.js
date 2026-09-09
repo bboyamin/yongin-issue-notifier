@@ -218,13 +218,16 @@ function renderIssues() {
 
         const titleAttr = (item.title || '').replace(/"/g, '&quot;');
         const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
-        const urlAttr = (item.url || '#').replace(/'/g, "\\'");
+        const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
+        const publisherAttr = (item.publisher || '소식').replace(/"/g, '&quot;');
+        const badgeAttr = (item.badge || '📰 이슈').replace(/"/g, '&quot;');
+        const timeAttr = (item.time || '보관됨').replace(/"/g, '&quot;');
 
         html += `
-          <div class="issue-card" data-category="${item.type}" data-title="${titleAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}">
+          <div class="issue-card" data-category="${item.type || 'news'}" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
             <div class="card-top">
               <span class="source-tag ${badgeClass}">${item.badge || '📰 이슈'} · ${item.publisher || '소식'} ${isNegBadge}</span>
-              <span class="card-time">${item.time || '보관됨'}</span>
+              <span class="card-date card-time">${item.time || '보관됨'}</span>
             </div>
             <h3 class="card-title">${item.title}</h3>
             
@@ -241,10 +244,10 @@ function renderIssues() {
 
             <div class="card-footer">
               <div class="card-btns">
-                <button class="card-action-btn scrapped" onclick="toggleScrap(this, '${titleAttr}')">★ 스크랩됨</button>
-                <button class="card-action-btn" onclick="shareArticle('${titleAttr}', '${urlAttr}')">🔗 공유</button>
+                <button class="card-action-btn scrapped" onclick="toggleScrap(this)">★ 스크랩됨</button>
+                <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
               </div>
-              <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn" onclick="openContentUrl('${item.url || '#'}', event)">${linkText}</a>
+              <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">${linkText}</a>
             </div>
           </div>
         `;
@@ -342,14 +345,17 @@ function renderIssues() {
 
       const titleAttr = (item.title || '').replace(/"/g, '&quot;');
       const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
-      const urlAttr = (item.url || '#').replace(/'/g, "\\'");
+      const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
+      const publisherAttr = (item.publisher || '소식').replace(/"/g, '&quot;');
+      const badgeAttr = (item.badge || '📰 이슈').replace(/"/g, '&quot;');
+      const timeAttr = (item.time || '방금 전').replace(/"/g, '&quot;');
       const isScrapped = StorageManager.isScrapped(item.title);
       const scrapBtnHtml = isScrapped
-        ? `<button class="card-action-btn scrapped" onclick="toggleScrap(this, '${titleAttr}')">★ 스크랩됨</button>`
-        : `<button class="card-action-btn" onclick="toggleScrap(this, '${titleAttr}')">⭐ 스크랩</button>`;
+        ? `<button class="card-action-btn scrapped" onclick="toggleScrap(this)">★ 스크랩됨</button>`
+        : `<button class="card-action-btn" onclick="toggleScrap(this)">⭐ 스크랩</button>`;
 
       html += `
-        <div class="issue-card" data-category="${item.type}" data-title="${titleAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}">
+        <div class="issue-card" data-category="${item.type || 'news'}" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
           <div class="card-top">
             <span class="source-tag ${badgeClass}">${item.badge} · ${item.publisher} ${isNegBadge}</span>
             <span class="card-time">${item.time}</span>
@@ -370,7 +376,7 @@ function renderIssues() {
           <div class="card-footer">
             <div class="card-btns">
               ${scrapBtnHtml}
-              <button class="card-action-btn" onclick="shareArticle('${titleAttr}', '${urlAttr}')">🔗 공유</button>
+              <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
             </div>
             <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">${linkText}</a>
           </div>
@@ -496,36 +502,38 @@ function toggleSettingsModal() {
   if (modal) modal.classList.toggle('show');
 }
 
-function toggleScrap(btn, title) {
-  const card = btn.closest('.issue-card');
-  if (!title && card) {
-    title = card.dataset.title || '';
-  }
+function toggleScrap(btn, legacyTitle) {
+  const card = (btn && btn.closest) ? btn.closest('.issue-card') : null;
+  let title = card ? (card.dataset.title || '') : (legacyTitle || '');
   if (!title) return;
 
   let targetItem = currentIssues.find(item => item.title === title);
   if (!targetItem && card) {
     targetItem = {
-      title: title,
-      url: card.querySelector('.link-btn') ? card.querySelector('.link-btn').href : '#',
-      publisher: '용인 소식',
-      time: '보관됨',
+      title: card.dataset.title || title,
+      url: card.dataset.url || (card.querySelector('.link-btn') ? card.querySelector('.link-btn').href : '#'),
+      publisher: card.dataset.publisher || '용인 소식',
+      time: card.dataset.time || '보관됨',
       type: card.dataset.category || 'news',
-      badge: '📰 보관',
+      badge: card.dataset.badge || '📰 보관',
       keyword: card.dataset.keyword || '용인시'
     };
+  } else if (!targetItem) {
+    targetItem = { title: title };
   }
 
-  const { isScrapped } = StorageManager.toggleScrap(targetItem || title);
+  const { isScrapped } = StorageManager.toggleScrap(targetItem);
 
-  if (isScrapped) {
-    btn.classList.add('scrapped');
-    btn.innerHTML = '★ 스크랩됨';
-    showToast('⭐ 보관함에 스크랩되었습니다.');
-  } else {
-    btn.classList.remove('scrapped');
-    btn.innerHTML = '⭐ 스크랩';
-    showToast('보관함에서 취소되었습니다.');
+  if (btn && btn.classList) {
+    if (isScrapped) {
+      btn.classList.add('scrapped');
+      btn.innerHTML = '★ 스크랩됨';
+      showToast('⭐ 보관함에 스크랩되었습니다.');
+    } else {
+      btn.classList.remove('scrapped');
+      btn.innerHTML = '⭐ 스크랩';
+      showToast('보관함에서 취소되었습니다.');
+    }
   }
 
   updateScrapBadge();
@@ -551,9 +559,26 @@ function showToast(msg) {
   }, 2500);
 }
 
-async function shareArticle(title, url) {
-  const articleUrl = (url && url !== '#') ? url : window.location.href;
-  const cleanTitle = (title || '용인 핫이슈').replace(/&quot;/g, '"');
+async function shareArticle(btnOrTitle, legacyUrl) {
+  let title = '';
+  let articleUrl = '';
+
+  if (btnOrTitle && typeof btnOrTitle === 'object' && btnOrTitle.nodeType) {
+    const card = btnOrTitle.closest('.issue-card');
+    if (card) {
+      title = card.dataset.title || '';
+      articleUrl = card.dataset.url || card.querySelector('.link-btn')?.href || window.location.href;
+    }
+  } else if (typeof btnOrTitle === 'string') {
+    title = btnOrTitle;
+    articleUrl = legacyUrl || window.location.href;
+  }
+
+  if (!articleUrl || articleUrl === '#') {
+    articleUrl = window.location.href;
+  }
+
+  const cleanTitle = title ? title.replace(/&quot;/g, '"') : '용인 핫이슈';
   const shareData = {
     title: cleanTitle,
     text: `[용인 핫이슈 모니터] ${cleanTitle}`,
