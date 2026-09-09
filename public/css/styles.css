@@ -480,11 +480,13 @@ body {
   font-size: 15px;
   font-weight: 700;
   color: #0F172A;
-  line-height: 1.45;
+  line-height: 1.5;
   letter-spacing: -0.01em;
-  word-break: keep-all;
+  word-break: break-all;
   overflow-wrap: break-word;
   white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 /* AI 3-Line Summary Toggle Button & Box */

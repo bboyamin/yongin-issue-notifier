@@ -221,9 +221,7 @@ def fetch_naver_news(keyword, limit=5):
         if res.status_code == 200:
             data = res.json().get("items", [])
             for idx, item in enumerate(data):
-                clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text
-                import re
-                clean_title = re.sub(r'\.\.\.+$', '', clean_title).strip()
+                clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
                 clean_desc = BeautifulSoup(item.get("description", ""), "html.parser").text
                 link = item.get("originallink") or item.get("link")
                 pub_date_raw = item.get("pubDate", "")
@@ -269,9 +267,7 @@ def fetch_naver_blog(keyword, limit=3):
         if res.status_code == 200:
             data = res.json().get("items", [])
             for idx, item in enumerate(data):
-                clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text
-                import re
-                clean_title = re.sub(r'\.\.\.+$', '', clean_title).strip()
+                clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
                 clean_desc = BeautifulSoup(item.get("description", ""), "html.parser").text
                 link = item.get("link", "")
                 blogger = item.get("bloggername") or "네이버 블로그"
