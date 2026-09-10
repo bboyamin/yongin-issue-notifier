@@ -127,8 +127,6 @@ async function selectKeyword(kw) {
   currentKeyword = kw;
   renderKeywordChips();
   renderIssues();
-  showToast(`🔄 '${kw}' 실시간 최신 소식 수집 중...`);
-  await refreshFeed();
 }
 
 async function addNewKeyword() {
@@ -200,6 +198,7 @@ async function refreshFeed() {
     if (userKeywords.length > 0) {
       const freshIssues = await IssueApi.fetchKeywordIssues(userKeywords);
       currentIssues = mergeIssues(currentIssues, freshIssues);
+      StorageManager.saveFeedCache(currentIssues);
     }
   } catch (err) {
     console.warn('Refresh error:', err);
@@ -1151,17 +1150,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start auto-polling with user preferred interval (default 15 min)
   startAutoPolling();
 
-  // Initial Load Issues: Show fast UI from cache or default, then refresh live feed!
+  // Initial Load Issues: Fast UI from cache or default. Only fetch live feed if cache is empty!
   const cachedFeed = StorageManager.getFeedCache();
   IssueApi.loadDefaultIssues().then(defaultIssues => {
     if (cachedFeed && cachedFeed.length > 0) {
       currentIssues = mergeIssues(cachedFeed, defaultIssues);
+      renderKeywordChips();
+      renderIssues();
     } else {
       currentIssues = defaultIssues;
       StorageManager.saveFeedCache(defaultIssues);
+      renderKeywordChips();
+      renderIssues();
+      refreshFeed();
     }
-    renderKeywordChips();
-    renderIssues();
-    refreshFeed();
   });
 });
