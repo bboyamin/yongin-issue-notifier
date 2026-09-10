@@ -142,6 +142,34 @@ def mock_llm_summarize(title, content, keyword):
     is_negative = any(word in title for word in ["수질", "악취", "민원", "우려", "논란", "지연", "정체", "사고", "화재", "불편", "갈등"])
     return summary, is_negative
 
+def fetch_full_title_from_url(url):
+    if not url or not url.startswith("http"):
+        return None
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        res = requests.get(url, headers=headers, timeout=2.0)
+        if res.status_code == 200:
+            res.encoding = res.apparent_encoding or 'utf-8'
+            soup = BeautifulSoup(res.text, "html.parser")
+            og = soup.find("meta", property="og:title") or soup.find("meta", attrs={"name": "twitter:title"}) or soup.find("meta", attrs={"name": "title"})
+            t = ""
+            if og and og.get("content"):
+                t = og["content"].strip()
+            elif soup.title and soup.title.text:
+                t = soup.title.text.strip()
+
+            if t:
+                import re
+                t = re.sub(r'\s*[-|:]\s*(네이버\s*뉴스|Daum\s*뉴스|[가-힣a-zA-Z0-9\s]+신문|[가-힣a-zA-Z0-9\s]+일보|[가-힣a-zA-Z0-9\s]+뉴스|[가-힣a-zA-Z0-9\s]+미디어)$', '', t)
+                t = t.strip()
+                if len(t) > 10 and not (t.endswith("...") or t.endswith("…")):
+                    return t
+    except Exception:
+        pass
+    return None
+
 # ----------------------------------------------------
 # 중복 이슈 제거 (Deduplication) 엔진
 # ----------------------------------------------------
@@ -183,6 +211,16 @@ def deduplicate_issues(items):
         if matched:
             matched["duplicates_count"] += 1
             matched["sub_titles"].append(item["title"])
+
+            rep_title = matched["representative"]["title"]
+            curr_title = item["title"]
+            rep_has_dots = rep_title.endswith("...") or rep_title.endswith("…")
+            curr_has_dots = curr_title.endswith("...") or curr_title.endswith("…")
+
+            if rep_has_dots and not curr_has_dots:
+                matched["representative"]["title"] = curr_title
+            elif not curr_has_dots and len(curr_title) > len(rep_title):
+                matched["representative"]["title"] = curr_title
         else:
             unique_clusters.append({
                 "representative": item,
@@ -237,6 +275,19 @@ def fetch_naver_news(keyword, limit=5):
                     "url": link,
                     "content": clean_desc
                 })
+
+            from concurrent.futures import ThreadPoolExecutor
+            def enrich_item_title(item_obj):
+                title = item_obj["title"]
+                if title.endswith("...") or title.endswith("…") or "..." in title:
+                    full_title = fetch_full_title_from_url(item_obj["url"])
+                    if full_title:
+                        item_obj["title"] = full_title
+                return item_obj
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                items = list(executor.map(enrich_item_title, items))
+
             print(f"✅ [네이버 뉴스] '{keyword}' {len(items)}건 수집 완료!")
         else:
             print(f"네이버 뉴스 API 호출 실패: HTTP {res.status_code}")
