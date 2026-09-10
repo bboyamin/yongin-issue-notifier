@@ -848,6 +848,15 @@ async function toggleOnDemandAiSummary(btn) {
       if (sourceTag && !sourceTag.querySelector('.is-neg-tag')) {
         sourceTag.innerHTML += `<span class="is-neg-tag" style="background:#FEF2F2; color:#EF4444; border:1px solid #FECACA; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:6px;">🚨 관심 이슈</span>`;
       }
+    }
+  } catch (err) {
+    console.error('On-Demand AI Summary Error:', err);
+    btn.innerHTML = '✨ AI 3줄 요약 보기 ▾';
+    btn.disabled = false;
+    alert('FactChat API 요약 생성 중 오류가 발생했습니다. 설정에서 API 키를 확인해 주세요.');
+  }
+}
+
 async function loadEtnewsForCurrentDate() {
   const datePicker = document.getElementById('etnewsDatePicker');
   if (datePicker && !datePicker.value) {
