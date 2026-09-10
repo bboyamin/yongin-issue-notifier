@@ -4,8 +4,11 @@ import urllib.parse
 import sys
 import os
 import requests
+import urllib3
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone, timedelta
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Add project root to sys.path so we can import src.local_issue_collector
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -16,7 +19,7 @@ except ImportError:
     def collect_all_issues(keywords=None):
         return []
 
-def fetch_etnews_by_date(ymd_str):
+def fetch_etnews_from_pdf(ymd_str):
     urls = [
         f"https://pdf.etnews.com/pdf_today.html?ymd={ymd_str}",
         f"https://pdf.etnews.com/index.html?ymd={ymd_str}"
@@ -34,23 +37,23 @@ def fetch_etnews_by_date(ymd_str):
     html_text = None
     for url in urls:
         try:
-            res = session.get(url, headers=headers, timeout=8)
+            res = session.get(url, headers=headers, verify=False, timeout=6)
             if res.status_code == 200 and len(res.text) > 2000:
                 html_text = res.text
                 break
         except Exception as e:
-            print(f"ETNews fetch error for {url}: {e}")
+            print(f"ETNews PDF fetch error for {url}: {e}")
             continue
             
     if not html_text:
-        return {"sections": [], "categorized": {}, "articles": []}
+        return None
         
     try:
         soup = BeautifulSoup(html_text, "html.parser")
         boxes = soup.find_all("div", class_="box") or soup.find_all("dl", class_="box") or soup.find_all("div", class_="pdf_box")
         
         if not boxes:
-            return {"sections": [], "categorized": {}, "articles": []}
+            return None
             
         categorized = {}
         all_articles = []
@@ -99,14 +102,90 @@ def fetch_etnews_by_date(ymd_str):
                     categorized[section_title] = articles
                 
         sections = list(categorized.keys())
-        return {
-            "sections": sections,
-            "categorized": categorized,
-            "articles": all_articles
-        }
+        if all_articles:
+            return {
+                "sections": sections,
+                "categorized": categorized,
+                "articles": all_articles
+            }
     except Exception as e:
-        print(f"ETNews parse error: {e}")
-        return {"sections": [], "categorized": {}, "articles": []}
+        print(f"ETNews PDF parse error: {e}")
+        
+    return None
+
+def fetch_etnews_from_rss():
+    rss_url = "https://news.google.com/rss/search?q=site:etnews.com+when:3d&hl=ko&gl=KR&ceid=KR:ko"
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
+    try:
+        res = requests.get(rss_url, headers=headers, verify=False, timeout=8)
+        if res.status_code == 200:
+            soup = BeautifulSoup(res.text, "xml")
+            items = soup.find_all("item")
+            categorized = {}
+            all_articles = []
+            today_str = datetime.now().strftime("%Y/%m/%d")
+
+            for idx, item in enumerate(items):
+                raw_title = item.title.text.strip() if item.title else ""
+                clean_title = raw_title.replace(" - 전자신문", "").strip()
+                link = item.link.text.strip() if item.link else ""
+                
+                section = "전자·산업"
+                if any(k in clean_title for k in ["AI", "SW", "소프트웨어", "보안", "클라우드", "데이터"]):
+                    section = "AI·SW·보안"
+                elif any(k in clean_title for k in ["반도체", "디스플레이", "삼성", "SK", "LG", "모바일", "스마트폰"]):
+                    section = "IT·반도체"
+                elif any(k in clean_title for k in ["정부", "정책", "정치", "국회", "부처", "금융"]):
+                    section = "정치·금융·정책"
+                elif any(k in clean_title for k in ["게임", "통신", "방송", "콘텐츠", "플랫폼"]):
+                    section = "통신·방송·게임"
+
+                article_obj = {
+                    "id": f"etnews_rss_{idx}_{int(datetime.now().timestamp())}",
+                    "keyword": "전자신문",
+                    "type": "news",
+                    "badge": f"📰 전자신문 · {section}",
+                    "publisher": "전자신문",
+                    "title": clean_title,
+                    "time": today_str,
+                    "url": link,
+                    "content": clean_title,
+                    "section": section
+                }
+                all_articles.append(article_obj)
+                if section not in categorized:
+                    categorized[section] = []
+                categorized[section].append(article_obj)
+
+            sections = list(categorized.keys())
+            return {
+                "sections": sections,
+                "categorized": categorized,
+                "articles": all_articles
+            }
+    except Exception as e:
+        print("ETNews RSS fallback error:", e)
+
+    return {"sections": [], "categorized": {}, "articles": []}
+
+def fetch_etnews_by_date(ymd_str):
+    result = fetch_etnews_from_pdf(ymd_str)
+    if not result or not result.get("articles"):
+        try:
+            dt_obj = datetime.strptime(ymd_str, "%Y%m%d")
+            for i in range(1, 4):
+                prev_ymd = (dt_obj - timedelta(days=i)).strftime("%Y%m%d")
+                fallback = fetch_etnews_from_pdf(prev_ymd)
+                if fallback and fallback.get("articles"):
+                    result = fallback
+                    break
+        except Exception:
+            pass
+
+    if not result or not result.get("articles"):
+        result = fetch_etnews_from_rss()
+
+    return result
 
 def get_etnews_article_body(url):
     headers = {
@@ -114,7 +193,7 @@ def get_etnews_article_body(url):
         "Referer": "https://pdf.etnews.com/"
     }
     try:
-        res = requests.get(url, headers=headers, timeout=8)
+        res = requests.get(url, headers=headers, verify=False, timeout=8)
         if res.status_code != 200:
             return None
             
@@ -154,27 +233,13 @@ class handler(BaseHTTPRequestHandler):
                 
                 ymd_str = date_param.replace("-", "").strip()
                 result = fetch_etnews_by_date(ymd_str)
-                
-                # Smart fallback: if requested date returned 0 articles, try previous weekdays
-                if not result or not result.get("articles"):
-                    try:
-                        dt_obj = datetime.strptime(ymd_str, "%Y%m%d")
-                        for i in range(1, 4):
-                            prev_ymd = (dt_obj - timedelta(days=i)).strftime("%Y%m%d")
-                            fallback = fetch_etnews_by_date(prev_ymd)
-                            if fallback and fallback.get("articles"):
-                                result = fallback
-                                break
-                    except Exception:
-                        pass
-
                 response_data = result
 
             body = json.dumps(response_data, ensure_ascii=False).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Cache-Control', 's-maxage=600, stale-while-revalidate=1800')
+            self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
