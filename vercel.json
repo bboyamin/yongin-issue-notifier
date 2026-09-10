@@ -2,6 +2,6 @@
   "version": 2,
   "rewrites": [
     { "source": "/api/collect", "destination": "/api/collect.py" },
-    { "source": "/api/etnews", "destination": "/api/etnews.py" }
+    { "source": "/api/etnews", "destination": "/api/collect.py" }
   ]
 }
