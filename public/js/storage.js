@@ -135,6 +135,20 @@ const StorageManager = (() => {
       if (Array.isArray(issues)) {
         safeSetJSON('feed_cache', issues.slice(0, 150));
       }
+    },
+
+    getLastUpdatedTime() {
+      try {
+        return localStorage.getItem('last_updated_time') || '';
+      } catch (e) {
+        return '';
+      }
+    },
+
+    saveLastUpdatedTime(timeStr) {
+      try {
+        if (timeStr) localStorage.setItem('last_updated_time', timeStr);
+      } catch (e) {}
     }
   };
 })();

@@ -9,7 +9,7 @@ let currentKeyword = '용인시';
 let currentEtnewsDate = getTodayKstStr();
 let currentEtnewsSection = 'all';
 let etnewsData = null;
-let lastUpdatedTimeStr = '';
+let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
 
 function getTodayKstStr() {
   const d = new Date();
@@ -206,6 +206,7 @@ async function refreshFeed() {
   } finally {
     const now = new Date();
     lastUpdatedTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    StorageManager.saveLastUpdatedTime(lastUpdatedTimeStr);
     renderKeywordChips();
     renderIssues();
     if (feedContainer) {
@@ -1145,19 +1146,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start auto-polling with user preferred interval (default 15 min)
   startAutoPolling();
 
-  // Initial Load Issues: Fast UI from cache or default. Only fetch live feed if cache is empty!
+  // Initial Load Issues: Fast UI directly from saved cache. If empty, load default.
   const cachedFeed = StorageManager.getFeedCache();
-  IssueApi.loadDefaultIssues().then(defaultIssues => {
-    if (cachedFeed && cachedFeed.length > 0) {
-      currentIssues = mergeIssues(cachedFeed, defaultIssues);
-      renderKeywordChips();
-      renderIssues();
-    } else {
+  if (cachedFeed && cachedFeed.length > 0) {
+    currentIssues = cachedFeed;
+    renderKeywordChips();
+    renderIssues();
+  } else {
+    IssueApi.loadDefaultIssues().then(defaultIssues => {
       currentIssues = defaultIssues;
       StorageManager.saveFeedCache(defaultIssues);
       renderKeywordChips();
       renderIssues();
       refreshFeed();
-    }
-  });
+    });
+  }
 });
