@@ -456,6 +456,19 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "�
     deduped_issues = deduplicate_issues(raw_issues)
     print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 중복 제거 후 {len(deduped_issues)}건 정리 완료")
 
+    # 5.5. 전체 이슈 (뉴스/유튜브/SNS/블로그) 타이틀 100% 원문 보장
+    from concurrent.futures import ThreadPoolExecutor
+    def enrich_item_title(item_obj):
+        title = item_obj.get("title", "")
+        if title.endswith("...") or title.endswith("…") or "..." in title:
+            full_title = fetch_full_title_from_url(item_obj.get("url", ""))
+            if full_title:
+                item_obj["title"] = full_title
+        return item_obj
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        deduped_issues = list(executor.map(enrich_item_title, deduped_issues))
+
     # 6. 온디맨드(On-Demand) AI 요약 설정: 백엔드 수집 시 LLM 호출 0건 (토큰 소모 0개!), 사용자가 피드에서 [AI 3줄 요약 보기]를 누를 때만 생성
     final_issues = []
     for item in deduped_issues:
