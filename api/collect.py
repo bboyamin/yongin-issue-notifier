@@ -140,7 +140,8 @@ class handler(BaseHTTPRequestHandler):
         # --------------------------------------------------
         # 1. Route for ETNews (전자신문 지면 기사)
         # --------------------------------------------------
-        if "etnews" in path_str:
+        is_etnews = ("etnews" in path_str) or ("date" in params) or ("ymd" in params) or (params.get('mode', [None])[0] == 'etnews') or ("url" in params)
+        if is_etnews:
             article_url = params.get('url', [None])[0]
             if article_url:
                 content = get_etnews_article_body(article_url)

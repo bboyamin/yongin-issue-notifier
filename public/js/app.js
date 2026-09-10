@@ -866,7 +866,7 @@ async function loadEtnewsForCurrentDate() {
   showToast(`🔄 전자신문 지면(${ymd}) 수집 중...`);
   
   try {
-    const res = await fetch(`/api/etnews?date=${ymd}`);
+    const res = await fetch(`/api/etnews?mode=etnews&date=${ymd}&v=` + Date.now());
     if (res.ok) {
       etnewsData = await res.json();
     } else {
@@ -1045,7 +1045,7 @@ async function toggleEtnewsAiSummary(btn) {
   try {
     let articleContent = card.dataset.content || '';
     if (!articleContent || articleContent === title) {
-      const bodyRes = await fetch(`/api/etnews?url=${encodeURIComponent(url)}`);
+      const bodyRes = await fetch(`/api/etnews?mode=etnews&url=${encodeURIComponent(url)}&v=` + Date.now());
       if (bodyRes.ok) {
         const bodyData = await bodyRes.json();
         if (bodyData.content) {
