@@ -84,6 +84,20 @@
         <button class="tab-btn" onclick="switchCategory('sns', this)">📱 SNS (0)</button>
       </div>
 
+      <!-- ETNews Date Picker & Section Header (Shown only on etnews tab) -->
+      <div class="etnews-header" id="etnewsHeader" style="display: none;">
+        <div class="etnews-date-bar">
+          <div class="etnews-date-label">
+            <span>📅 지면 날짜:</span>
+            <input type="date" id="etnewsDatePicker" onchange="onEtnewsDateChange(this.value)">
+          </div>
+          <button class="etnews-today-btn" onclick="setEtnewsToday()">오늘 자</button>
+        </div>
+        <div class="etnews-section-chips" id="etnewsSectionChips">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
       <!-- Feed Container -->
       <div class="feed-container" id="feedContainer">
         <!-- Rendered dynamically by app.js -->
@@ -94,6 +108,10 @@
         <button class="nav-item active" onclick="switchNavTab('feed', this)">
           <span class="nav-icon">🏠</span>
           <span>실시간 피드</span>
+        </button>
+        <button class="nav-item" onclick="switchNavTab('etnews', this)">
+          <span class="nav-icon">📰</span>
+          <span>전자신문</span>
         </button>
         <button class="nav-item" onclick="switchNavTab('bookmark', this)">
           <span class="nav-icon">⭐</span>

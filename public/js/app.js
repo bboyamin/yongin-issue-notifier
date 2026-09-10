@@ -6,6 +6,27 @@ let currentIssues = [];
 let currentCategory = 'all';
 let currentNavTab = 'feed'; // 'feed' or 'bookmark'
 let currentKeyword = '용인시';
+let currentEtnewsDate = getTodayKstStr();
+let currentEtnewsSection = 'all';
+let etnewsData = null;
+
+function getTodayKstStr() {
+  const d = new Date();
+  const kst = new Date(d.getTime() + (9 * 60 + d.getTimezoneOffset()) * 60000);
+  const yyyy = kst.getFullYear();
+  const mm = String(kst.getMonth() + 1).padStart(2, '0');
+  const dd = String(kst.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function isDateWeekend(dateStr) {
+  if (!dateStr) return false;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return false;
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  const day = d.getDay();
+  return day === 0 || day === 6;
+}
 
 function mergeIssues(existingList, newList) {
   if (!newList || !newList.length) return existingList || [];
@@ -196,6 +217,7 @@ async function refreshFeed() {
 
 async function switchNavTab(tab, btn) {
   const isAlreadyFeed = (currentNavTab === 'feed' && tab === 'feed');
+  const isAlreadyEtnews = (currentNavTab === 'etnews' && tab === 'etnews');
   currentNavTab = tab;
 
   const navBtns = document.querySelectorAll('.app-bottom-nav .nav-item');
@@ -208,13 +230,27 @@ async function switchNavTab(tab, btn) {
 
   const categoryTabs = document.querySelector('.category-tabs');
   const keywordChips = document.querySelector('.keyword-chips');
+  const etnewsHeader = document.getElementById('etnewsHeader');
+
   if (tab === 'bookmark') {
     if (categoryTabs) categoryTabs.style.display = 'none';
     if (keywordChips) keywordChips.style.display = 'none';
+    if (etnewsHeader) etnewsHeader.style.display = 'none';
     renderIssues();
+  } else if (tab === 'etnews') {
+    if (categoryTabs) categoryTabs.style.display = 'none';
+    if (keywordChips) keywordChips.style.display = 'none';
+    if (etnewsHeader) etnewsHeader.style.display = 'flex';
+
+    if (isAlreadyEtnews) {
+      await refreshEtnews();
+    } else {
+      await loadEtnewsForCurrentDate();
+    }
   } else {
     if (categoryTabs) categoryTabs.style.display = 'flex';
     if (keywordChips) keywordChips.style.display = 'flex';
+    if (etnewsHeader) etnewsHeader.style.display = 'none';
 
     if (isAlreadyFeed) {
       await refreshFeed();
@@ -230,6 +266,12 @@ function renderIssues() {
 
   updateScrapBadge();
   const scraps = StorageManager.getScraps();
+
+  // --- ETNews View (전자신문 지면) ---
+  if (currentNavTab === 'etnews') {
+    renderEtnewsView();
+    return;
+  }
 
   // --- Bookmark View (보관함) ---
   if (currentNavTab === 'bookmark') {
@@ -806,12 +848,222 @@ async function toggleOnDemandAiSummary(btn) {
       if (sourceTag && !sourceTag.querySelector('.is-neg-tag')) {
         sourceTag.innerHTML += `<span class="is-neg-tag" style="background:#FEF2F2; color:#EF4444; border:1px solid #FECACA; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:6px;">🚨 관심 이슈</span>`;
       }
+async function loadEtnewsForCurrentDate() {
+  const datePicker = document.getElementById('etnewsDatePicker');
+  if (datePicker && !datePicker.value) {
+    datePicker.value = currentEtnewsDate;
+  }
+  const ymd = (datePicker && datePicker.value ? datePicker.value : currentEtnewsDate).replace(/-/g, '');
+  showToast(`🔄 전자신문 지면(${ymd}) 수집 중...`);
+  
+  try {
+    const res = await fetch(`/api/etnews?date=${ymd}`);
+    if (res.ok) {
+      etnewsData = await res.json();
+    } else {
+      etnewsData = { sections: [], categorized: {}, articles: [] };
     }
-  } catch (err) {
-    console.error('On-Demand AI Summary Error:', err);
-    btn.innerHTML = '✨ AI 3줄 요약 보기 ▾';
+  } catch (e) {
+    console.warn('ETNews fetch error:', e);
+    etnewsData = { sections: [], categorized: {}, articles: [] };
+  }
+  
+  renderEtnewsSectionChips();
+  renderEtnewsView();
+}
+
+function renderEtnewsSectionChips() {
+  const container = document.getElementById('etnewsSectionChips');
+  if (!container || !etnewsData) return;
+
+  const sections = etnewsData.sections || [];
+  const totalCount = etnewsData.articles ? etnewsData.articles.length : 0;
+  let html = `<span class="etnews-section-chip ${currentEtnewsSection === 'all' ? 'active' : ''}" onclick="selectEtnewsSection('all')">전체 지면 (${totalCount})</span>`;
+
+  sections.forEach(sec => {
+    const count = etnewsData.categorized[sec] ? etnewsData.categorized[sec].length : 0;
+    const isActive = currentEtnewsSection === sec;
+    const safeSec = sec.replace(/'/g, "\\'");
+    html += `<span class="etnews-section-chip ${isActive ? 'active' : ''}" onclick="selectEtnewsSection('${safeSec}')">${sec} (${count})</span>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function selectEtnewsSection(sec) {
+  currentEtnewsSection = sec;
+  renderEtnewsSectionChips();
+  renderEtnewsView();
+}
+
+function onEtnewsDateChange(val) {
+  if (!val) return;
+  currentEtnewsDate = val;
+  currentEtnewsSection = 'all';
+  loadEtnewsForCurrentDate();
+}
+
+function setEtnewsToday() {
+  currentEtnewsDate = getTodayKstStr();
+  const datePicker = document.getElementById('etnewsDatePicker');
+  if (datePicker) datePicker.value = currentEtnewsDate;
+  currentEtnewsSection = 'all';
+  loadEtnewsForCurrentDate();
+}
+
+async function refreshEtnews() {
+  await loadEtnewsForCurrentDate();
+}
+
+function renderEtnewsView() {
+  const container = document.getElementById('feedContainer');
+  if (!container) return;
+
+  updateScrapBadge();
+
+  if (!etnewsData || !etnewsData.articles || etnewsData.articles.length === 0) {
+    const isWeekend = isDateWeekend(currentEtnewsDate);
+    let msg = isWeekend
+      ? `📅 ${currentEtnewsDate} 은 주말(휴간일)로 지면 신문이 발행되지 않는 날입니다. 평일을 선택해 주세요.`
+      : `📅 ${currentEtnewsDate} 지면 정보를 불러오는 중입니다. 신문사 발행 직후(아침 06~07시)이거나 수집 지연이 발생할 수 있습니다.`;
+    container.innerHTML = `
+      <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
+        <p style="font-size:36px; margin-bottom:12px;">📰</p>
+        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">전자신문 지면 기사 없음</p>
+        <p style="font-size:12px; color:#64748B; line-height:1.5;">${msg}</p>
+        <button onclick="refreshEtnews()" style="margin-top:16px; background:#EEF2FF; color:#4F46E5; border:1px solid #C7D2FE; padding:8px 16px; border-radius:12px; font-weight:700; cursor:pointer;">🔄 지면 다시 불러오기</button>
+      </div>
+    `;
+    updateClock();
+    return;
+  }
+
+  let displayArticles = etnewsData.articles;
+  if (currentEtnewsSection !== 'all') {
+    displayArticles = etnewsData.categorized[currentEtnewsSection] || [];
+  }
+
+  const formattedYmd = currentEtnewsDate.replace(/-/g, '.');
+  let html = `
+    <div class="realtime-bar" onclick="refreshEtnews()" style="cursor: pointer; background: #F8FAFC; border-color: #E2E8F0;" title="클릭 시 전자신문 지면 다시 불러오기">
+      <div class="realtime-indicator">
+        <div class="live-dot" style="background:#0F172A;"></div>
+        <span>📰 전자신문 지면 브리핑 <strong>(${formattedYmd})</strong></span>
+      </div>
+      <span style="font-size: 11px; opacity: 0.8;">총 ${displayArticles.length}건</span>
+    </div>
+  `;
+
+  displayArticles.forEach(item => {
+    const hasPreSummary = item.summary && item.summary.length > 0;
+    const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
+
+    const titleAttr = (item.title || '').replace(/"/g, '&quot;');
+    const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
+    const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
+    const publisherAttr = (item.publisher || '전자신문').replace(/"/g, '&quot;');
+    const badgeAttr = (item.badge || '📰 전자신문').replace(/"/g, '&quot;');
+    const timeAttr = (item.time || currentEtnewsDate).replace(/"/g, '&quot;');
+    const isScrapped = StorageManager.isScrapped(item.title);
+    const scrapBtnHtml = isScrapped
+      ? `<button class="card-action-btn scrapped" onclick="toggleScrap(this)">★ 스크랩됨</button>`
+      : `<button class="card-action-btn" onclick="toggleScrap(this)">⭐ 스크랩</button>`;
+
+    html += `
+      <div class="issue-card" data-category="news" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="전자신문" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
+        <div class="card-top">
+          <span class="source-tag source-news">${item.badge}</span>
+          <span class="card-time">${item.time}</span>
+        </div>
+        <h3 class="card-title">${item.title}</h3>
+        
+        <button class="ai-summary-toggle-btn" onclick="toggleEtnewsAiSummary(this)">
+          ✨ AI 스마트 브리핑 보기 ▾
+        </button>
+
+        <div class="ai-summary-box" style="display: none;" data-generated="${hasPreSummary ? 'true' : 'false'}">
+          <div class="ai-summary-head">✨ FactChat AI 전자신문 스마트 브리핑</div>
+          <ul class="ai-summary-list">
+            ${summaryItems}
+          </ul>
+        </div>
+
+        <div class="card-footer">
+          <div class="card-btns">
+            ${scrapBtnHtml}
+            <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
+          </div>
+          <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">지면 원문 보기 ↗</a>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  updateClock();
+}
+
+async function toggleEtnewsAiSummary(btn) {
+  const card = btn.closest('.issue-card');
+  if (!card) return;
+  const summaryBox = card.querySelector('.ai-summary-box');
+  if (!summaryBox) return;
+
+  if (summaryBox.style.display === 'block') {
+    summaryBox.style.display = 'none';
+    btn.innerHTML = '✨ AI 스마트 브리핑 보기 ▾';
+    return;
+  }
+
+  if (summaryBox.dataset.generated === 'true') {
+    summaryBox.style.display = 'block';
+    btn.innerHTML = '✨ AI 스마트 브리핑 접기 ▴';
+    return;
+  }
+
+  const apiKey = StorageManager.getFactChatKey();
+  if (!apiKey) {
+    alert('FactChat API 키가 설정되지 않았습니다.\n상단 ⚙️ 설정 메뉴에서 API 키를 입력해 주세요.');
+    toggleSettingsModal();
+    return;
+  }
+
+  const title = card.dataset.title;
+  const url = card.dataset.url;
+  btn.disabled = true;
+  btn.innerHTML = '✨ AI 요약 작성 중... ⏳';
+
+  try {
+    let articleContent = card.dataset.content || '';
+    if (!articleContent || articleContent === title) {
+      const bodyRes = await fetch(`/api/etnews?url=${encodeURIComponent(url)}`);
+      if (bodyRes.ok) {
+        const bodyData = await bodyRes.json();
+        if (bodyData.content) {
+          articleContent = bodyData.content;
+          card.dataset.content = articleContent;
+        }
+      }
+    }
+
+    const { summary } = await IssueApi.generateSummary({
+      title,
+      keyword: '전자신문',
+      content: articleContent,
+      apiKey
+    });
+
+    const listHtml = summary.map(s => `<li>${s}</li>`).join('');
+    summaryBox.querySelector('.ai-summary-list').innerHTML = listHtml;
+    summaryBox.style.display = 'block';
+    summaryBox.dataset.generated = 'true';
+    btn.innerHTML = '✨ AI 스마트 브리핑 접기 ▴';
     btn.disabled = false;
-    alert('FactChat API 요약 생성 중 오류가 발생했습니다. 설정에서 API 키를 확인해 주세요.');
+  } catch (err) {
+    console.error('ETNews AI Summary Error:', err);
+    btn.innerHTML = '✨ AI 스마트 브리핑 보기 ▾';
+    btn.disabled = false;
+    alert('FactChat API 요약 작성 중 오류가 발생했습니다.');
   }
 }
 
