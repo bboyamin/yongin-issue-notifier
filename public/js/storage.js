@@ -105,6 +105,7 @@ const StorageManager = (() => {
       safeSetJSON(KEYS.NOTIFY, settings);
     },
 
+    KEYS_FEED_CACHE: 'feed_cache',
     getFactChatKey() {
       try {
         const stored = localStorage.getItem(KEYS.FACTCHAT_KEY);
@@ -123,6 +124,16 @@ const StorageManager = (() => {
         }
       } catch (e) {
         console.warn('StorageManager error saving FactChat Key:', e);
+      }
+    },
+
+    getFeedCache() {
+      return safeGetJSON('feed_cache', []);
+    },
+
+    saveFeedCache(issues) {
+      if (Array.isArray(issues)) {
+        safeSetJSON('feed_cache', issues.slice(0, 150));
       }
     }
   };

@@ -7,6 +7,49 @@ let currentCategory = 'all';
 let currentNavTab = 'feed'; // 'feed' or 'bookmark'
 let currentKeyword = '용인시';
 
+function mergeIssues(existingList, newList) {
+  if (!newList || !newList.length) return existingList || [];
+  if (!existingList || !existingList.length) return newList || [];
+
+  const existingMap = new Map();
+  existingList.forEach(item => {
+    const key = (item.url && item.url !== '#') ? item.url : item.title;
+    if (key) existingMap.set(key, item);
+  });
+
+  const merged = [];
+  const addedKeys = new Set();
+
+  newList.forEach(newItem => {
+    const key = (newItem.url && newItem.url !== '#') ? newItem.url : newItem.title;
+    if (key) {
+      addedKeys.add(key);
+      const existing = existingMap.get(key);
+      if (existing) {
+        if (existing.summary && (!newItem.summary || newItem.summary.length === 0)) {
+          newItem.summary = existing.summary;
+        }
+        if (existing.is_negative !== undefined && newItem.is_negative === undefined) {
+          newItem.is_negative = existing.is_negative;
+        }
+      }
+      merged.push(newItem);
+    }
+  });
+
+  existingList.forEach(existingItem => {
+    const key = (existingItem.url && existingItem.url !== '#') ? existingItem.url : existingItem.title;
+    if (key && !addedKeys.has(key)) {
+      addedKeys.add(key);
+      merged.push(existingItem);
+    }
+  });
+
+  const finalMerged = merged.slice(0, 150);
+  StorageManager.saveFeedCache(finalMerged);
+  return finalMerged;
+}
+
 // Initialize Keyword Chips UI
 function renderKeywordChips() {
   const userKeywords = StorageManager.getKeywords();
@@ -49,7 +92,8 @@ function renderKeywordChips() {
 
 async function fetchKeywordIssues(keywordsList) {
   try {
-    currentIssues = await IssueApi.fetchKeywordIssues(keywordsList);
+    const freshIssues = await IssueApi.fetchKeywordIssues(keywordsList);
+    currentIssues = mergeIssues(currentIssues, freshIssues);
     renderKeywordChips();
     renderIssues();
     showToast(`✅ 최신 소식 수집이 완료되었습니다.`);
@@ -133,7 +177,8 @@ async function refreshFeed() {
   const userKeywords = StorageManager.getKeywords();
   try {
     if (userKeywords.length > 0) {
-      currentIssues = await IssueApi.fetchKeywordIssues(userKeywords);
+      const freshIssues = await IssueApi.fetchKeywordIssues(userKeywords);
+      currentIssues = mergeIssues(currentIssues, freshIssues);
     }
   } catch (err) {
     console.warn('Refresh error:', err);
@@ -652,7 +697,7 @@ function startAutoPolling() {
         const previousTitles = new Set(currentIssues.map(i => i.title));
         const newItems = latestIssues.filter(i => !previousTitles.has(i.title));
 
-        currentIssues = latestIssues;
+        currentIssues = mergeIssues(currentIssues, latestIssues);
         renderKeywordChips();
         renderIssues();
 
@@ -845,9 +890,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start auto-polling with user preferred interval (default 15 min)
   startAutoPolling();
 
-  // Initial Load Issues: Show fast UI, then immediately refresh live feed!
-  IssueApi.loadDefaultIssues().then(issues => {
-    currentIssues = issues;
+  // Initial Load Issues: Show fast UI from cache or default, then refresh live feed!
+  const cachedFeed = StorageManager.getFeedCache();
+  IssueApi.loadDefaultIssues().then(defaultIssues => {
+    if (cachedFeed && cachedFeed.length > 0) {
+      currentIssues = mergeIssues(cachedFeed, defaultIssues);
+    } else {
+      currentIssues = defaultIssues;
+      StorageManager.saveFeedCache(defaultIssues);
+    }
     renderKeywordChips();
     renderIssues();
     refreshFeed();
