@@ -9,6 +9,7 @@ let currentKeyword = '용인시';
 let currentEtnewsDate = getTodayKstStr();
 let currentEtnewsSection = 'all';
 let etnewsData = null;
+let lastUpdatedTimeStr = '';
 
 function getTodayKstStr() {
   const d = new Date();
@@ -203,14 +204,14 @@ async function refreshFeed() {
   } catch (err) {
     console.warn('Refresh error:', err);
   } finally {
+    const now = new Date();
+    lastUpdatedTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     renderKeywordChips();
     renderIssues();
     if (feedContainer) {
       feedContainer.style.opacity = '1';
     }
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-    showToast(`✅ 실시간 피드 업데이트 완료 (${timeStr})`);
+    showToast(`✅ 실시간 피드 업데이트 완료 (${lastUpdatedTimeStr})`);
   }
 }
 
@@ -398,8 +399,7 @@ function renderIssues() {
     return currentCategory === 'all' || item.type === currentCategory;
   });
 
-  const now = new Date();
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  const displayTimeStr = lastUpdatedTimeStr ? `${lastUpdatedTimeStr} 갱신 완료` : '최신 데이터 표시 중';
 
   let html = `
     <div class="realtime-bar" onclick="refreshFeed()" style="cursor: pointer;" title="클릭 시 최신 소식 실시간 새로고침">
@@ -407,7 +407,7 @@ function renderIssues() {
         <div class="live-dot"></div>
         <span>실시간 이슈 피드 🔄 <strong>새로고침</strong></span>
       </div>
-      <span style="font-size: 11px; opacity: 0.9;" id="updateTimestamp">${timeStr} 갱신 완료</span>
+      <span style="font-size: 11px; opacity: 0.9;" id="updateTimestamp">${displayTimeStr}</span>
     </div>
   `;
 
@@ -1087,13 +1087,8 @@ function updateClock() {
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
   const timeElem = document.getElementById('liveTime');
-  const tsElem = document.getElementById('updateTimestamp');
   if (timeElem) timeElem.textContent = `${hours}:${minutes}`;
-  if (tsElem && !tsElem.textContent.includes('갱신 완료')) {
-    tsElem.textContent = `${hours}:${minutes}:${seconds} 갱신 완료`;
-  }
 }
 
 function installPWA() {
