@@ -740,6 +740,10 @@ function startAutoPolling() {
         const newItems = latestIssues.filter(i => !previousTitles.has(i.title));
 
         currentIssues = mergeIssues(currentIssues, latestIssues);
+        const now = new Date();
+        lastUpdatedTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        StorageManager.saveLastUpdatedTime(lastUpdatedTimeStr);
+
         renderKeywordChips();
         renderIssues();
 
@@ -1145,6 +1149,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Start auto-polling with user preferred interval (default 15 min)
   startAutoPolling();
+
+  // Mobile App Resume / Foreground listener: check if interval has passed when user reopens screen
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      const settings = StorageManager.getNotifySettings();
+      const intervalMin = settings.intervalMinutes || 15;
+      const lastTimeStr = StorageManager.getLastUpdatedTime();
+      
+      if (lastTimeStr && lastTimeStr.includes(':')) {
+        const parts = lastTimeStr.split(':');
+        const lastDate = new Date();
+        lastDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || 0, 10));
+        const diffMins = (new Date() - lastDate) / (1000 * 60);
+        if (diffMins >= intervalMin) {
+          refreshFeed();
+        }
+      }
+    }
+  });
 
   // Initial Load Issues: Fast UI directly from saved cache. If empty, load default.
   const cachedFeed = StorageManager.getFeedCache();
