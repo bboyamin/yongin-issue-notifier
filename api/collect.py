@@ -168,6 +168,59 @@ def fetch_etnews_from_rss():
 
     return {"sections": [], "categorized": {}, "articles": []}
 
+def fetch_etnews_from_naver():
+    client_id = (os.getenv("NAVER_CLIENT_ID") or "").strip('"\'')
+    client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "").strip('"\'')
+    if not client_id or not client_secret:
+        return None
+    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote('전자신문')}&display=30&sort=date"
+    headers = {"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret}
+    try:
+        res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            items = res.json().get("items", [])
+            categorized = {}
+            all_articles = []
+            today_str = datetime.now().strftime("%Y/%m/%d")
+            for idx, item in enumerate(items):
+                clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
+                link = item.get("originallink") or item.get("link")
+                section = "전자·IT 속보"
+                if any(k in clean_title for k in ["AI", "SW", "소프트웨어", "보안", "클라우드", "데이터"]):
+                    section = "AI·SW·보안"
+                elif any(k in clean_title for k in ["반도체", "디스플레이", "삼성", "SK", "LG", "모바일", "스마트폰"]):
+                    section = "IT·반도체"
+                elif any(k in clean_title for k in ["정부", "정책", "정치", "국회", "부처", "금융"]):
+                    section = "정치·금융·정책"
+                elif any(k in clean_title for k in ["게임", "통신", "방송", "콘텐츠", "플랫폼"]):
+                    section = "통신·방송·게임"
+
+                article_obj = {
+                    "id": f"etnews_naver_{idx}_{int(datetime.now().timestamp())}",
+                    "keyword": "전자신문",
+                    "type": "news",
+                    "badge": f"📰 전자신문 · {section}",
+                    "publisher": "전자신문",
+                    "title": clean_title,
+                    "time": today_str,
+                    "url": link,
+                    "content": clean_title,
+                    "section": section
+                }
+                all_articles.append(article_obj)
+                if section not in categorized:
+                    categorized[section] = []
+                categorized[section].append(article_obj)
+            if all_articles:
+                return {
+                    "sections": list(categorized.keys()),
+                    "categorized": categorized,
+                    "articles": all_articles
+                }
+    except Exception as e:
+        print("Naver ETNews fallback error:", e)
+    return None
+
 def fetch_etnews_by_date(ymd_str):
     result = fetch_etnews_from_pdf(ymd_str)
     if not result or not result.get("articles"):
@@ -185,7 +238,12 @@ def fetch_etnews_by_date(ymd_str):
     if not result or not result.get("articles"):
         result = fetch_etnews_from_rss()
 
-    return result
+    if not result or not result.get("articles"):
+        nav_fallback = fetch_etnews_from_naver()
+        if nav_fallback and nav_fallback.get("articles"):
+            result = nav_fallback
+
+    return result or {"sections": [], "categorized": {}, "articles": []}
 
 def get_etnews_article_body(url):
     headers = {
