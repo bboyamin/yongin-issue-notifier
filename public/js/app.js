@@ -1004,8 +1004,8 @@ function renderEtnewsView() {
     const titleAttr = (item.title || '').replace(/"/g, '&quot;');
     const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
     const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
-    const publisherAttr = (item.publisher || '전자신문').replace(/"/g, '&quot;');
-    const badgeAttr = (item.badge || '📰 전자신문').replace(/"/g, '&quot;');
+    const publisherAttr = (item.publisher || providerName).replace(/"/g, '&quot;');
+    const badgeAttr = (item.badge || `${providerIcon} ${providerName}`).replace(/"/g, '&quot;');
     const timeAttr = (item.time || currentEtnewsDate).replace(/"/g, '&quot;');
     const isScrapped = StorageManager.isScrapped(item.title);
     const scrapBtnHtml = isScrapped
@@ -1013,9 +1013,9 @@ function renderEtnewsView() {
       : `<button class="card-action-btn" onclick="toggleScrap(this)">⭐ 스크랩</button>`;
 
     html += `
-      <div class="issue-card" data-category="news" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="전자신문" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
+      <div class="issue-card" data-category="news" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${providerName}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
         <div class="card-top">
-          <span class="source-tag source-news">${item.badge}</span>
+          <span class="source-tag source-news">${item.badge || badgeAttr}</span>
           <span class="card-time">${item.time}</span>
         </div>
         <h3 class="card-title">${item.title}</h3>
@@ -1025,7 +1025,7 @@ function renderEtnewsView() {
         </button>
 
         <div class="ai-summary-box" style="display: none;" data-generated="${hasPreSummary ? 'true' : 'false'}">
-          <div class="ai-summary-head">✨ FactChat AI 전자신문 스마트 브리핑</div>
+          <div class="ai-summary-head">✨ FactChat AI ${providerName} 스마트 브리핑</div>
           <ul class="ai-summary-list">
             ${summaryItems}
           </ul>

@@ -45,6 +45,40 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(issues, ensure_ascii=False).encode('utf-8'))
             return
 
+        elif parsed_path.path == "/api/etnews":
+            query_params = urllib.parse.parse_qs(parsed_path.query)
+            ymd = query_params.get("date", [datetime.now().strftime("%Y%m%d")])[0].replace("-", "")
+            try:
+                from api.etnews import fetch_etnews_by_date
+                result = fetch_etnews_by_date(ymd)
+            except Exception as e:
+                print("ETNews fetch error:", e)
+                result = {"sections": [], "categorized": {}, "articles": []}
+
+            body = json.dumps(result, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        elif parsed_path.path == "/api/mknews":
+            query_params = urllib.parse.parse_qs(parsed_path.query)
+            ymd = query_params.get("date", [datetime.now().strftime("%Y%m%d")])[0].replace("-", "")
+            try:
+                from api.mknews import fetch_mknews_by_date
+                result = fetch_mknews_by_date(ymd)
+            except Exception as e:
+                print("MKNews fetch error:", e)
+                result = {"sections": [], "categorized": {}, "articles": []}
+
+            body = json.dumps(result, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         super().do_GET()
 
 if __name__ == "__main__":
