@@ -194,7 +194,77 @@ def fetch_mknews_from_google_rss():
 
     return None
 
+def fetch_mknews_for_past_date(ymd_str):
+    try:
+        dt = datetime.strptime(ymd_str, "%Y%m%d")
+        dt_next = dt + timedelta(days=1)
+        after_str = dt.strftime("%Y-%m-%d")
+        before_str = dt_next.strftime("%Y-%m-%d")
+        formatted_date = dt.strftime("%Y/%m/%d")
+
+        rss_url = f"https://news.google.com/rss/search?q=site:mk.co.kr+after:{after_str}+before:{before_str}&hl=ko&gl=KR&ceid=KR:ko"
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
+        res = requests.get(rss_url, headers=headers, verify=False, timeout=8)
+        if res.status_code == 200:
+            soup = BeautifulSoup(res.text, "xml")
+            items = soup.find_all("item")
+            categorized = {}
+            all_articles = []
+
+            for idx, item in enumerate(items):
+                raw_title = item.title.text.strip() if item.title else ""
+                clean_title = raw_title.replace(" - 매일경제", "").strip()
+                link = item.link.text.strip() if item.link else ""
+                if not clean_title or not link:
+                    continue
+
+                section = "종합"
+                if any(k in clean_title for k in ["증권", "주식", "금리", "금융", "코스피", "코스닥"]):
+                    section = "경제·증권"
+                elif any(k in clean_title for k in ["부동산", "아파트", "분양", "건설", "기업", "경영"]):
+                    section = "기업·부동산"
+                elif any(k in clean_title for k in ["AI", "반도체", "IT", "기술", "스마트폰", "플랫폼"]):
+                    section = "IT·과학"
+                elif any(k in clean_title for k in ["정부", "대통령", "국회", "정치", "검찰", "사회"]):
+                    section = "정치·사회"
+
+                article_obj = {
+                    "id": f"mknews_past_{ymd_str}_{idx}",
+                    "keyword": "매일경제",
+                    "type": "news",
+                    "badge": f"📈 매일경제 · {section}",
+                    "publisher": "매일경제",
+                    "title": clean_title,
+                    "time": formatted_date,
+                    "url": link,
+                    "content": clean_title,
+                    "section": section
+                }
+                all_articles.append(article_obj)
+                if section not in categorized:
+                    categorized[section] = []
+                categorized[section].append(article_obj)
+
+            if all_articles:
+                return {
+                    "sections": list(categorized.keys()),
+                    "categorized": categorized,
+                    "articles": all_articles
+                }
+    except Exception as e:
+        print(f"MKNews past date ({ymd_str}) fetch error:", e)
+
+    return None
+
 def fetch_mknews_by_date(ymd_str):
+    today_ymd = datetime.now().strftime("%Y%m%d")
+    
+    # If a past date is requested from date picker
+    if ymd_str and len(ymd_str) == 8 and ymd_str != today_ymd:
+        past_res = fetch_mknews_for_past_date(ymd_str)
+        if past_res and past_res.get("articles"):
+            return past_res
+
     # 1st tier: Official MK RSS
     result = fetch_mknews_from_rss()
 
