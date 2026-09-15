@@ -149,6 +149,20 @@ const StorageManager = (() => {
       try {
         if (timeStr) localStorage.setItem('last_updated_time', timeStr);
       } catch (e) {}
+    },
+
+    getPaperProvider() {
+      try {
+        return localStorage.getItem('paper_provider') || 'etnews';
+      } catch (e) {
+        return 'etnews';
+      }
+    },
+
+    savePaperProvider(provider) {
+      try {
+        if (provider) localStorage.setItem('paper_provider', provider);
+      } catch (e) {}
     }
   };
 })();
