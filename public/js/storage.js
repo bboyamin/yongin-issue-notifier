@@ -38,7 +38,20 @@ const StorageManager = (() => {
         const item = localStorage.getItem(KEYS.KEYWORDS);
         if (item === null) return DEFAULT_KEYWORDS;
         const parsed = JSON.parse(item);
-        return Array.isArray(parsed) ? parsed : DEFAULT_KEYWORDS;
+        if (!Array.isArray(parsed)) return DEFAULT_KEYWORDS;
+        
+        const clean = [];
+        parsed.forEach(k => {
+          if (typeof k === 'string') {
+            k.split(',').forEach(sub => {
+              const trimmed = sub.trim().replace(/^#\s*/, '');
+              if (trimmed && !clean.includes(trimmed)) {
+                clean.push(trimmed);
+              }
+            });
+          }
+        });
+        return clean.length ? clean : DEFAULT_KEYWORDS;
       } catch (e) {
         return DEFAULT_KEYWORDS;
       }
@@ -50,10 +63,16 @@ const StorageManager = (() => {
 
     addKeyword(kw) {
       const current = this.getKeywords();
-      if (!current.includes(kw)) {
-        current.push(kw);
-        this.saveKeywords(current);
-      }
+      const newItems = (typeof kw === 'string' ? kw.split(',') : [kw])
+        .map(s => String(s).trim().replace(/^#\s*/, ''))
+        .filter(Boolean);
+
+      newItems.forEach(item => {
+        if (!current.includes(item)) {
+          current.push(item);
+        }
+      });
+      this.saveKeywords(current);
       return current;
     },
 

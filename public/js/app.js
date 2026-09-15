@@ -132,23 +132,22 @@ async function selectKeyword(kw) {
 }
 
 async function addNewKeyword() {
-  const input = prompt('추가할 모니터링 키워드나 지역명을 입력하세요 (예: 수지구, 기흥구, 동백동):', '');
+  const input = prompt('추가할 모니터링 키워드나 지역명을 입력하세요 (예: 수지구, 기흥구, 동백동 또는 주식, 주가, 증시):', '');
   if (!input) return;
-  const kw = input.trim().replace(/^#\s*/, '');
-  if (!kw) return;
 
-  const currentKeywords = StorageManager.getKeywords();
-  if (currentKeywords.includes(kw)) {
-    selectKeyword(kw);
-    return;
-  }
+  const rawKws = input.split(',').map(k => k.trim().replace(/^#\s*/, '')).filter(Boolean);
+  if (!rawKws.length) return;
 
-  const updated = StorageManager.addKeyword(kw);
-  currentKeyword = kw;
+  let updated = StorageManager.getKeywords();
+  rawKws.forEach(kw => {
+    updated = StorageManager.addKeyword(kw);
+  });
+
+  currentKeyword = rawKws[0];
   renderKeywordChips();
   renderIssues();
 
-  showToast(`🔄 '${kw}' 실시간 관련 콘텐츠 수집 중...`);
+  showToast(`🔄 '${rawKws.join(', ')}' 실시간 관련 콘텐츠 수집 중...`);
   await fetchKeywordIssues(updated);
 }
 
@@ -376,8 +375,12 @@ function renderIssues() {
     if (currentKeyword === '전체') return true;
     if (item.keyword === currentKeyword) return true;
     if ((currentKeyword === '용인시' || currentKeyword === '용인특례시') && (item.keyword === '용인시' || item.keyword === '용인특례시')) return true;
+
+    const subKws = currentKeyword.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
     const searchSpace = ((item.title || '') + ' ' + (item.content || '') + ' ' + (item.publisher || '')).toLowerCase();
-    return searchSpace.includes(currentKeyword.toLowerCase());
+    const itemKw = (item.keyword || '').toLowerCase();
+
+    return subKws.some(kw => itemKw === kw || searchSpace.includes(kw));
   });
 
   // Calculate category tab counts based strictly on the selected keyword's contents
