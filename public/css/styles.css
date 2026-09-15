@@ -910,6 +910,33 @@ input:checked + .slider:before { transform: translateX(20px); }
   gap: 8px;
 }
 
+.paper-provider-bar {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.paper-provider-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  background: #F8FAFC;
+  color: #64748B;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.paper-provider-btn.active {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border-color: #6366F1;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.15);
+}
+
 .etnews-date-bar {
   display: flex;
   align-items: center;

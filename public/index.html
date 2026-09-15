@@ -84,8 +84,12 @@
         <button class="tab-btn" onclick="switchCategory('sns', this)">📱 SNS (0)</button>
       </div>
 
-      <!-- ETNews Date Picker & Section Header (Shown only on etnews tab) -->
+      <!-- Paper Date Picker & Section Header (Shown only on paper tab) -->
       <div class="etnews-header" id="etnewsHeader" style="display: none;">
+        <div class="paper-provider-bar">
+          <button class="paper-provider-btn active" id="paperBtnEtnews" onclick="switchPaperProvider('etnews')">📰 전자신문</button>
+          <button class="paper-provider-btn" id="paperBtnMknews" onclick="switchPaperProvider('mknews')">📈 매일경제</button>
+        </div>
         <div class="etnews-date-bar">
           <div class="etnews-date-label">
             <span>📅 지면 날짜:</span>
@@ -111,7 +115,7 @@
         </button>
         <button class="nav-item" onclick="switchNavTab('etnews', this)">
           <span class="nav-icon">📰</span>
-          <span>전자신문</span>
+          <span id="navPaperLabel">지면 신문</span>
         </button>
         <button class="nav-item" onclick="switchNavTab('bookmark', this)">
           <span class="nav-icon">⭐</span>
@@ -129,6 +133,17 @@
           <div class="modal-head">
             <h3>⚙️ 이슈 알림 & 키워드 설정</h3>
             <button class="modal-close" onclick="toggleSettingsModal()">✕</button>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>📰 선호 지면 신문사</h4>
+              <p>지면 탭에서 보여줄 메인 신문사를 선택합니다.</p>
+            </div>
+            <select id="paperProviderSelect" onchange="switchPaperProvider(this.value)" style="padding: 6px 10px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 12px; font-weight: 700; background: #F8FAFC; color: #1E293B; cursor: pointer;">
+              <option value="etnews">📰 전자신문</option>
+              <option value="mknews">📈 매일경제</option>
+            </select>
           </div>
 
           <div class="setting-item">
