@@ -10,7 +10,6 @@ let currentEtnewsDate = getTodayKstStr();
 let currentEtnewsSection = 'all';
 let etnewsData = null;
 let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
-let currentPaperProvider = StorageManager.getPaperProvider();
 
 function getTodayKstStr() {
   const d = new Date();
@@ -862,53 +861,26 @@ async function toggleOnDemandAiSummary(btn) {
   }
 }
 
-function updatePaperProviderUI() {
-  const btnEt = document.getElementById('paperBtnEtnews');
-  const btnMk = document.getElementById('paperBtnMknews');
-  if (btnEt) btnEt.classList.toggle('active', currentPaperProvider === 'etnews');
-  if (btnMk) btnMk.classList.toggle('active', currentPaperProvider === 'mknews');
-
-  const selectElem = document.getElementById('paperProviderSelect');
-  if (selectElem) selectElem.value = currentPaperProvider;
-
-  const labelElem = document.getElementById('navPaperLabel');
-  if (labelElem) labelElem.textContent = currentPaperProvider === 'mknews' ? '매일경제' : '지면 신문';
-}
-
-function switchPaperProvider(provider) {
-  if (!['etnews', 'mknews'].includes(provider)) return;
-  currentPaperProvider = provider;
-  StorageManager.savePaperProvider(provider);
-  currentEtnewsSection = 'all';
-
-  updatePaperProviderUI();
-  loadEtnewsForCurrentDate();
-}
-
 async function loadEtnewsForCurrentDate() {
   const datePicker = document.getElementById('etnewsDatePicker');
   if (datePicker && !datePicker.value) {
     datePicker.value = currentEtnewsDate;
   }
   const ymd = (datePicker && datePicker.value ? datePicker.value : currentEtnewsDate).replace(/-/g, '');
-  const providerName = currentPaperProvider === 'mknews' ? '매일경제' : '전자신문';
-  const apiEndpoint = currentPaperProvider === 'mknews' ? '/api/mknews' : '/api/etnews';
-
-  showToast(`🔄 ${providerName} 지면(${ymd}) 수집 중...`);
+  showToast(`🔄 전자신문 지면(${ymd}) 수집 중...`);
   
   try {
-    const res = await fetch(`${apiEndpoint}?mode=paper&date=${ymd}&v=` + Date.now());
+    const res = await fetch(`/api/etnews?mode=etnews&date=${ymd}&v=` + Date.now());
     if (res.ok) {
       etnewsData = await res.json();
     } else {
       etnewsData = { sections: [], categorized: {}, articles: [] };
     }
   } catch (e) {
-    console.warn('Paper fetch error:', e);
+    console.warn('ETNews fetch error:', e);
     etnewsData = { sections: [], categorized: {}, articles: [] };
   }
   
-  updatePaperProviderUI();
   renderEtnewsSectionChips();
   renderEtnewsView();
 }
@@ -961,8 +933,6 @@ function renderEtnewsView() {
   if (!container) return;
 
   updateScrapBadge();
-  const providerName = currentPaperProvider === 'mknews' ? '매일경제' : '전자신문';
-  const providerIcon = currentPaperProvider === 'mknews' ? '📈' : '📰';
 
   if (!etnewsData || !etnewsData.articles || etnewsData.articles.length === 0) {
     const isWeekend = isDateWeekend(currentEtnewsDate);
@@ -971,8 +941,8 @@ function renderEtnewsView() {
       : `📅 ${currentEtnewsDate} 지면 정보를 불러오는 중입니다. 신문사 발행 직후(아침 06~07시)이거나 수집 지연이 발생할 수 있습니다.`;
     container.innerHTML = `
       <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
-        <p style="font-size:36px; margin-bottom:12px;">${providerIcon}</p>
-        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">${providerName} 지면 기사 없음</p>
+        <p style="font-size:36px; margin-bottom:12px;">📰</p>
+        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">전자신문 지면 기사 없음</p>
         <p style="font-size:12px; color:#64748B; line-height:1.5;">${msg}</p>
         <button onclick="refreshEtnews()" style="margin-top:16px; background:#EEF2FF; color:#4F46E5; border:1px solid #C7D2FE; padding:8px 16px; border-radius:12px; font-weight:700; cursor:pointer;">🔄 지면 다시 불러오기</button>
       </div>
@@ -988,10 +958,10 @@ function renderEtnewsView() {
 
   const formattedYmd = currentEtnewsDate.replace(/-/g, '.');
   let html = `
-    <div class="realtime-bar" onclick="refreshEtnews()" style="cursor: pointer; background: #F8FAFC; border-color: #E2E8F0;" title="클릭 시 지면 다시 불러오기">
+    <div class="realtime-bar" onclick="refreshEtnews()" style="cursor: pointer; background: #F8FAFC; border-color: #E2E8F0;" title="클릭 시 전자신문 지면 다시 불러오기">
       <div class="realtime-indicator">
         <div class="live-dot" style="background:#0F172A;"></div>
-        <span>${providerIcon} ${providerName} 지면 브리핑 <strong>(${formattedYmd})</strong></span>
+        <span>📰 전자신문 지면 브리핑 <strong>(${formattedYmd})</strong></span>
       </div>
       <span style="font-size: 11px; opacity: 0.8;">총 ${displayArticles.length}건</span>
     </div>
@@ -1166,14 +1136,12 @@ document.addEventListener('DOMContentLoaded', () => {
     deferredPrompt = e;
   });
 
-  // Initialize notification interval & paper provider UI
+  // Initialize notification interval UI
   const notifySettings = StorageManager.getNotifySettings();
   const selectElem = document.getElementById('notifyIntervalSelect');
   if (selectElem && notifySettings.intervalMinutes) {
     selectElem.value = String(notifySettings.intervalMinutes);
   }
-
-  updatePaperProviderUI();
 
   // Clock Timer
   setInterval(updateClock, 1000);
