@@ -895,9 +895,10 @@ async function loadEtnewsForCurrentDate() {
   const apiEndpoint = currentPaperProvider === 'mknews' ? '/api/mknews' : '/api/etnews';
 
   showToast(`🔄 ${providerName} 지면(${ymd}) 수집 중...`);
+  etnewsData = { sections: [], categorized: {}, articles: [] };
   
   try {
-    const res = await fetch(`${apiEndpoint}?mode=paper&date=${ymd}&v=` + Date.now());
+    const res = await fetch(`${apiEndpoint}?provider=${currentPaperProvider}&date=${ymd}&v=` + Date.now());
     if (res.ok) {
       etnewsData = await res.json();
     } else {

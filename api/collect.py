@@ -275,9 +275,37 @@ class handler(BaseHTTPRequestHandler):
         params = urllib.parse.parse_qs(parsed.query)
 
         # --------------------------------------------------
-        # 1. Route for ETNews (전자신문 지면 기사)
+        # 1. Route for MKNews (매일경제 지면 기사)
         # --------------------------------------------------
-        is_etnews = ("etnews" in path_str) or ("date" in params) or ("ymd" in params) or (params.get('mode', [None])[0] == 'etnews') or ("url" in params)
+        is_mknews = ("mknews" in path_str) or (params.get('provider', [None])[0] == 'mknews') or (params.get('mode', [None])[0] == 'mknews')
+        if is_mknews:
+            date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
+            if not date_param:
+                kst = timezone(timedelta(hours=9))
+                date_param = datetime.now(kst).strftime("%Y%m%d")
+            
+            ymd_str = date_param.replace("-", "").strip()
+            try:
+                from api.mknews import fetch_mknews_by_date
+                result = fetch_mknews_by_date(ymd_str)
+            except Exception as e:
+                print("MKNews fetch in collect.py error:", e)
+                result = {"sections": [], "categorized": {}, "articles": []}
+
+            body = json.dumps(result, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        # --------------------------------------------------
+        # 2. Route for ETNews (전자신문 지면 기사)
+        # --------------------------------------------------
+        is_etnews = ("etnews" in path_str) or (params.get('provider', [None])[0] == 'etnews') or (params.get('mode', [None])[0] == 'etnews')
         if is_etnews:
             article_url = params.get('url', [None])[0]
             if article_url:
