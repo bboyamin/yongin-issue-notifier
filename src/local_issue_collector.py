@@ -237,6 +237,21 @@ def deduplicate_issues(items):
     return result
 
 # ----------------------------------------------------
+def check_title_match(title_text, terms):
+    if not terms or not title_text:
+        return True
+    t_lower = title_text.lower()
+    for term in terms:
+        t_term = term.lower()
+        if t_term in t_lower:
+            return True
+        if len(t_term) >= 3 and t_term[-1] in ["시", "구", "동", "군"]:
+            base = t_term[:-1]
+            if len(base) >= 2 and base in t_lower:
+                return True
+    return False
+
+# ----------------------------------------------------
 # 1. 네이버 뉴스 API 수집기
 # ----------------------------------------------------
 def fetch_naver_news(keyword, limit=5):
@@ -266,8 +281,8 @@ def fetch_naver_news(keyword, limit=5):
                 link = item.get("originallink") or item.get("link")
                 pub_date_raw = item.get("pubDate", "")
 
-                # Title-Only Precision Filter: Check if any sub-term exists in the title
-                if sub_terms and not any(t.lower() in clean_title.lower() for t in sub_terms):
+                # Generic Title-Only Precision Filter (0% Hardcoding)
+                if sub_terms and not check_title_match(clean_title, sub_terms):
                     continue
 
                 items.append({
@@ -332,7 +347,7 @@ def fetch_naver_blog(keyword, limit=3):
                 blogger = item.get("bloggername") or "네이버 블로그"
                 postdate = item.get("postdate", "")
 
-                if sub_terms and not any(t.lower() in clean_title.lower() for t in sub_terms):
+                if sub_terms and not check_title_match(clean_title, sub_terms):
                     continue
                 
                 blog_time = "최신 속보"
@@ -369,10 +384,6 @@ def fetch_google_news_rss(keyword, limit=15):
         query = f"({' OR '.join(sub_terms)})+when:7d"
     else:
         query = f"{keyword}+when:7d"
-        if keyword == "용인특례시":
-            query = "용인특례시+OR+용인시+when:7d"
-        elif keyword in ["처인구", "기흥구", "수지구"]:
-            query = f"용인+{keyword}+when:7d"
         
     encoded_kw = urllib.parse.quote(query)
     rss_url = f"https://news.google.com/rss/search?q={encoded_kw}&hl=ko&gl=KR&ceid=KR:ko"
@@ -393,7 +404,7 @@ def fetch_google_news_rss(keyword, limit=15):
                 desc = item.description.text if item.description else title
                 clean_desc = BeautifulSoup(desc, "html.parser").text
 
-                if sub_terms and not any(t.lower() in title.lower() for t in sub_terms):
+                if sub_terms and not check_title_match(title, sub_terms):
                     continue
 
                 items.append({
