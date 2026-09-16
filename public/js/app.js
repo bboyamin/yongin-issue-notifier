@@ -378,10 +378,14 @@ function renderIssues() {
 
     const subKws = currentKeyword.replace(/ OR /gi, ',').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
     const itemTitle = (item.title || '').toLowerCase();
-    const itemKw = (item.keyword || '').toLowerCase();
 
-    // Strict Title-Only Precision Match: Ensure keyword exists in the article title
-    return subKws.some(kw => itemKw === kw || itemTitle.includes(kw));
+    // For Yongin keywords, match if title contains '용인'
+    if (subKws.some(k => k === '용인시' || k === '용인특례시') && itemTitle.includes('용인')) {
+      return true;
+    }
+
+    // Strict Title-Only Precision Match: Keyword MUST be in article title!
+    return subKws.some(kw => itemTitle.includes(kw));
   });
 
   // Calculate category tab counts based strictly on the selected keyword's contents
