@@ -487,20 +487,7 @@ function getRecencyWeight(timeStr) {
       </div>
     `;
   } else {
-    let lastRenderedType = null;
     filtered.forEach(item => {
-      if (currentCategory === 'all' && item.type !== lastRenderedType) {
-        lastRenderedType = item.type;
-        let groupTitle = '📰 뉴스 기사 소식';
-        if (item.type === 'youtube') groupTitle = '🎥 관련 유튜브 영상';
-        else if (item.type === 'sns') groupTitle = '📱 관련 블로그 & SNS 소식';
-
-        html += `
-          <div class="feed-group-divider" style="margin: 18px 0 10px 0; padding: 8px 12px; background: #F1F5F9; border-radius: 8px; font-size: 13px; font-weight: 800; color: #334155; display: flex; align-items: center; gap: 6px; border-left: 4px solid var(--primary);">
-            <span>${groupTitle}</span>
-          </div>
-        `;
-      }
       const badgeClass = item.type === 'news' ? 'source-news' : (item.type === 'youtube' ? 'source-youtube' : 'source-sns');
       const hasPreSummary = item.summary && item.summary.length > 0;
       const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
