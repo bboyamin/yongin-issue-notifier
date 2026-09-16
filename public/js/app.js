@@ -373,16 +373,26 @@ function renderIssues() {
 
   if (!currentIssues.length) return;
 
+  const DISTRICT_LANDMARKS = {
+    '처인구': ['처인', '원삼', '남사', '모현', '포곡', '양지', '역북', '김량장', '삼가', '유방', '백암', '용인'],
+    '처인': ['처인', '원삼', '남사', '모현', '포곡', '양지', '역북', '김량장', '삼가', '유방', '백암', '용인'],
+    '기흥구': ['기흥', '동백', '보정', '신갈', '구갈', '영덕', '흥덕', '마북', '공세', '서천', '고매', '플랫폼시티', '용인'],
+    '기흥': ['기흥', '동백', '보정', '신갈', '구갈', '영덕', '흥덕', '마북', '공세', '서천', '고매', '플랫폼시티', '용인'],
+    '수지구': ['수지', '풍덕천', '상현', '성복', '죽전', '동천', '고기', '신봉', '용인'],
+    '수지': ['수지', '풍덕천', '상현', '성복', '죽전', '동천', '고기', '신봉', '용인']
+  };
+
   const keywordFiltered = currentIssues.filter(item => {
     if (currentKeyword === '전체') return true;
 
     const subKws = currentKeyword.replace(/ OR /gi, ',').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
     const itemTitle = (item.title || '').toLowerCase();
 
-    // Generic Title-Only Precision Match (0% Hardcoding)
     return subKws.some(kw => {
+      if (DISTRICT_LANDMARKS[kw]) {
+        if (DISTRICT_LANDMARKS[kw].some(l => itemTitle.includes(l.toLowerCase()))) return true;
+      }
       if (itemTitle.includes(kw)) return true;
-      // Generic base-term match for regional suffixes (e.g. '용인시' -> '용인', '수지구' -> '수지', '동백동' -> '동백')
       if (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군'))) {
         const baseTerm = kw.slice(0, -1);
         if (baseTerm.length >= 2 && itemTitle.includes(baseTerm)) return true;

@@ -237,12 +237,24 @@ def deduplicate_issues(items):
     return result
 
 # ----------------------------------------------------
+DISTRICT_LANDMARKS = {
+    "처인구": ["처인", "원삼", "남사", "모현", "포곡", "양지", "역북", "김량장", "삼가", "유방", "백암", "용인"],
+    "처인": ["처인", "원삼", "남사", "모현", "포곡", "양지", "역북", "김량장", "삼가", "유방", "백암", "용인"],
+    "기흥구": ["기흥", "동백", "보정", "신갈", "구갈", "영덕", "흥덕", "마북", "공세", "서천", "고매", "플랫폼시티", "용인"],
+    "기흥": ["기흥", "동백", "보정", "신갈", "구갈", "영덕", "흥덕", "마북", "공세", "서천", "고매", "플랫폼시티", "용인"],
+    "수지구": ["수지", "풍덕천", "상현", "성복", "죽전", "동천", "고기", "신봉", "용인"],
+    "수지": ["수지", "풍덕천", "상현", "성복", "죽전", "동천", "고기", "신봉", "용인"]
+}
+
 def check_title_match(title_text, terms):
     if not terms or not title_text:
         return True
     t_lower = title_text.lower()
     for term in terms:
         t_term = term.lower()
+        if t_term in DISTRICT_LANDMARKS:
+            if any(l in t_lower for l in DISTRICT_LANDMARKS[t_term]):
+                return True
         if t_term in t_lower:
             return True
         if len(t_term) >= 3 and t_term[-1] in ["시", "구", "동", "군"]:
