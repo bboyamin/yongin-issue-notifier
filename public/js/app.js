@@ -414,7 +414,29 @@ function renderIssues() {
     });
   });
 
-  // Calculate category tab counts based strictly on the selected keyword's contents
+function getRecencyWeight(timeStr) {
+  if (!timeStr) return 0;
+  const s = String(timeStr).trim();
+  if (s.includes('방금')) return 1000000;
+  if (s.includes('분 전')) {
+    const mins = parseInt(s, 10) || 1;
+    return 1000000 - mins;
+  }
+  if (s.includes('시간 전')) {
+    const hours = parseInt(s, 10) || 1;
+    return 900000 - (hours * 60);
+  }
+  if (s.includes('오늘')) return 800000;
+  if (s.includes('어제')) return 700000;
+  
+  const digits = s.replace(/[^\d]/g, '');
+  if (digits.length >= 4) {
+    return 500000 + parseInt(digits.slice(-6), 10);
+  }
+  return 400000;
+}
+
+// Calculate category tab counts based strictly on the selected keyword's contents
   const counts = {
     all: keywordFiltered.length,
     news: keywordFiltered.filter(i => i.type === 'news').length,
@@ -430,10 +452,20 @@ function renderIssues() {
     tabs[3].textContent = `📱 SNS (${counts.sns})`;
   }
 
-  // Filter list by current category tab
-  const filtered = keywordFiltered.filter(item => {
-    return currentCategory === 'all' || item.type === currentCategory;
-  });
+  // Filter & Group list: News -> Youtube -> SNS (Newest first)
+  let filtered = [];
+  if (currentCategory === 'all') {
+    const newsItems = keywordFiltered.filter(i => i.type === 'news').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+    const youtubeItems = keywordFiltered.filter(i => i.type === 'youtube').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+    const snsItems = keywordFiltered.filter(i => i.type === 'sns').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+    const otherItems = keywordFiltered.filter(i => i.type !== 'news' && i.type !== 'youtube' && i.type !== 'sns').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+
+    filtered = [...newsItems, ...youtubeItems, ...snsItems, ...otherItems];
+  } else {
+    filtered = keywordFiltered
+      .filter(item => item.type === currentCategory)
+      .sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+  }
 
   const displayTimeStr = lastUpdatedTimeStr ? `${lastUpdatedTimeStr} 갱신 완료` : '최신 데이터 표시 중';
 
@@ -455,7 +487,20 @@ function renderIssues() {
       </div>
     `;
   } else {
+    let lastRenderedType = null;
     filtered.forEach(item => {
+      if (currentCategory === 'all' && item.type !== lastRenderedType) {
+        lastRenderedType = item.type;
+        let groupTitle = '📰 뉴스 기사 소식';
+        if (item.type === 'youtube') groupTitle = '🎥 관련 유튜브 영상';
+        else if (item.type === 'sns') groupTitle = '📱 관련 블로그 & SNS 소식';
+
+        html += `
+          <div class="feed-group-divider" style="margin: 18px 0 10px 0; padding: 8px 12px; background: #F1F5F9; border-radius: 8px; font-size: 13px; font-weight: 800; color: #334155; display: flex; align-items: center; gap: 6px; border-left: 4px solid var(--primary);">
+            <span>${groupTitle}</span>
+          </div>
+        `;
+      }
       const badgeClass = item.type === 'news' ? 'source-news' : (item.type === 'youtube' ? 'source-youtube' : 'source-sns');
       const hasPreSummary = item.summary && item.summary.length > 0;
       const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
