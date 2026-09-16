@@ -6,6 +6,7 @@ import email.utils
 from datetime import datetime, timezone
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -149,7 +150,7 @@ def fetch_full_title_from_url(url):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
-        res = requests.get(url, headers=headers, timeout=2.0)
+        res = requests.get(url, headers=headers, timeout=0.6)
         if res.status_code == 200:
             res.encoding = res.apparent_encoding or 'utf-8'
             soup = BeautifulSoup(res.text, "html.parser")
@@ -345,7 +346,6 @@ def fetch_naver_news(keyword, limit=35):
             "content": clean_desc
         })
 
-    from concurrent.futures import ThreadPoolExecutor
     def enrich_item_title(item_obj):
         title = item_obj["title"]
         if title.endswith("...") or title.endswith("…") or "..." in title:
@@ -507,18 +507,21 @@ def fetch_multichannel_sns(keywords):
 def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "기흥구", "수지구"]):
     raw_issues = []
     
-    for kw in keywords:
-        # 1. 네이버 뉴스 API 수집 (최신 속보 15건)
-        n_news = fetch_naver_news(kw, limit=15)
-        raw_issues.extend(n_news)
-        
-        # 2. 네이버 블로그 API 수집 (10건)
-        n_blogs = fetch_naver_blog(kw, limit=10)
-        raw_issues.extend(n_blogs)
+    # Run all keyword collection tasks in parallel for 5x~10x refresh speedup!
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        futures = []
+        for kw in keywords:
+            futures.append(executor.submit(fetch_naver_news, kw, 35))
+            futures.append(executor.submit(fetch_naver_blog, kw, 8))
+            futures.append(executor.submit(fetch_google_news_rss, kw, 12))
 
-        # 3. 구글 뉴스 RSS 수집 (15건)
-        g_items = fetch_google_news_rss(kw, limit=15)
-        raw_issues.extend(g_items)
+        for f in futures:
+            try:
+                res = f.result()
+                if res:
+                    raw_issues.extend(res)
+            except Exception as e:
+                print("Parallel task fetch error:", e)
 
     # 4. 유튜브 & 쓰레드 수집
     sns_data = fetch_multichannel_sns(keywords)
@@ -529,7 +532,6 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "�
     print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 중복 제거 후 {len(deduped_issues)}건 정리 완료")
 
     # 5.5. 전체 이슈 (뉴스/유튜브/SNS/블로그) 타이틀 100% 원문 보장
-    from concurrent.futures import ThreadPoolExecutor
     def enrich_item_title(item_obj):
         title = item_obj.get("title", "")
         if title.endswith("...") or title.endswith("…") or "..." in title:
