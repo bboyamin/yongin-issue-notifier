@@ -237,7 +237,19 @@ def deduplicate_issues(items):
     return result
 
 # ----------------------------------------------------
-SPAM_PROMO_KEYWORDS = ["특별분양", "회사보유분", "모델하우스", "임대보장", "선착순 분양"]
+# ----------------------------------------------------
+SPAM_PROMO_KEYWORDS = [
+    "특별분양", "회사보유분", "모델하우스", "임대수익", "조합원 모집", "조합원",
+    "지식산업센터", "선착순 계약", "선착순 분양", "분양가 상한제", "분양안내", "상가 분양",
+    "수익형 부동산", "급등주", "상한가 종목", "무료 리딩방", "수익률 보장",
+    "소정의 원고료", "협찬 받아", "할인 쿠폰"
+]
+
+TRUSTED_PRESS = [
+    "연합뉴스", "KBS", "MBC", "SBS", "YTN", "매일경제", "한국경제", "조선일보", 
+    "중앙일보", "동아일보", "경향신문", "한겨레", "경기일보", "경인일보", "중부일보", 
+    "인천일보", "기호일보", "뉴스1", "뉴시스", "전자신문", "머니투데이", "이데일리"
+]
 
 def is_clean_relevant_article(title_text, desc_text, terms):
     if not terms:
@@ -245,16 +257,16 @@ def is_clean_relevant_article(title_text, desc_text, terms):
     t_lower = (title_text or "").lower()
     d_lower = (desc_text or "").lower()
 
+    # Reject promo ad spam if title or description head contains promo keywords
+    if any(s in t_lower for s in SPAM_PROMO_KEYWORDS):
+        return False
+
     for term in terms:
         t_term = term.lower().strip()
         if not t_term:
             continue
         
         base_term = t_term[:-1] if (len(t_term) >= 3 and t_term[-1] in ["시", "구", "동", "군"]) else t_term
-
-        # Reject promo ad spam if title contains promo keywords and lacks the exact term/baseTerm
-        if any(s in t_lower for s in SPAM_PROMO_KEYWORDS) and not (t_term in t_lower or (base_term and base_term in t_lower)):
-            return False
 
         # Rule 1: Title contains exact term or base term
         if t_term in t_lower or (base_term and len(base_term) >= 2 and base_term in t_lower):
@@ -268,9 +280,9 @@ def is_clean_relevant_article(title_text, desc_text, terms):
     return False
 
 # ----------------------------------------------------
-# 1. 네이버 뉴스 API 수집기
+# 1. 네이버 뉴스 API 수집기 (하이브리드 sim+date 및 고품질 정밀 수집)
 # ----------------------------------------------------
-def fetch_naver_news(keyword, limit=5):
+def fetch_naver_news(keyword, limit=35):
     client_id = (os.getenv("NAVER_CLIENT_ID") or "").strip('"\'')
     client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "").strip('"\'')
     
@@ -280,57 +292,72 @@ def fetch_naver_news(keyword, limit=5):
         
     sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
     query_str = " | ".join(sub_terms) if len(sub_terms) > 1 else keyword
-    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote(query_str)}&display={limit}&sort=date"
     headers = {
         "X-Naver-Client-Id": client_id,
         "X-Naver-Client-Secret": client_secret
     }
     
+    raw_results = []
+    # Hybrid fetch: 35 sim (relevance) + 15 date (freshness)
+    for sort_mode in ["sim", "date"]:
+        display_num = 35 if sort_mode == "sim" else 15
+        url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote(query_str)}&display={display_num}&sort={sort_mode}"
+        try:
+            res = requests.get(url, headers=headers, timeout=8)
+            if res.status_code == 200:
+                raw_results.extend(res.json().get("items", []))
+        except Exception as e:
+            print(f"Naver news fetch error ({sort_mode}):", e)
+
     items = []
-    try:
-        res = requests.get(url, headers=headers, timeout=8)
-        if res.status_code == 200:
-            data = res.json().get("items", [])
-            for idx, item in enumerate(data):
-                clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
-                clean_desc = BeautifulSoup(item.get("description", ""), "html.parser").text
-                link = item.get("originallink") or item.get("link")
-                pub_date_raw = item.get("pubDate", "")
+    seen_urls = set()
 
-                # Universal Clean Relevance Filter (0% Hardcoding)
-                if sub_terms and not is_clean_relevant_article(clean_title, clean_desc, sub_terms):
-                    continue
+    for idx, item in enumerate(raw_results):
+        link = item.get("originallink") or item.get("link") or ""
+        clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
+        clean_desc = BeautifulSoup(item.get("description", ""), "html.parser").text.strip()
+        pub_date_raw = item.get("pubDate", "")
 
-                items.append({
-                    "id": f"naver_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
-                    "keyword": keyword,
-                    "type": "news",
-                    "badge": "📰 네이버뉴스",
-                    "publisher": "네이버 뉴스",
-                    "title": clean_title,
-                    "time": format_pub_date(pub_date_raw),
-                    "url": link,
-                    "content": clean_desc
-                })
+        dedup_key = link if link and link != "#" else clean_title
+        if not dedup_key or dedup_key in seen_urls:
+            continue
+        seen_urls.add(dedup_key)
 
-            from concurrent.futures import ThreadPoolExecutor
-            def enrich_item_title(item_obj):
-                title = item_obj["title"]
-                if title.endswith("...") or title.endswith("…") or "..." in title:
-                    full_title = fetch_full_title_from_url(item_obj["url"])
-                    if full_title:
-                        item_obj["title"] = full_title
-                return item_obj
+        if sub_terms and not is_clean_relevant_article(clean_title, clean_desc, sub_terms):
+            continue
 
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                items = list(executor.map(enrich_item_title, items))
+        # Extract publisher or estimate press name
+        publisher = "네이버 뉴스"
+        for tp in TRUSTED_PRESS:
+            if tp in clean_title or tp in clean_desc:
+                publisher = tp
+                break
 
-            print(f"✅ [네이버 뉴스] '{keyword}' {len(items)}건 수집 완료!")
-        else:
-            print(f"네이버 뉴스 API 호출 실패: HTTP {res.status_code}")
-    except Exception as e:
-        print(f"네이버 뉴스 API 수집 에러: {e}")
-        
+        items.append({
+            "id": f"naver_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
+            "keyword": keyword,
+            "type": "news",
+            "badge": f"📰 {publisher}" if publisher != "네이버 뉴스" else "📰 뉴스",
+            "publisher": publisher,
+            "title": clean_title,
+            "time": format_pub_date(pub_date_raw),
+            "url": link,
+            "content": clean_desc
+        })
+
+    from concurrent.futures import ThreadPoolExecutor
+    def enrich_item_title(item_obj):
+        title = item_obj["title"]
+        if title.endswith("...") or title.endswith("…") or "..." in title:
+            full_title = fetch_full_title_from_url(item_obj["url"])
+            if full_title:
+                item_obj["title"] = full_title
+        return item_obj
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        items = list(executor.map(enrich_item_title, items))
+
+    print(f"✅ [네이버 뉴스 (고품질 정밀 수집)] '{keyword}' {len(items)}건 수집 완료!")
     return items
 
 # ----------------------------------------------------

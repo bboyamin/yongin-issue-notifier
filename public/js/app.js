@@ -373,10 +373,18 @@ function renderIssues() {
 
   if (!currentIssues.length) return;
 
-  const SPAM_PROMO_KEYWORDS = ['특별분양', '회사보유분', '모델하우스', '임대보장', '선착순 분양'];
+  const SPAM_PROMO_KEYWORDS = [
+    '특별분양', '회사보유분', '모델하우스', '임대수익', '조합원 모집', '조합원',
+    '지식산업센터', '선착순 계약', '선착순 분양', '분양가 상한제', '분양안내', '상가 분양',
+    '수익형 부동산', '급등주', '상한가 종목', '무료 리딩방', '수익률 보장',
+    '소정의 원고료', '협찬 받아', '할인 쿠폰'
+  ];
 
   const keywordFiltered = currentIssues.filter(item => {
-    if (currentKeyword === '전체') return true;
+    if (currentKeyword === '전체') {
+      const title = (item.title || '').toLowerCase();
+      return !SPAM_PROMO_KEYWORDS.some(s => title.includes(s));
+    }
 
     const subKws = currentKeyword.replace(/ OR /gi, ',').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
     const itemTitle = (item.title || '').toLowerCase();
@@ -386,8 +394,8 @@ function renderIssues() {
     return subKws.some(kw => {
       const baseTerm = (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군'))) ? kw.slice(0, -1) : kw;
 
-      // Reject ad spam if title has promo keywords and lacks kw or baseTerm
-      if (SPAM_PROMO_KEYWORDS.some(s => itemTitle.includes(s)) && !(itemTitle.includes(kw) || (baseTerm && itemTitle.includes(baseTerm)))) {
+      // Reject ad spam if title contains promo keywords
+      if (SPAM_PROMO_KEYWORDS.some(s => itemTitle.includes(s))) {
         return false;
       }
 
