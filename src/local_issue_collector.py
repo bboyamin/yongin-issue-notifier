@@ -247,7 +247,9 @@ def fetch_naver_news(keyword, limit=5):
         print("⚠️ NAVER API 키가 누락되어 구글 RSS 수집으로 대체합니다.")
         return []
         
-    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote(keyword)}&display={limit}&sort=date"
+    sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
+    query_str = " | ".join(sub_terms) if len(sub_terms) > 1 else keyword
+    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote(query_str)}&display={limit}&sort=date"
     headers = {
         "X-Naver-Client-Id": client_id,
         "X-Naver-Client-Secret": client_secret
@@ -306,7 +308,9 @@ def fetch_naver_blog(keyword, limit=3):
     if not client_id or not client_secret:
         return []
         
-    url = f"https://openapi.naver.com/v1/search/blog.json?query={urllib.parse.quote(keyword)}&display={limit}&sort=date"
+    sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
+    query_str = " | ".join(sub_terms) if len(sub_terms) > 1 else keyword
+    url = f"https://openapi.naver.com/v1/search/blog.json?query={urllib.parse.quote(query_str)}&display={limit}&sort=date"
     headers = {
         "X-Naver-Client-Id": client_id,
         "X-Naver-Client-Secret": client_secret
@@ -353,11 +357,15 @@ def fetch_naver_blog(keyword, limit=3):
 # 3. 구글 뉴스 RSS 수집기
 # ----------------------------------------------------
 def fetch_google_news_rss(keyword, limit=15):
-    query = f"{keyword}+when:7d"
-    if keyword == "용인특례시":
-        query = "용인특례시+OR+용인시+when:7d"
-    elif keyword in ["처인구", "기흥구", "수지구"]:
-        query = f"용인+{keyword}+when:7d"
+    sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
+    if len(sub_terms) > 1:
+        query = f"({' OR '.join(sub_terms)})+when:7d"
+    else:
+        query = f"{keyword}+when:7d"
+        if keyword == "용인특례시":
+            query = "용인특례시+OR+용인시+when:7d"
+        elif keyword in ["처인구", "기흥구", "수지구"]:
+            query = f"용인+{keyword}+when:7d"
         
     encoded_kw = urllib.parse.quote(query)
     rss_url = f"https://news.google.com/rss/search?q={encoded_kw}&hl=ko&gl=KR&ceid=KR:ko"

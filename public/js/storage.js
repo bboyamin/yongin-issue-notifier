@@ -39,18 +39,7 @@ const StorageManager = (() => {
         if (item === null) return DEFAULT_KEYWORDS;
         const parsed = JSON.parse(item);
         if (!Array.isArray(parsed)) return DEFAULT_KEYWORDS;
-        
-        const clean = [];
-        parsed.forEach(k => {
-          if (typeof k === 'string') {
-            k.split(',').forEach(sub => {
-              const trimmed = sub.trim().replace(/^#\s*/, '');
-              if (trimmed && !clean.includes(trimmed)) {
-                clean.push(trimmed);
-              }
-            });
-          }
-        });
+        const clean = parsed.map(k => (typeof k === 'string' ? k.trim().replace(/^#\s*/, '') : '')).filter(Boolean);
         return clean.length ? clean : DEFAULT_KEYWORDS;
       } catch (e) {
         return DEFAULT_KEYWORDS;
@@ -63,16 +52,11 @@ const StorageManager = (() => {
 
     addKeyword(kw) {
       const current = this.getKeywords();
-      const newItems = (typeof kw === 'string' ? kw.split(',') : [kw])
-        .map(s => String(s).trim().replace(/^#\s*/, ''))
-        .filter(Boolean);
-
-      newItems.forEach(item => {
-        if (!current.includes(item)) {
-          current.push(item);
-        }
-      });
-      this.saveKeywords(current);
+      const cleanKw = (typeof kw === 'string' ? kw.trim().replace(/^#\s*/, '') : '');
+      if (cleanKw && !current.includes(cleanKw)) {
+        current.push(cleanKw);
+        this.saveKeywords(current);
+      }
       return current;
     },
 
