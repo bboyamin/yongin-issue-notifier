@@ -132,22 +132,24 @@ async function selectKeyword(kw) {
 }
 
 async function addNewKeyword() {
-  const input = prompt('추가할 모니터링 키워드나 지역명을 입력하세요 (예: 수지구, 기흥구, 동백동 또는 주식, 주가, 증시):', '');
+  const input = prompt('추가할 모니터링 키워드를 입력하세요 (예: 주식,주가,증시 또는 용인시):', '');
   if (!input) return;
 
-  const rawKws = input.split(',').map(k => k.trim().replace(/^#\s*/, '')).filter(Boolean);
-  if (!rawKws.length) return;
+  const kw = input.trim().replace(/^#\s*/, '');
+  if (!kw) return;
 
-  let updated = StorageManager.getKeywords();
-  rawKws.forEach(kw => {
-    updated = StorageManager.addKeyword(kw);
-  });
+  const currentKeywords = StorageManager.getKeywords();
+  if (currentKeywords.includes(kw)) {
+    selectKeyword(kw);
+    return;
+  }
 
-  currentKeyword = rawKws[0];
+  const updated = StorageManager.addKeyword(kw);
+  currentKeyword = kw;
   renderKeywordChips();
   renderIssues();
 
-  showToast(`🔄 '${rawKws.join(', ')}' 실시간 관련 콘텐츠 수집 중...`);
+  showToast(`🔄 '${kw}' 실시간 관련 콘텐츠 수집 중...`);
   await fetchKeywordIssues(updated);
 }
 
