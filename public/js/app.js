@@ -375,14 +375,13 @@ function renderIssues() {
 
   const keywordFiltered = currentIssues.filter(item => {
     if (currentKeyword === '전체') return true;
-    if (item.keyword === currentKeyword) return true;
-    if ((currentKeyword === '용인시' || currentKeyword === '용인특례시') && (item.keyword === '용인시' || item.keyword === '용인특례시')) return true;
 
-    const subKws = currentKeyword.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-    const searchSpace = ((item.title || '') + ' ' + (item.content || '') + ' ' + (item.publisher || '')).toLowerCase();
+    const subKws = currentKeyword.replace(/ OR /gi, ',').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    const itemTitle = (item.title || '').toLowerCase();
     const itemKw = (item.keyword || '').toLowerCase();
 
-    return subKws.some(kw => itemKw === kw || searchSpace.includes(kw));
+    // Strict Title-Only Precision Match: Ensure keyword exists in the article title
+    return subKws.some(kw => itemKw === kw || itemTitle.includes(kw));
   });
 
   // Calculate category tab counts based strictly on the selected keyword's contents

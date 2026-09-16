@@ -266,6 +266,10 @@ def fetch_naver_news(keyword, limit=5):
                 link = item.get("originallink") or item.get("link")
                 pub_date_raw = item.get("pubDate", "")
 
+                # Title-Only Precision Filter: Check if any sub-term exists in the title
+                if sub_terms and not any(t.lower() in clean_title.lower() for t in sub_terms):
+                    continue
+
                 items.append({
                     "id": f"naver_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
                     "keyword": keyword,
@@ -327,6 +331,9 @@ def fetch_naver_blog(keyword, limit=3):
                 link = item.get("link", "")
                 blogger = item.get("bloggername") or "네이버 블로그"
                 postdate = item.get("postdate", "")
+
+                if sub_terms and not any(t.lower() in clean_title.lower() for t in sub_terms):
+                    continue
                 
                 blog_time = "최신 속보"
                 if len(postdate) == 8:
@@ -385,6 +392,9 @@ def fetch_google_news_rss(keyword, limit=15):
                 
                 desc = item.description.text if item.description else title
                 clean_desc = BeautifulSoup(desc, "html.parser").text
+
+                if sub_terms and not any(t.lower() in title.lower() for t in sub_terms):
+                    continue
 
                 items.append({
                     "id": f"gnews_{keyword}_{idx}_{int(datetime.now().timestamp())}",
