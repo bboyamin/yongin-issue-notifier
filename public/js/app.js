@@ -373,30 +373,35 @@ function renderIssues() {
 
   if (!currentIssues.length) return;
 
-  const DISTRICT_LANDMARKS = {
-    '처인구': ['처인', '원삼', '남사', '모현', '포곡', '양지', '역북', '김량장', '삼가', '유방', '백암', '용인'],
-    '처인': ['처인', '원삼', '남사', '모현', '포곡', '양지', '역북', '김량장', '삼가', '유방', '백암', '용인'],
-    '기흥구': ['기흥', '동백', '보정', '신갈', '구갈', '영덕', '흥덕', '마북', '공세', '서천', '고매', '플랫폼시티', '용인'],
-    '기흥': ['기흥', '동백', '보정', '신갈', '구갈', '영덕', '흥덕', '마북', '공세', '서천', '고매', '플랫폼시티', '용인'],
-    '수지구': ['수지', '풍덕천', '상현', '성복', '죽전', '동천', '고기', '신봉', '용인'],
-    '수지': ['수지', '풍덕천', '상현', '성복', '죽전', '동천', '고기', '신봉', '용인']
-  };
+  const SPAM_PROMO_KEYWORDS = ['특별분양', '회사보유분', '모델하우스', '임대보장', '선착순 분양'];
 
   const keywordFiltered = currentIssues.filter(item => {
     if (currentKeyword === '전체') return true;
 
     const subKws = currentKeyword.replace(/ OR /gi, ',').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
     const itemTitle = (item.title || '').toLowerCase();
+    const itemContent = (item.content || '').toLowerCase();
 
+    // Universal 0% Hardcode Clean Filter
     return subKws.some(kw => {
-      if (DISTRICT_LANDMARKS[kw]) {
-        if (DISTRICT_LANDMARKS[kw].some(l => itemTitle.includes(l.toLowerCase()))) return true;
+      const baseTerm = (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군'))) ? kw.slice(0, -1) : kw;
+
+      // Reject ad spam if title has promo keywords and lacks kw or baseTerm
+      if (SPAM_PROMO_KEYWORDS.some(s => itemTitle.includes(s)) && !(itemTitle.includes(kw) || (baseTerm && itemTitle.includes(baseTerm)))) {
+        return false;
       }
-      if (itemTitle.includes(kw)) return true;
-      if (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군'))) {
-        const baseTerm = kw.slice(0, -1);
-        if (baseTerm.length >= 2 && itemTitle.includes(baseTerm)) return true;
+
+      // Rule 1: Title contains exact term or base term
+      if (itemTitle.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemTitle.includes(baseTerm))) {
+        return true;
       }
+
+      // Rule 2: Core content snippet head match (first 80 chars)
+      const contentHead = itemContent.slice(0, 80);
+      if (contentHead.includes(kw) || (baseTerm && baseTerm.length >= 2 && contentHead.includes(baseTerm))) {
+        return true;
+      }
+
       return false;
     });
   });
