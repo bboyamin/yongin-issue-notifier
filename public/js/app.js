@@ -11,6 +11,27 @@ let currentEtnewsSection = 'all';
 let etnewsData = null;
 let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
 let currentPaperProvider = StorageManager.getPaperProvider();
+let pendingNewIssues = null;
+let renderedTitlesSet = new Set();
+
+function applyNewIssuesFromToast() {
+  const toast = document.getElementById('newIssuesToast');
+  if (toast) toast.style.display = 'none';
+
+  if (pendingNewIssues && pendingNewIssues.length) {
+    currentIssues = pendingNewIssues;
+    pendingNewIssues = null;
+  }
+
+  renderIssues();
+
+  const container = document.getElementById('feedContainer');
+  if (container) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    container.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  showToast('✨ 새로운 핫이슈 피드로 갱신되었습니다!');
+}
 
 function getTodayKstStr() {
   const d = new Date();
@@ -209,7 +230,22 @@ async function refreshFeed() {
   try {
     if (userKeywords.length > 0) {
       const freshIssues = await IssueApi.fetchKeywordIssues(userKeywords);
-      currentIssues = mergeIssues(currentIssues, freshIssues);
+      if (renderedTitlesSet.size > 0) {
+        const newItems = freshIssues.filter(item => item && item.title && !renderedTitlesSet.has(item.title));
+        if (newItems.length > 0) {
+          pendingNewIssues = mergeIssues(currentIssues, freshIssues);
+          const toast = document.getElementById('newIssuesToast');
+          const countEl = document.getElementById('newIssuesCount');
+          if (toast && countEl) {
+            countEl.textContent = newItems.length;
+            toast.style.display = 'flex';
+          }
+        } else {
+          currentIssues = mergeIssues(currentIssues, freshIssues);
+        }
+      } else {
+        currentIssues = mergeIssues(currentIssues, freshIssues);
+      }
       StorageManager.saveFeedCache(currentIssues);
     }
   } catch (err) {
@@ -219,7 +255,9 @@ async function refreshFeed() {
     lastUpdatedTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     StorageManager.saveLastUpdatedTime(lastUpdatedTimeStr);
     renderKeywordChips();
-    renderIssues();
+    if (!pendingNewIssues) {
+      renderIssues();
+    }
     if (feedContainer) {
       feedContainer.style.opacity = '1';
     }
@@ -622,6 +660,9 @@ function getRecencyWeight(timeStr) {
           </div>
         </div>
       `;
+    renderedTitlesSet.clear();
+    filtered.forEach(item => {
+      if (item && item.title) renderedTitlesSet.add(item.title);
     });
   }
 
