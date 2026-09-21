@@ -14,7 +14,7 @@ const IssueApi = (() => {
     async fetchKeywordIssues(keywordsList) {
       try {
         const kwParam = encodeURIComponent(keywordsList.join(','));
-        const res = await fetch(`/api/collect?keywords=${kwParam}&v=` + Date.now());
+        const res = await fetch(`/api/collect?keywords=${kwParam}`);
         if (res.ok) {
           const liveData = await res.json();
           if (Array.isArray(liveData) && liveData.length >= 10) {
@@ -33,7 +33,7 @@ const IssueApi = (() => {
      */
     async loadDefaultIssues() {
       try {
-        const res = await fetch('./data/issues.json?v=' + Date.now(), { cache: 'no-store' });
+        const res = await fetch('./data/issues.json?v=35');
         if (res.ok) {
           return await res.json();
         }

@@ -334,9 +334,8 @@ class handler(BaseHTTPRequestHandler):
         # --------------------------------------------------
         # 2. Route for Yongin Live Issues (/api/collect)
         # --------------------------------------------------
-        kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
-        keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
-        
+        force_refresh = params.get('force', ['false'])[0].lower() == 'true'
+
         static_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json"))
         if not os.path.exists(static_file):
             static_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "LocalIssueNotifier", "data", "issues.json"))
@@ -348,6 +347,21 @@ class handler(BaseHTTPRequestHandler):
                     static_issues = json.load(f)
             except Exception:
                 pass
+
+        # Fast SWR: Serve pre-collected high quality static_issues instantly if present and not forced
+        if static_issues and not force_refresh:
+            body = json.dumps(static_issues, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
+        keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
 
         try:
             live_issues = collect_all_issues(keywords=keywords)
@@ -364,7 +378,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
