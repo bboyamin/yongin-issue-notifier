@@ -514,7 +514,8 @@ def fetch_youtube_videos(keyword, limit=12):
     # 4.1 Official YouTube Data API v3 Integration
     if yt_api_key:
         try:
-            search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults={limit}&q={urllib.parse.quote(keyword)}&order=date&type=video&regionCode=KR&key={yt_api_key}"
+            dt_7d = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults={limit}&q={urllib.parse.quote(keyword)}&order=date&publishedAfter={dt_7d}&type=video&regionCode=KR&relevanceLanguage=ko&key={yt_api_key}"
             r = requests.get(search_url, timeout=5)
             if r.status_code == 200:
                 data = r.json()
@@ -553,98 +554,46 @@ def fetch_youtube_videos(keyword, limit=12):
                                 "url": f"https://www.youtube.com/watch?v={v_id}",
                                 "content": f"[{channel}] {view_str} | {title}"
                             })
-
-                    if yt_items:
-                        return yt_items[:limit]
         except Exception as e:
             print(f"YouTube Official API fetch error for {keyword}: {e}")
 
-    # 4.2 Fallback to direct HTML parser (skip on Vercel to avoid timeouts)
-    if not is_vercel:
+    # 4.2 Supplementary Fresh Video Search (site:youtube.com/watch "{keyword}" when:7d)
+    if len(yt_items) < limit:
         try:
-            encoded_kw = urllib.parse.quote(f"{keyword} 이슈")
-            url = f"https://www.youtube.com/results?search_query={encoded_kw}&sp=CAI%253D"
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
-            }
-            r = requests.get(url, headers=headers, timeout=2.5)
-            if r.status_code == 200:
-                match = re.search(r'ytInitialData\s*=\s*({.*?});</script>', r.text)
-                if match:
-                    data = json.loads(match.group(1))
-
-                    def extract_videos(obj):
-                        vids = []
-                        if isinstance(obj, dict):
-                            if 'videoRenderer' in obj:
-                                vr = obj['videoRenderer']
-                                vid = vr.get('videoId')
-                                title = vr.get('title', {}).get('runs', [{}])[0].get('text')
-                                views_str = vr.get('viewCountText', {}).get('simpleText', '조회수 정보 없음')
-                                time_str = vr.get('publishedTimeText', {}).get('simpleText', '최신 영상')
-                                channel = vr.get('ownerText', {}).get('runs', [{}])[0].get('text', '유튜브')
-                                if vid and title:
-                                    vids.append({
-                                        'videoId': vid,
-                                        'title': title,
-                                        'views': views_str,
-                                        'time': time_str,
-                                        'channel': channel
-                                    })
-                            for v in obj.values():
-                                vids.extend(extract_videos(v))
-                        elif isinstance(obj, list):
-                            for item in obj:
-                                vids.extend(extract_videos(item))
-                        return vids
-
-                    found_videos = extract_videos(data)
-                    seen_vids = set()
-                    for v in found_videos:
-                        if v['videoId'] not in seen_vids:
-                            seen_vids.add(v['videoId'])
-                            channel_name = v['channel']
-                            yt_items.append({
-                                "id": f"yt_{v['videoId']}",
-                                "keyword": keyword,
-                                "type": "youtube",
-                                "badge": f"🎥 유튜브 · {channel_name}" if channel_name != "유튜브" else "🎥 유튜브",
-                                "publisher": channel_name,
-                                "title": v['title'],
-                                "time": v['time'],
-                                "url": f"https://www.youtube.com/watch?v={v['videoId']}",
-                                "content": f"[{v['channel']}] {v['views']} • {v['time']} | {v['title']}"
-                            })
-        except Exception as e:
-            print(f"YouTube HTML scrape error for {keyword}: {e}")
-
-    # 4.3 Fast Google RSS Fallback (site:youtube.com "{keyword}") - ultra reliable & fast on Vercel
-    if not yt_items:
-        try:
-            q_yt = f'site:youtube.com "{keyword}"'
+            q_yt = f'site:youtube.com/watch "{keyword}" when:7d'
             rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q_yt)}&hl=ko&gl=KR&ceid=KR:ko"
-            r = requests.get(rss_url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}, timeout=2.0)
+            r = requests.get(rss_url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}, timeout=2.5)
             if r.status_code == 200:
                 root = ET.fromstring(r.text)
-                for item in root.findall('.//item')[:limit]:
-                    title = item.findtext('title')
-                    link = item.findtext('link')
-                    pub_date = item.findtext('pubDate')
-                    if title and link:
-                        clean_t = title.split(' - ')[0]
-                        channel = title.split(' - ')[-1] if ' - ' in title else "유튜브"
+                seen_urls = {i["url"] for i in yt_items}
+                for item in root.findall('.//item'):
+                    title = item.findtext('title') or ""
+                    link = item.findtext('link') or ""
+                    pub_date = item.findtext('pubDate') or ""
+                    if title and link and link not in seen_urls:
+                        seen_urls.add(link)
+                        clean_t = title.replace(' - YouTube', '').strip()
+                        if ' - ' in clean_t:
+                            parts = clean_t.rsplit(' - ', 1)
+                            video_title = parts[0].strip()
+                            channel = parts[1].strip()
+                        else:
+                            video_title = clean_t
+                            channel = "유튜브"
+
                         yt_items.append({
                             "id": f"yt_rss_{abs(hash(link))}",
                             "keyword": keyword,
                             "type": "youtube",
                             "badge": f"🎥 유튜브 · {channel[:15]}",
                             "publisher": channel,
-                            "title": clean_t,
+                            "title": video_title,
                             "time": format_pub_date(pub_date),
                             "url": link,
-                            "content": title
+                            "content": f"[{channel}] {video_title}"
                         })
+                        if len(yt_items) >= limit:
+                            break
         except Exception as e:
             print(f"YouTube RSS fetch error for {keyword}: {e}")
 

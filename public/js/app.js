@@ -565,15 +565,10 @@ function formatRelativeTime(timeStr) {
     tabs[3].textContent = `📱 SNS (${counts.sns})`;
   }
 
-  // Filter & Group list: News -> Youtube -> SNS (Newest first)
+  // Filter & Group list: Sort by recency (Newest first)
   let filtered = [];
   if (currentCategory === 'all') {
-    const newsItems = keywordFiltered.filter(i => i.type === 'news').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-    const youtubeItems = keywordFiltered.filter(i => i.type === 'youtube').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-    const snsItems = keywordFiltered.filter(i => i.type === 'sns').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-    const otherItems = keywordFiltered.filter(i => i.type !== 'news' && i.type !== 'youtube' && i.type !== 'sns').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-
-    filtered = [...newsItems, ...youtubeItems, ...snsItems, ...otherItems];
+    filtered = [...keywordFiltered].sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
   } else if (currentCategory === 'sns') {
     // Priority ordering inside SNS tab: Threads -> Instagram -> Facebook -> X -> Cafe -> Blog
     const getSnsPriority = (item) => {
