@@ -99,7 +99,7 @@ function mergeIssues(existingList, newList) {
   });
 
   const sortedMerged = merged.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-  const finalMerged = sortedMerged.slice(0, 150);
+  const finalMerged = sortedMerged.slice(0, 450);
   StorageManager.saveFeedCache(finalMerged);
   return finalMerged;
 }

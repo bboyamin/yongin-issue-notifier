@@ -659,7 +659,7 @@ def fetch_multichannel_sns(keyword, limit=25):
     try:
         q_threads = f'Threads "{keyword}"'
         rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q_threads)}&hl=ko&gl=KR&ceid=KR:ko"
-        r = requests.get(rss_url, headers=headers_rss, timeout=3)
+        r = requests.get(rss_url, headers=headers_rss, timeout=2.0)
         if r.status_code == 200:
             root = ET.fromstring(r.text)
             for item in root.findall('.//item')[:3]:
@@ -692,7 +692,7 @@ def fetch_multichannel_sns(keyword, limit=25):
     for badge, q, fetch_count in sns_sources:
         try:
             rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q)}&hl=ko&gl=KR&ceid=KR:ko"
-            r = requests.get(rss_url, headers=headers_rss, timeout=3)
+            r = requests.get(rss_url, headers=headers_rss, timeout=2.0)
             if r.status_code == 200:
                 root = ET.fromstring(r.text)
                 for item in root.findall('.//item')[:fetch_count]:
@@ -756,10 +756,10 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "�
         for kw in keywords:
             futures.append(executor.submit(fetch_naver_news, kw, 35))
             futures.append(executor.submit(fetch_google_news_rss, kw, 25))
+            futures.append(executor.submit(fetch_multichannel_sns, kw, 15))
             if not is_vercel:
                 futures.append(executor.submit(fetch_naver_blog, kw, 1))
                 futures.append(executor.submit(fetch_youtube_videos, kw, 12))
-                futures.append(executor.submit(fetch_multichannel_sns, kw, 25))
 
         for f in futures:
             try:
