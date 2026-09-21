@@ -15,23 +15,31 @@ load_dotenv()
 
 def format_pub_date(pub_date_str):
     if not pub_date_str:
-        return "최신 속보"
+        kst_now = datetime.now(timezone(timedelta(hours=9)))
+        return kst_now.strftime("%m/%d %H:%M")
     try:
         dt = email.utils.parsedate_to_datetime(pub_date_str)
-        now = datetime.now(timezone.utc)
-        diff_sec = (now - dt).total_seconds()
-        if diff_sec <= 0:
-            return "방금 전"
-        if diff_sec < 3600:
-            mins = max(1, int(diff_sec // 60))
-            return f"{mins}분 전"
-        elif diff_sec < 86400:
-            hours = int(diff_sec // 3600)
-            return f"{hours}시간 전"
-        else:
-            return dt.strftime("%m/%d %H:%M")
+        kst_dt = dt.astimezone(timezone(timedelta(hours=9)))
+        return kst_dt.strftime("%m/%d %H:%M")
     except Exception:
-        return pub_date_str[:16] if len(pub_date_str) > 16 else "최신 속보"
+        pass
+
+    try:
+        if "T" in pub_date_str:
+            clean_str = pub_date_str.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(clean_str)
+            kst_dt = dt.astimezone(timezone(timedelta(hours=9)))
+            return kst_dt.strftime("%m/%d %H:%M")
+    except Exception:
+        pass
+
+    try:
+        if len(pub_date_str) == 8 and pub_date_str.isdigit():
+            return f"{pub_date_str[4:6]}/{pub_date_str[6:8]} 09:00"
+    except Exception:
+        pass
+
+    return pub_date_str[:16] if len(pub_date_str) > 16 else pub_date_str
 
 def clean_base_url(url):
     if not url:
@@ -314,9 +322,9 @@ def fetch_naver_news(keyword, limit=35):
     }
     
     raw_results = []
-    # Hybrid fetch: 35 sim (relevance) + 15 date (freshness)
-    for sort_mode in ["sim", "date"]:
-        display_num = 35 if sort_mode == "sim" else 15
+    # Freshness Priority: 40 items sorted by date (newest first) + 10 items sorted by sim (relevance)
+    for sort_mode in ["date", "sim"]:
+        display_num = 40 if sort_mode == "date" else 10
         url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote(query_str)}&display={display_num}&sort={sort_mode}"
         try:
             res = requests.get(url, headers=headers, timeout=8)

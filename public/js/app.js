@@ -349,7 +349,7 @@ function renderIssues() {
           <div class="issue-card" data-category="${item.type || 'news'}" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
             <div class="card-top">
               <span class="source-tag ${badgeClass}">${item.badge || '📰 이슈'} · ${item.publisher || '소식'} ${isNegBadge}</span>
-              <span class="card-date card-time">${item.time || '보관됨'}</span>
+              <span class="card-date card-time">${formatRelativeTime(item.time)}</span>
             </div>
             <h3 class="card-title">${item.title}</h3>
             
@@ -521,6 +521,18 @@ function getRecencyWeight(timeStr) {
   return 0;
 }
 
+function formatRelativeTime(timeStr) {
+  if (!timeStr) return '방금 전';
+  const weight = getRecencyWeight(timeStr);
+  if (!weight) return timeStr;
+
+  const diffSec = Math.floor((Date.now() - weight) / 1000);
+  if (diffSec < 0 || diffSec < 60) return '방금 전';
+  if (diffSec < 3600) return `${Math.max(1, Math.floor(diffSec / 60))}분 전`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}시간 전`;
+  return timeStr;
+}
+
 // Calculate category tab counts based strictly on the selected keyword's contents
   const counts = {
     all: keywordFiltered.length,
@@ -624,7 +636,7 @@ function getRecencyWeight(timeStr) {
         <div class="issue-card" data-category="${item.type || 'news'}" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
           <div class="card-top">
             <span class="source-tag ${badgeClass}">${badgeLabel} ${isNegBadge}</span>
-            <span class="card-time">${item.time}</span>
+            <span class="card-time">${formatRelativeTime(item.time)}</span>
           </div>
           <h3 class="card-title">${item.title}</h3>
           
