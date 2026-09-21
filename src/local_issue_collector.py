@@ -509,12 +509,13 @@ def fetch_google_news_rss(keyword, limit=30):
 def fetch_youtube_videos(keyword, limit=12):
     yt_items = []
     yt_api_key = (os.getenv("YOUTUBE_API_KEY") or "").strip('"\'')
+    is_vercel = os.getenv("VERCEL") == "1"
 
-    # Official YouTube Data API v3 Integration
+    # 4.1 Official YouTube Data API v3 Integration
     if yt_api_key:
         try:
             search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults={limit}&q={urllib.parse.quote(keyword)}&order=date&type=video&regionCode=KR&key={yt_api_key}"
-            r = requests.get(search_url, timeout=4)
+            r = requests.get(search_url, timeout=3)
             if r.status_code == 200:
                 data = r.json()
                 items = data.get("items", [])
@@ -522,7 +523,7 @@ def fetch_youtube_videos(keyword, limit=12):
 
                 if video_ids:
                     stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id={','.join(video_ids)}&key={yt_api_key}"
-                    r_stats = requests.get(stats_url, timeout=4)
+                    r_stats = requests.get(stats_url, timeout=3)
                     stats_dict = {}
                     if r_stats.status_code == 200:
                         for item in r_stats.json().get("items", []):
@@ -558,71 +559,96 @@ def fetch_youtube_videos(keyword, limit=12):
         except Exception as e:
             print(f"YouTube Official API fetch error for {keyword}: {e}")
 
-    # Fallback to direct HTML parser if API key is absent or fails
-    try:
-        encoded_kw = urllib.parse.quote(f"{keyword} 이슈")
-        url = f"https://www.youtube.com/results?search_query={encoded_kw}&sp=CAI%253D"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
-        }
-        r = requests.get(url, headers=headers, timeout=4)
-        if r.status_code == 200:
-            match = re.search(r'ytInitialData\s*=\s*({.*?});</script>', r.text)
-            if match:
-                data = json.loads(match.group(1))
+    # 4.2 Fallback to direct HTML parser (skip on Vercel to avoid timeouts)
+    if not is_vercel:
+        try:
+            encoded_kw = urllib.parse.quote(f"{keyword} 이슈")
+            url = f"https://www.youtube.com/results?search_query={encoded_kw}&sp=CAI%253D"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+            r = requests.get(url, headers=headers, timeout=2.5)
+            if r.status_code == 200:
+                match = re.search(r'ytInitialData\s*=\s*({.*?});</script>', r.text)
+                if match:
+                    data = json.loads(match.group(1))
 
-                def extract_videos(obj):
-                    vids = []
-                    if isinstance(obj, dict):
-                        if 'videoRenderer' in obj:
-                            vr = obj['videoRenderer']
-                            vid = vr.get('videoId')
-                            title = vr.get('title', {}).get('runs', [{}])[0].get('text')
-                            views_str = vr.get('viewCountText', {}).get('simpleText', '조회수 정보 없음')
-                            time_str = vr.get('publishedTimeText', {}).get('simpleText', '최신 영상')
-                            channel = vr.get('ownerText', {}).get('runs', [{}])[0].get('text', '유튜브')
-                            if vid and title:
-                                vids.append({
-                                    'videoId': vid,
-                                    'title': title,
-                                    'views': views_str,
-                                    'time': time_str,
-                                    'channel': channel
-                                })
-                        for v in obj.values():
-                            vids.extend(extract_videos(v))
-                    elif isinstance(obj, list):
-                        for item in obj:
-                            vids.extend(extract_videos(item))
-                    return vids
+                    def extract_videos(obj):
+                        vids = []
+                        if isinstance(obj, dict):
+                            if 'videoRenderer' in obj:
+                                vr = obj['videoRenderer']
+                                vid = vr.get('videoId')
+                                title = vr.get('title', {}).get('runs', [{}])[0].get('text')
+                                views_str = vr.get('viewCountText', {}).get('simpleText', '조회수 정보 없음')
+                                time_str = vr.get('publishedTimeText', {}).get('simpleText', '최신 영상')
+                                channel = vr.get('ownerText', {}).get('runs', [{}])[0].get('text', '유튜브')
+                                if vid and title:
+                                    vids.append({
+                                        'videoId': vid,
+                                        'title': title,
+                                        'views': views_str,
+                                        'time': time_str,
+                                        'channel': channel
+                                    })
+                            for v in obj.values():
+                                vids.extend(extract_videos(v))
+                        elif isinstance(obj, list):
+                            for item in obj:
+                                vids.extend(extract_videos(item))
+                        return vids
 
-                found_videos = extract_videos(data)
+                    found_videos = extract_videos(data)
+                    seen_vids = set()
+                    for v in found_videos:
+                        if v['videoId'] not in seen_vids:
+                            seen_vids.add(v['videoId'])
+                            channel_name = v['channel']
+                            yt_items.append({
+                                "id": f"yt_{v['videoId']}",
+                                "keyword": keyword,
+                                "type": "youtube",
+                                "badge": f"🎥 유튜브 · {channel_name}" if channel_name != "유튜브" else "🎥 유튜브",
+                                "publisher": channel_name,
+                                "title": v['title'],
+                                "time": v['time'],
+                                "url": f"https://www.youtube.com/watch?v={v['videoId']}",
+                                "content": f"[{v['channel']}] {v['views']} • {v['time']} | {v['title']}"
+                            })
+        except Exception as e:
+            print(f"YouTube HTML scrape error for {keyword}: {e}")
 
-                seen_vids = set()
-                unique_vids = []
-                for v in found_videos:
-                    if v['videoId'] not in seen_vids:
-                        seen_vids.add(v['videoId'])
-                        unique_vids.append(v)
+    # 4.3 Fast Google RSS Fallback (site:youtube.com "{keyword}") - ultra reliable & fast on Vercel
+    if not yt_items:
+        try:
+            q_yt = f'site:youtube.com "{keyword}"'
+            rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q_yt)}&hl=ko&gl=KR&ceid=KR:ko"
+            r = requests.get(rss_url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}, timeout=2.0)
+            if r.status_code == 200:
+                root = ET.fromstring(r.text)
+                for item in root.findall('.//item')[:limit]:
+                    title = item.findtext('title')
+                    link = item.findtext('link')
+                    pub_date = item.findtext('pubDate')
+                    if title and link:
+                        clean_t = title.split(' - ')[0]
+                        channel = title.split(' - ')[-1] if ' - ' in title else "유튜브"
+                        yt_items.append({
+                            "id": f"yt_rss_{abs(hash(link))}",
+                            "keyword": keyword,
+                            "type": "youtube",
+                            "badge": f"🎥 유튜브 · {channel[:15]}",
+                            "publisher": channel,
+                            "title": clean_t,
+                            "time": format_pub_date(pub_date),
+                            "url": link,
+                            "content": title
+                        })
+        except Exception as e:
+            print(f"YouTube RSS fetch error for {keyword}: {e}")
 
-                for v in unique_vids[:limit]:
-                    channel_name = v['channel']
-                    yt_items.append({
-                        "id": f"yt_{v['videoId']}",
-                        "keyword": keyword,
-                        "type": "youtube",
-                        "badge": f"🎥 유튜브 · {channel_name}" if channel_name != "유튜브" else "🎥 유튜브",
-                        "publisher": channel_name,
-                        "title": v['title'],
-                        "time": v['time'],
-                        "url": f"https://www.youtube.com/watch?v={v['videoId']}",
-                        "content": f"[{v['channel']}] {v['views']} • {v['time']} | {v['title']}"
-                    })
-    except Exception as e:
-        print(f"YouTube fetch error for {keyword}: {e}")
-
-    return yt_items
+    return yt_items[:limit]
 
 # ----------------------------------------------------
 # 5. 실시간 다채널 SNS 수집기 (쓰레드, 페이스북, 인스타그램, X, 네이버 카페)
@@ -634,13 +660,11 @@ def fetch_multichannel_sns(keyword, limit=25):
     headers_nv = {'X-Naver-Client-Id': client_id, 'X-Naver-Client-Secret': client_secret}
     headers_rss = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
 
-    # 5.1 🧵 쓰레드 (Threads) 5건 주민 소통 피드 및 실시간 포스트
+    # 5.1 🧵 쓰레드 (Threads) 주민 소통 주제 (always fast)
     threads_topics = [
         (f"🧵 Threads에서 '{keyword}' 실시간 주민 소통 포스트 및 반응 모음", f"https://www.threads.net/search?q={urllib.parse.quote(keyword)}"),
         (f"🧵 Threads '{keyword}' 지역 주요 이슈 및 주민 의견 공유", f"https://www.threads.net/search?q={urllib.parse.quote(keyword + ' 소식')}"),
         (f"🧵 Threads '{keyword}' 인근 실시간 핫이슈 및 커뮤니티 정보", f"https://www.threads.net/search?q={urllib.parse.quote(keyword + ' 핫이슈')}"),
-        (f"🧵 Threads '{keyword}' 대중교통·교통체증 및 생활 민원 소통 피드", f"https://www.threads.net/search?q={urllib.parse.quote(keyword + ' 민원')}"),
-        (f"🧵 Threads '{keyword}' 소상공인·맛집 및 문화 행사 추천 타임라인", f"https://www.threads.net/search?q={urllib.parse.quote(keyword + ' 추천')}")
     ]
     for idx, (t_title, t_url) in enumerate(threads_topics):
         sns_items.append({
@@ -655,46 +679,18 @@ def fetch_multichannel_sns(keyword, limit=25):
             "content": f"{keyword} 관련 Threads(쓰레드) 실시간 주민 반응 및 의견 공유"
         })
 
-    # Additional Threads RSS posts
-    try:
-        q_threads = f'Threads "{keyword}"'
-        rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q_threads)}&hl=ko&gl=KR&ceid=KR:ko"
-        r = requests.get(rss_url, headers=headers_rss, timeout=2.0)
-        if r.status_code == 200:
-            root = ET.fromstring(r.text)
-            for item in root.findall('.//item')[:3]:
-                title = item.findtext('title')
-                link = item.findtext('link')
-                pub_date = item.findtext('pubDate')
-                if title and link:
-                    clean_t = title.split(' - ')[0]
-                    sns_items.append({
-                        "id": f"threads_rss_{hash(link)}",
-                        "keyword": keyword,
-                        "type": "sns",
-                        "badge": "🧵 쓰레드 (Threads)",
-                        "publisher": "Threads",
-                        "title": clean_t,
-                        "time": format_pub_date(pub_date),
-                        "url": link,
-                        "content": title
-                    })
-    except Exception as e:
-        print(f"Threads RSS fetch error: {e}")
-
-    # 5.2 주요 소셜 미디어 (인스타그램, X/트위터, 페이스북)
+    # 5.2 SNS RSS sources (Instagram, X, Facebook, Threads)
     sns_sources = [
-        ("📱 인스타그램", f'site:instagram.com "{keyword}"', 4),
-        ("🐦 X (트위터)", f'site:x.com "{keyword}"', 4),
-        ("📱 페이스북", f'site:facebook.com "{keyword}"', 3)
+        ("📱 인스타그램", f'site:instagram.com "{keyword}"', 3),
+        ("🐦 X (트위터)", f'site:x.com "{keyword}"', 3),
+        ("📱 페이스북", f'site:facebook.com "{keyword}"', 3),
+        ("🧵 쓰레드", f'site:threads.net "{keyword}"', 3)
     ]
 
-    def fetch_single_sns(source_info):
-        badge, q, fetch_count = source_info
-        sub_items = []
+    for badge, q, fetch_count in sns_sources:
         try:
             rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q)}&hl=ko&gl=KR&ceid=KR:ko"
-            r = requests.get(rss_url, headers=headers_rss, timeout=2.0)
+            r = requests.get(rss_url, headers=headers_rss, timeout=1.5)
             if r.status_code == 200:
                 root = ET.fromstring(r.text)
                 for item in root.findall('.//item')[:fetch_count]:
@@ -704,8 +700,8 @@ def fetch_multichannel_sns(keyword, limit=25):
                     if title and link:
                         clean_t = title.split(' - ')[0]
                         pub_name = title.split(' - ')[-1] if ' - ' in title else badge
-                        sub_items.append({
-                            "id": f"sns_{hash(link)}",
+                        sns_items.append({
+                            "id": f"sns_{abs(hash(link))}",
                             "keyword": keyword,
                             "type": "sns",
                             "badge": badge,
@@ -717,26 +713,19 @@ def fetch_multichannel_sns(keyword, limit=25):
                         })
         except Exception as e:
             print(f"SNS {badge} fetch error: {e}")
-        return sub_items
-
-    with ThreadPoolExecutor(max_workers=3) as sns_exec:
-        sns_results = sns_exec.map(fetch_single_sns, sns_sources)
-        for res_list in sns_results:
-            if res_list:
-                sns_items.extend(res_list)
 
     # 5.3 💬 네이버 카페 실시간 게시글
     if client_id and client_secret:
         try:
-            url = f"https://openapi.naver.com/v1/search/cafearticle.json?query={urllib.parse.quote(keyword)}&display=3&sort=date"
-            r = requests.get(url, headers=headers_nv, timeout=3)
+            url = f"https://openapi.naver.com/v1/search/cafearticle.json?query={urllib.parse.quote(keyword)}&display=4&sort=date"
+            r = requests.get(url, headers=headers_nv, timeout=2.0)
             if r.status_code == 200:
                 for item in r.json().get('items', []):
                     t = item['title'].replace('<b>','').replace('</b>','').replace('&quot;', '"').replace('&lt;','<').replace('&gt;','>')
                     desc = item['description'].replace('<b>','').replace('</b>','').replace('&quot;', '"')
                     cafename = item.get('cafename', '네이버 카페')
                     sns_items.append({
-                        "id": f"cafe_{hash(item['link'])}",
+                        "id": f"cafe_{abs(hash(item['link']))}",
                         "keyword": keyword,
                         "type": "sns",
                         "badge": f"💬 카페 · {cafename[:10]}",
@@ -757,7 +746,7 @@ def fetch_multichannel_sns(keyword, limit=25):
 def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
     raw_issues = []
     is_vercel = os.getenv("VERCEL") == "1"
-    max_w = 4 if is_vercel else 12
+    max_w = 6 if is_vercel else 12
 
     with ThreadPoolExecutor(max_workers=max_w) as executor:
         futures = []
@@ -765,13 +754,13 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
             futures.append(executor.submit(fetch_naver_news, kw, 20))
             futures.append(executor.submit(fetch_google_news_rss, kw, 15))
             futures.append(executor.submit(fetch_multichannel_sns, kw, 10))
+            futures.append(executor.submit(fetch_youtube_videos, kw, 6))
             if not is_vercel:
                 futures.append(executor.submit(fetch_naver_blog, kw, 2))
-                futures.append(executor.submit(fetch_youtube_videos, kw, 8))
 
         for f in futures:
             try:
-                res = f.result(timeout=3.0 if is_vercel else 10.0)
+                res = f.result(timeout=6.0 if is_vercel else 10.0)
                 if res:
                     raw_issues.extend(res)
             except Exception as e:
@@ -780,20 +769,43 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
     # 중복 이슈 제거 (Deduplication)
     deduped_issues = deduplicate_issues(raw_issues)
 
-    # Cap per keyword to top 30 fresh items to avoid clutter
+    # Balanced category selection per keyword (News: max 16, SNS: max 7, YouTube: max 7 -> Total 30)
     by_kw = {}
     for item in deduped_issues:
         kw = item.get("keyword") or "기타"
         if kw not in by_kw:
-            by_kw[kw] = []
-        if len(by_kw[kw]) < 30:
-            by_kw[kw].append(item)
+            by_kw[kw] = {"news": [], "sns": [], "youtube": [], "other": []}
+        t = item.get("type", "news")
+        if t in by_kw[kw]:
+            by_kw[kw][t].append(item)
+        else:
+            by_kw[kw]["other"].append(item)
 
     final_deduped = []
-    for kw_items in by_kw.values():
-        final_deduped.extend(kw_items)
+    for kw, categorized in by_kw.items():
+        kw_news = categorized["news"]
+        kw_sns = categorized["sns"]
+        kw_yt = categorized["youtube"]
+        kw_other = categorized["other"]
 
-    print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 정밀 필터링 및 중복 제거 후 {len(final_deduped)}건 정리 완료")
+        selected_yt = kw_yt[:7]
+        selected_sns = kw_sns[:7]
+        rem_slots = max(16, 30 - len(selected_yt) - len(selected_sns))
+        selected_news = kw_news[:rem_slots]
+
+        kw_combined = selected_news + selected_sns + selected_yt + kw_other
+        if len(kw_combined) < 30:
+            seen_ids = {i["id"] for i in kw_combined}
+            for extra in (kw_news + kw_sns + kw_yt + kw_other):
+                if extra["id"] not in seen_ids:
+                    kw_combined.append(extra)
+                    seen_ids.add(extra["id"])
+                    if len(kw_combined) >= 30:
+                        break
+
+        final_deduped.extend(kw_combined[:30])
+
+    print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 정밀 균형 조합 및 중복 제거 후 {len(final_deduped)}건 정리 완료")
     deduped_issues = final_deduped
 
     # 뉴스 타이틀 원문 긁어오기 (Vercel 서벌리스 환경에서는 타임아웃 방지를 위해 건너뜀)
