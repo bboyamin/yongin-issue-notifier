@@ -230,8 +230,9 @@ async function refreshFeed() {
   try {
     if (userKeywords.length > 0) {
       const freshIssues = await IssueApi.fetchKeywordIssues(userKeywords);
-      if (renderedTitlesSet.size > 0) {
-        const newItems = freshIssues.filter(item => item && item.title && !renderedTitlesSet.has(item.title));
+      const existingTitles = new Set((currentIssues || []).map(item => item && item.title));
+      if (existingTitles.size > 0) {
+        const newItems = freshIssues.filter(item => item && item.title && !existingTitles.has(item.title));
         if (newItems.length > 0) {
           pendingNewIssues = mergeIssues(currentIssues, freshIssues);
           const toast = document.getElementById('newIssuesToast');
