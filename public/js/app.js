@@ -599,6 +599,7 @@ function getRecencyWeight(timeStr) {
     </div>
   `;
 
+  renderedTitlesSet.clear();
   if (filtered.length === 0) {
     html += `
       <div style="text-align:center; padding: 40px 20px; color: var(--text-sub);">
@@ -608,6 +609,8 @@ function getRecencyWeight(timeStr) {
     `;
   } else {
     filtered.forEach(item => {
+      if (item && item.title) renderedTitlesSet.add(item.title);
+
       const badgeClass = item.type === 'news' ? 'source-news' : (item.type === 'youtube' ? 'source-youtube' : 'source-sns');
       const hasPreSummary = item.summary && item.summary.length > 0;
       const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
@@ -660,9 +663,6 @@ function getRecencyWeight(timeStr) {
           </div>
         </div>
       `;
-    renderedTitlesSet.clear();
-    filtered.forEach(item => {
-      if (item && item.title) renderedTitlesSet.add(item.title);
     });
   }
 
