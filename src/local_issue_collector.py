@@ -746,20 +746,23 @@ def fetch_multichannel_sns(keyword, limit=25):
 # ----------------------------------------------------
 def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "기흥구", "수지구"]):
     raw_issues = []
+    is_vercel = os.getenv("VERCEL") == "1"
+    max_w = 3 if is_vercel else 12
 
-    # Run all keyword collection tasks in parallel for 5x~10x refresh speedup!
-    with ThreadPoolExecutor(max_workers=16) as executor:
+    # Run collection tasks in parallel (lightweight workers on Vercel to prevent thread limit crashes)
+    with ThreadPoolExecutor(max_workers=max_w) as executor:
         futures = []
         for kw in keywords:
             futures.append(executor.submit(fetch_naver_news, kw, 35))
-            futures.append(executor.submit(fetch_naver_blog, kw, 1))
-            futures.append(executor.submit(fetch_google_news_rss, kw, 12))
-            futures.append(executor.submit(fetch_youtube_videos, kw, 12))
-            futures.append(executor.submit(fetch_multichannel_sns, kw, 25))
+            futures.append(executor.submit(fetch_google_news_rss, kw, 25))
+            if not is_vercel:
+                futures.append(executor.submit(fetch_naver_blog, kw, 1))
+                futures.append(executor.submit(fetch_youtube_videos, kw, 12))
+                futures.append(executor.submit(fetch_multichannel_sns, kw, 25))
 
         for f in futures:
             try:
-                res = f.result()
+                res = f.result(timeout=4.0 if is_vercel else 10.0)
                 if res:
                     raw_issues.extend(res)
             except Exception as e:
