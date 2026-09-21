@@ -689,7 +689,9 @@ def fetch_multichannel_sns(keyword, limit=25):
         ("📱 페이스북", f'site:facebook.com "{keyword}"', 3)
     ]
 
-    for badge, q, fetch_count in sns_sources:
+    def fetch_single_sns(source_info):
+        badge, q, fetch_count = source_info
+        sub_items = []
         try:
             rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q)}&hl=ko&gl=KR&ceid=KR:ko"
             r = requests.get(rss_url, headers=headers_rss, timeout=2.0)
@@ -702,7 +704,7 @@ def fetch_multichannel_sns(keyword, limit=25):
                     if title and link:
                         clean_t = title.split(' - ')[0]
                         pub_name = title.split(' - ')[-1] if ' - ' in title else badge
-                        sns_items.append({
+                        sub_items.append({
                             "id": f"sns_{hash(link)}",
                             "keyword": keyword,
                             "type": "sns",
@@ -715,6 +717,13 @@ def fetch_multichannel_sns(keyword, limit=25):
                         })
         except Exception as e:
             print(f"SNS {badge} fetch error: {e}")
+        return sub_items
+
+    with ThreadPoolExecutor(max_workers=3) as sns_exec:
+        sns_results = sns_exec.map(fetch_single_sns, sns_sources)
+        for res_list in sns_results:
+            if res_list:
+                sns_items.extend(res_list)
 
     # 5.3 💬 네이버 카페 실시간 게시글
     if client_id and client_secret:

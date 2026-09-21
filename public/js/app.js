@@ -153,7 +153,13 @@ async function fetchKeywordIssues(keywordsList) {
   try {
     const freshIssues = await IssueApi.fetchKeywordIssues(keywordsList);
     if (Array.isArray(freshIssues) && freshIssues.length > 0) {
-      currentIssues = mergeIssues(currentIssues, freshIssues);
+      const taggedIssues = freshIssues.map(item => {
+        if (!item.keyword || item.keyword === '용인시' || item.keyword === '최신') {
+          return { ...item, keyword: targetKw };
+        }
+        return item;
+      });
+      currentIssues = mergeIssues(currentIssues, taggedIssues);
       showToast(`✅ '${targetKw}' 최신 소식 수집 완료!`);
     } else {
       showToast(`ℹ️ '${targetKw}' 최신 소식 연동을 완료했습니다.`);
@@ -170,12 +176,13 @@ async function fetchKeywordIssues(keywordsList) {
 
 async function selectKeyword(kw) {
   currentKeyword = kw;
+  isFetchingActive = true;
   renderKeywordChips();
   renderIssues();
 
   const userKeywords = StorageManager.getKeywords();
   const fetchList = [kw, ...userKeywords.filter(k => k !== kw)];
-  fetchKeywordIssues(fetchList);
+  await fetchKeywordIssues(fetchList);
 }
 
 async function addNewKeyword() {
@@ -191,13 +198,14 @@ async function addNewKeyword() {
   }
 
   currentKeyword = kw;
+  isFetchingActive = true;
   const updated = StorageManager.getKeywords();
   const fetchList = [kw, ...updated.filter(k => k !== kw)];
 
   renderKeywordChips();
   renderIssues();
 
-  fetchKeywordIssues(fetchList);
+  await fetchKeywordIssues(fetchList);
 }
 
 function removeKeyword(kw, event) {
@@ -439,25 +447,27 @@ function renderIssues() {
       return true;
     }
 
-    // Direct keyword tag match (e.g. items explicitly fetched for the active keyword chip)
-    if (item.keyword && item.keyword.trim().toLowerCase() === currentKeyword.trim().toLowerCase()) {
+    const curKwClean = currentKeyword.trim().toLowerCase();
+    const itemKwClean = (item.keyword || '').trim().toLowerCase();
+
+    // Direct keyword tag match
+    if (itemKwClean && (itemKwClean === curKwClean || curKwClean.includes(itemKwClean) || itemKwClean.includes(curKwClean))) {
       return true;
     }
 
-    const subKws = currentKeyword.replace(/ OR /gi, ',').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    const subKws = curKwClean.replace(/ OR /gi, ',').split(',').map(k => k.trim()).filter(Boolean);
     const itemContent = (item.content || '').toLowerCase();
 
-    // Universal Clean Filter
     return subKws.some(kw => {
-      const baseTerm = (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군'))) ? kw.slice(0, -1) : kw;
+      if (!kw) return false;
+      const baseTerm = (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군') || kw.endsWith('학교'))) ? kw.slice(0, -1) : kw;
+      const shortTerm = (kw.endsWith('학교') && kw.length >= 3) ? kw.slice(0, -2) : kw;
 
-      // Rule 1: Title contains exact term or base term
-      if (itemTitle.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemTitle.includes(baseTerm))) {
+      if (itemTitle.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemTitle.includes(baseTerm)) || (shortTerm && shortTerm.length >= 2 && itemTitle.includes(shortTerm))) {
         return true;
       }
 
-      // Rule 2: Full content snippet match
-      if (itemContent.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemContent.includes(baseTerm))) {
+      if (itemContent.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemContent.includes(baseTerm)) || (shortTerm && shortTerm.length >= 2 && itemContent.includes(shortTerm))) {
         return true;
       }
 
