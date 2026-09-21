@@ -5,7 +5,7 @@ import requests
 import urllib.parse
 import email.utils
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 from concurrent.futures import ThreadPoolExecutor
@@ -14,32 +14,49 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def format_pub_date(pub_date_str):
+    kst_now = datetime.now(timezone(timedelta(hours=9)))
+    fallback = kst_now.strftime("%Y-%m-%d %H:%M:%S")
+
     if not pub_date_str:
-        kst_now = datetime.now(timezone(timedelta(hours=9)))
-        return kst_now.strftime("%Y-%m-%d %H:%M:%S")
+        return fallback
+
+    # Handle RFC2822 pubDate (e.g. Naver News, RSS)
     try:
         dt = email.utils.parsedate_to_datetime(pub_date_str)
-        kst_dt = dt.astimezone(timezone(timedelta(hours=9)))
-        return kst_dt.strftime("%Y-%m-%d %H:%M:%S")
-    except Exception:
-        pass
-
-    try:
-        if "T" in pub_date_str:
-            clean_str = pub_date_str.replace("Z", "+00:00")
-            dt = datetime.fromisoformat(clean_str)
+        if dt:
             kst_dt = dt.astimezone(timezone(timedelta(hours=9)))
             return kst_dt.strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
         pass
 
+    # Handle ISO datetime strings
+    try:
+        if "T" in pub_date_str:
+            clean_str = pub_date_str.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(clean_str)
+            if dt:
+                kst_dt = dt.astimezone(timezone(timedelta(hours=9)))
+                return kst_dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        pass
+
+    # Handle 8-digit date string
     try:
         if len(pub_date_str) == 8 and pub_date_str.isdigit():
             return f"{pub_date_str[:4]}-{pub_date_str[4:6]}-{pub_date_str[6:8]} 09:00:00"
     except Exception:
         pass
 
-    return pub_date_str[:19] if len(pub_date_str) >= 19 else pub_date_str
+    # Extract YYYY-MM-DD HH:MM:SS if embedded
+    try:
+        m = re.search(r'(\d{4})[-/.](\d{2})[-/.](\d{2})\s+(\d{2}):(\d{2}):?(\d{2})?', pub_date_str)
+        if m:
+            sec = m.group(6) if m.group(6) else "00"
+            return f"{m.group(1)}-{m.group(2)}-{m.group(3)} {m.group(4)}:{m.group(5)}:{sec}"
+    except Exception:
+        pass
+
+    return fallback
 
 def clean_base_url(url):
     if not url:

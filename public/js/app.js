@@ -452,7 +452,7 @@ function renderIssues() {
 
 function getRecencyWeight(timeStr) {
   if (!timeStr) return 0;
-  const s = String(timeStr).trim();
+  let s = String(timeStr).trim();
 
   // 1. Formatted datetime: "YYYY-MM-DD HH:mm:ss" or "YYYY.MM.DD HH:mm"
   let match = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
@@ -485,7 +485,12 @@ function getRecencyWeight(timeStr) {
     return new Date(year, month, day).getTime();
   }
 
-  // 4. General JS Date parsing fallback (e.g. RSS / RFC pubDate)
+  // 4. Handle RFC date string lacking minutes (e.g. "Mon, 21 Sep 2026 13")
+  if (/^[A-Za-z]{3},\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s+\d{1,2}$/.test(s)) {
+    s += ":00:00";
+  }
+
+  // 5. General JS Date parsing fallback (e.g. RSS / RFC pubDate)
   const parsed = Date.parse(s);
   if (!isNaN(parsed)) {
     return parsed;
