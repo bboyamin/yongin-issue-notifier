@@ -334,7 +334,7 @@ class handler(BaseHTTPRequestHandler):
         # --------------------------------------------------
         # 2. Route for Yongin Live Issues (/api/collect)
         # --------------------------------------------------
-        kw_str = params.get('keywords', ['용인시,처인구'])[0]
+        kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
         keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
         
         static_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json"))

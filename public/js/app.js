@@ -32,10 +32,19 @@ function isDateWeekend(dateStr) {
 
 function mergeIssues(existingList, newList) {
   if (!newList || !newList.length) return existingList || [];
-  if (!existingList || !existingList.length) return newList || [];
+
+  const isDummy = item => item && item.title && (
+    item.title.includes('최신 현장 이슈 및 주민 반응') || 
+    item.title.includes('지역 실시간 소통 및 이슈 쓰레드')
+  );
+
+  const cleanNew = newList.filter(i => !isDummy(i));
+  const cleanExisting = (existingList || []).filter(i => !isDummy(i));
+
+  if (!cleanExisting.length) return cleanNew;
 
   const existingMap = new Map();
-  existingList.forEach(item => {
+  cleanExisting.forEach(item => {
     const key = (item.url && item.url !== '#') ? item.url : item.title;
     if (key) existingMap.set(key, item);
   });
@@ -43,7 +52,7 @@ function mergeIssues(existingList, newList) {
   const merged = [];
   const addedKeys = new Set();
 
-  newList.forEach(newItem => {
+  cleanNew.forEach(newItem => {
     const key = (newItem.url && newItem.url !== '#') ? newItem.url : newItem.title;
     if (key) {
       addedKeys.add(key);
@@ -60,7 +69,7 @@ function mergeIssues(existingList, newList) {
     }
   });
 
-  existingList.forEach(existingItem => {
+  cleanExisting.forEach(existingItem => {
     const key = (existingItem.url && existingItem.url !== '#') ? existingItem.url : existingItem.title;
     if (key && !addedKeys.has(key)) {
       addedKeys.add(key);
@@ -381,23 +390,26 @@ function renderIssues() {
   ];
 
   const keywordFiltered = currentIssues.filter(item => {
+    const itemTitle = (item.title || '').toLowerCase();
+    if (SPAM_PROMO_KEYWORDS.some(s => itemTitle.includes(s))) {
+      return false;
+    }
+
     if (currentKeyword === '전체') {
-      const title = (item.title || '').toLowerCase();
-      return !SPAM_PROMO_KEYWORDS.some(s => title.includes(s));
+      return true;
+    }
+
+    // Direct keyword tag match (e.g. items explicitly fetched for the active keyword chip)
+    if (item.keyword && item.keyword.trim().toLowerCase() === currentKeyword.trim().toLowerCase()) {
+      return true;
     }
 
     const subKws = currentKeyword.replace(/ OR /gi, ',').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-    const itemTitle = (item.title || '').toLowerCase();
     const itemContent = (item.content || '').toLowerCase();
 
     // Universal 0% Hardcode Clean Filter
     return subKws.some(kw => {
       const baseTerm = (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군'))) ? kw.slice(0, -1) : kw;
-
-      // Reject ad spam if title contains promo keywords
-      if (SPAM_PROMO_KEYWORDS.some(s => itemTitle.includes(s))) {
-        return false;
-      }
 
       // Rule 1: Title contains exact term or base term
       if (itemTitle.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemTitle.includes(baseTerm))) {
@@ -417,23 +429,73 @@ function renderIssues() {
 function getRecencyWeight(timeStr) {
   if (!timeStr) return 0;
   const s = String(timeStr).trim();
-  if (s.includes('방금')) return 1000000;
-  if (s.includes('분 전')) {
-    const mins = parseInt(s, 10) || 1;
-    return 1000000 - mins;
+  const now = Date.now();
+
+  // 1. Relative times
+  if (s.includes('방금') || s.includes('최신')) return now;
+
+  let match = s.match(/^(\d+)\s*분\s*전/);
+  if (match) {
+    const mins = parseInt(match[1], 10);
+    return now - (mins * 60 * 1000);
   }
-  if (s.includes('시간 전')) {
-    const hours = parseInt(s, 10) || 1;
-    return 900000 - (hours * 60);
+
+  match = s.match(/^(\d+)\s*시간\s*전/);
+  if (match) {
+    const hours = parseInt(match[1], 10);
+    return now - (hours * 3600 * 1000);
   }
-  if (s.includes('오늘')) return 800000;
-  if (s.includes('어제')) return 700000;
-  
-  const digits = s.replace(/[^\d]/g, '');
-  if (digits.length >= 4) {
-    return 500000 + parseInt(digits.slice(-6), 10);
+
+  match = s.match(/^(\d+)\s*일\s*전/);
+  if (match) {
+    const days = parseInt(match[1], 10);
+    return now - (days * 86400 * 1000);
   }
-  return 400000;
+
+  if (s.includes('오늘')) return now - (2 * 3600 * 1000);
+  if (s.includes('어제')) return now - (24 * 3600 * 1000);
+
+  // 2. Formatted date: "MM/DD HH:mm" (e.g. "09/16 10:45")
+  match = s.match(/^(\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
+  if (match) {
+    const month = parseInt(match[1], 10) - 1;
+    const day = parseInt(match[2], 10);
+    const hour = parseInt(match[3], 10);
+    const min = parseInt(match[4], 10);
+    const currentYear = new Date().getFullYear();
+    let d = new Date(currentYear, month, day, hour, min);
+    if (d.getTime() > now + 86400000) {
+      d = new Date(currentYear - 1, month, day, hour, min);
+    }
+    return d.getTime();
+  }
+
+  // 3. Formatted date: "YYYY.MM.DD" or "YYYY-MM-DD" with optional time
+  match = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    const hour = match[4] ? parseInt(match[4], 10) : 0;
+    const min = match[5] ? parseInt(match[5], 10) : 0;
+    return new Date(year, month, day, hour, min).getTime();
+  }
+
+  // 4. 8-digit date string: "20260916"
+  if (/^\d{8}$/.test(s)) {
+    const year = parseInt(s.slice(0, 4), 10);
+    const month = parseInt(s.slice(4, 6), 10) - 1;
+    const day = parseInt(s.slice(6, 8), 10);
+    return new Date(year, month, day).getTime();
+  }
+
+  // 5. General JS Date parsing fallback (e.g. RSS pubDate)
+  const parsed = Date.parse(s);
+  if (!isNaN(parsed)) {
+    return parsed;
+  }
+
+  return 0;
 }
 
 // Calculate category tab counts based strictly on the selected keyword's contents
@@ -461,6 +523,26 @@ function getRecencyWeight(timeStr) {
     const otherItems = keywordFiltered.filter(i => i.type !== 'news' && i.type !== 'youtube' && i.type !== 'sns').sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
 
     filtered = [...newsItems, ...youtubeItems, ...snsItems, ...otherItems];
+  } else if (currentCategory === 'sns') {
+    // Priority ordering inside SNS tab: Threads -> Instagram -> Facebook -> X -> Cafe -> Blog
+    const getSnsPriority = (item) => {
+      const b = (item.badge || '').toLowerCase();
+      if (b.includes('쓰레드') || b.includes('threads')) return 1;
+      if (b.includes('인스타그램') || b.includes('instagram')) return 2;
+      if (b.includes('트위터') || b.includes('x (') || b.startsWith('x ')) return 3;
+      if (b.includes('페이스북') || b.includes('facebook')) return 4;
+      if (b.includes('카페')) return 5;
+      return 6;
+    };
+
+    filtered = keywordFiltered
+      .filter(item => item.type === 'sns')
+      .sort((a, b) => {
+        const pA = getSnsPriority(a);
+        const pB = getSnsPriority(b);
+        if (pA !== pB) return pA - pB;
+        return getRecencyWeight(b.time) - getRecencyWeight(a.time);
+      });
   } else {
     filtered = keywordFiltered
       .filter(item => item.type === currentCategory)
@@ -508,10 +590,14 @@ function getRecencyWeight(timeStr) {
         ? `<button class="card-action-btn scrapped" onclick="toggleScrap(this)">★ 스크랩됨</button>`
         : `<button class="card-action-btn" onclick="toggleScrap(this)">⭐ 스크랩</button>`;
 
+      const badgeLabel = (item.badge && item.publisher && item.badge.includes(item.publisher)) 
+        ? item.badge 
+        : `${item.badge || '📰 이슈'} · ${item.publisher || '소식'}`;
+
       html += `
         <div class="issue-card" data-category="${item.type || 'news'}" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
           <div class="card-top">
-            <span class="source-tag ${badgeClass}">${item.badge} · ${item.publisher} ${isNegBadge}</span>
+            <span class="source-tag ${badgeClass}">${badgeLabel} ${isNegBadge}</span>
             <span class="card-time">${item.time}</span>
           </div>
           <h3 class="card-title">${item.title}</h3>
@@ -815,6 +901,7 @@ function startAutoPolling() {
         renderIssues();
 
         if (newItems.length > 0) {
+          newItems.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
           const topItem = newItems[0];
           triggerRealPushNotification(
             `🔔 [신규 속보] #${topItem.keyword || '용인시'} 새 이슈`,
@@ -1268,12 +1355,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initial Load Issues: Fast UI directly from saved cache. If empty, load default.
+  // Initial Load Issues: Fast UI directly from saved cache then refresh automatically
   const cachedFeed = StorageManager.getFeedCache();
   if (cachedFeed && cachedFeed.length > 0) {
     currentIssues = cachedFeed;
     renderKeywordChips();
     renderIssues();
+    refreshFeed();
   } else {
     IssueApi.loadDefaultIssues().then(defaultIssues => {
       currentIssues = defaultIssues;
