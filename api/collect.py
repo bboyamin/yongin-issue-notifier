@@ -375,36 +375,10 @@ class handler(BaseHTTPRequestHandler):
         issues = []
         try:
             current_static = load_static_issues()
-
-            # Check if all requested keywords have at least 5 matching items in static_issues
-            missing_keywords = []
-            for kw in keywords:
-                kw_clean = kw.lower().strip()
-                if not kw_clean:
-                    continue
-                matching_count = sum(1 for item in (current_static or []) if kw_clean == (item.get("keyword") or "").lower().strip() or kw_clean in (item.get("title") or "").lower())
-                if matching_count < 5:
-                    missing_keywords.append(kw)
-
-            # Serve current_static instantly if no force_refresh AND no missing keywords
-            if current_static and not force_refresh and not missing_keywords:
-                body = json.dumps(current_static, ensure_ascii=False).encode('utf-8')
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-                return
-
-            # Fetch live issues for missing keywords (or all keywords if force_refresh)
-            target_fetch_kws = keywords if force_refresh or not current_static else missing_keywords
-            live_issues = collect_all_issues(keywords=target_fetch_kws)
+            live_issues = collect_all_issues(keywords=keywords)
             if live_issues and len(live_issues) > 0:
-                # Merge live issues with static issues
                 if current_static:
-                    existing_keys = {item.get('url') or item.get('title') for item in current_static if item.get('url') or item.get('title')}
+                    existing_keys = {item.get('url') or item.get('title') for item in live_issues if item.get('url') or item.get('title')}
                     merged_list = list(live_issues)
                     for s_item in current_static:
                         k = s_item.get('url') or s_item.get('title')
