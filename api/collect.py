@@ -19,6 +19,25 @@ except ImportError:
     def collect_all_issues(keywords=None):
         return []
 
+def load_static_issues():
+    paths = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "LocalIssueNotifier", "data", "issues.json"))
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list) and data:
+                        return data
+            except Exception as e:
+                print(f"Error loading static issues from {p}: {e}")
+    return []
+
+static_issues = load_static_issues()
+
+
 def fetch_etnews_from_pdf(ymd_str):
     urls = [
         f"https://pdf.etnews.com/pdf_today.html?ymd={ymd_str}",
@@ -353,38 +372,41 @@ class handler(BaseHTTPRequestHandler):
         kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
         keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
 
-        # Check if all requested keywords have at least 5 matching items in static_issues
-        missing_keywords = []
-        for kw in keywords:
-            kw_clean = kw.lower().strip()
-            if not kw_clean:
-                continue
-            matching_count = sum(1 for item in static_issues if kw_clean == (item.get("keyword") or "").lower().strip() or kw_clean in (item.get("title") or "").lower())
-            if matching_count < 5:
-                missing_keywords.append(kw)
-
-        # Serve static_issues instantly if no force_refresh AND no missing keywords
-        if static_issues and not force_refresh and not missing_keywords:
-            body = json.dumps(static_issues, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-
+        issues = []
         try:
+            current_static = load_static_issues()
+
+            # Check if all requested keywords have at least 5 matching items in static_issues
+            missing_keywords = []
+            for kw in keywords:
+                kw_clean = kw.lower().strip()
+                if not kw_clean:
+                    continue
+                matching_count = sum(1 for item in (current_static or []) if kw_clean == (item.get("keyword") or "").lower().strip() or kw_clean in (item.get("title") or "").lower())
+                if matching_count < 5:
+                    missing_keywords.append(kw)
+
+            # Serve current_static instantly if no force_refresh AND no missing keywords
+            if current_static and not force_refresh and not missing_keywords:
+                body = json.dumps(current_static, ensure_ascii=False).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
             # Fetch live issues for missing keywords (or all keywords if force_refresh)
-            target_fetch_kws = keywords if force_refresh or not static_issues else missing_keywords
+            target_fetch_kws = keywords if force_refresh or not current_static else missing_keywords
             live_issues = collect_all_issues(keywords=target_fetch_kws)
             if live_issues and len(live_issues) > 0:
                 # Merge live issues with static issues
-                if static_issues:
-                    existing_keys = {item.get('url') or item.get('title') for item in static_issues if item.get('url') or item.get('title')}
+                if current_static:
+                    existing_keys = {item.get('url') or item.get('title') for item in current_static if item.get('url') or item.get('title')}
                     merged_list = list(live_issues)
-                    for s_item in static_issues:
+                    for s_item in current_static:
                         k = s_item.get('url') or s_item.get('title')
                         if k and k not in existing_keys:
                             existing_keys.add(k)
@@ -393,12 +415,13 @@ class handler(BaseHTTPRequestHandler):
                 else:
                     issues = live_issues
             else:
-                issues = static_issues
+                issues = current_static or []
         except Exception as e:
             print("Vercel collect error:", e)
-            issues = static_issues
+            issues = load_static_issues() or []
 
         body = json.dumps(issues, ensure_ascii=False).encode('utf-8')
+
         
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')

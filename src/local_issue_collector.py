@@ -343,7 +343,7 @@ def fetch_naver_news(keyword, limit=35):
         display_num = 40 if sort_mode == "date" else 10
         url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote(query_str)}&display={display_num}&sort={sort_mode}"
         try:
-            res = requests.get(url, headers=headers, timeout=8)
+            res = requests.get(url, headers=headers, timeout=2.5)
             if res.status_code == 200:
                 raw_results.extend(res.json().get("items", []))
         except Exception as e:
@@ -393,8 +393,9 @@ def fetch_naver_news(keyword, limit=35):
                 item_obj["title"] = full_title
         return item_obj
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        items = list(executor.map(enrich_item_title, items))
+    if os.getenv("VERCEL") != "1":
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            items = list(executor.map(enrich_item_title, items))
 
     print(f"✅ [네이버 뉴스 (고품질 정밀 수집)] '{keyword}' {len(items)}건 수집 완료!")
     return items
@@ -470,7 +471,7 @@ def fetch_google_news_rss(keyword, limit=30):
 
     items = []
     try:
-        res = requests.get(rss_url, headers=headers, timeout=10)
+        res = requests.get(rss_url, headers=headers, timeout=2.5)
         if res.status_code == 200:
             soup = BeautifulSoup(res.text, "xml")
             rss_items = soup.find_all("item")[:limit]
@@ -762,7 +763,7 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "�
 
         for f in futures:
             try:
-                res = f.result(timeout=4.0 if is_vercel else 10.0)
+                res = f.result(timeout=3.0 if is_vercel else 10.0)
                 if res:
                     raw_issues.extend(res)
             except Exception as e:

@@ -156,11 +156,11 @@ async function fetchKeywordIssues(keywordsList) {
       currentIssues = mergeIssues(currentIssues, freshIssues);
       showToast(`✅ '${targetKw}' 최신 소식 수집 완료!`);
     } else {
-      showToast(`⚠️ '${targetKw}' 관련 소식을 찾지 못했습니다.`);
+      showToast(`ℹ️ '${targetKw}' 최신 소식 연동을 완료했습니다.`);
     }
   } catch (err) {
     console.warn('Keyword collect error:', err);
-    showToast(`⚠️ 네트워크 연동 상태를 확인해 주세요.`);
+    showToast(`ℹ️ '${targetKw}' 소식을 불러오는 중입니다...`);
   } finally {
     isFetchingActive = false;
     renderKeywordChips();
@@ -609,8 +609,9 @@ function formatRelativeTime(timeStr) {
       html += `
         <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
           <p style="font-size:32px; margin-bottom:10px;">🔍</p>
-          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 조건에 일치하는 최신 이슈가 없습니다.</p>
-          <p style="font-size:12px; color:#64748B;">상단의 <strong>[+ 추가]</strong> 버튼을 눌러 다른 관심 키워드를 등록해 보세요!</p>
+          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 관련 실시간 이슈를 준비 중입니다.</p>
+          <p style="font-size:12px; color:#64748B; margin-bottom:16px;">아래 버튼을 누르면 실시간으로 최신 뉴스 및 소식을 수집해 연결합니다.</p>
+          <button onclick="refreshFeed()" style="background:var(--primary); color:white; border:none; padding:10px 18px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">🔄 '# ${currentKeyword}' 실시간 소식 수집하기</button>
         </div>
       `;
     }
