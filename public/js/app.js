@@ -167,7 +167,7 @@ async function fetchKeywordIssues(keywordsList) {
         return (ik === targetKwClean) || (kwSub && (it.includes(kwSub) || ic.includes(kwSub))) || (shortTerm && shortTerm.length >= 2 && (it.includes(shortTerm) || ic.includes(shortTerm)));
       });
 
-      const cleanTopItems = (targetItems.length > 0 ? targetItems : freshIssues).slice(0, 30);
+      const cleanTopItems = (targetItems.length > 0 ? targetItems : freshIssues).slice(0, 60);
       keywordFeeds[targetKw] = cleanTopItems.map(i => ({ ...i, keyword: targetKw }));
       currentIssues = keywordFeeds[targetKw];
       showToast(`✅ '${targetKw}' 최신 소식 ${currentIssues.length}건 수집 완료!`);

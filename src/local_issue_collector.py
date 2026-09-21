@@ -751,6 +751,7 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
                     if len(kw_combined) >= 60:
                         break
 
+        kw_combined.sort(key=lambda x: str(x.get("time", "")), reverse=True)
         final_deduped.extend(kw_combined[:60])
 
     print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 오늘 풍성한 전체 이슈 보장 후 {len(final_deduped)}건 정리 완료")
