@@ -350,6 +350,11 @@ class handler(BaseHTTPRequestHandler):
             return
 
         force_refresh = params.get('force', ['false'])[0].lower() == 'true'
+        kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
+        keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
+
+        default_kws = {"용인시", "처인구", "용인특례시"}
+        has_custom_kw = any(k not in default_kws for k in keywords)
 
         static_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json"))
         if not os.path.exists(static_file):
@@ -363,8 +368,8 @@ class handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-        # Fast SWR: Serve pre-collected high quality static_issues instantly if present and not forced
-        if static_issues and not force_refresh:
+        # Fast SWR: Serve pre-collected static_issues ONLY IF no custom keywords are requested AND force_refresh is False
+        if static_issues and not force_refresh and not has_custom_kw:
             body = json.dumps(static_issues, ensure_ascii=False).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -375,15 +380,20 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
-        kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
-        keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
-
         try:
             live_issues = collect_all_issues(keywords=keywords)
-            if len(live_issues) >= 10:
+            if live_issues and len(live_issues) > 0:
+                # Merge live issues with static issues if present
+                if static_issues:
+                    existing_urls = {item.get('url') or item.get('title') for item in live_issues if item.get('url') or item.get('title')}
+                    for s_item in static_issues:
+                        k = s_item.get('url') or s_item.get('title')
+                        if k and k not in existing_urls:
+                            existing_urls.add(k)
+                            live_issues.append(s_item)
                 issues = live_issues
             else:
-                issues = static_issues if len(static_issues) > len(live_issues) else live_issues
+                issues = static_issues
         except Exception as e:
             print("Vercel collect error:", e)
             issues = static_issues

@@ -51,8 +51,11 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
             else:
                 keywords = [k.strip() for k in kw_param.split(",") if k.strip()]
 
-            # ⚡ Ultra-Fast SWR Pattern: If issues.json exists, return INSTANTLY (< 0.02s)
-            if os.path.exists(output_path) and not force_refresh:
+            default_kws = {"용인시", "처인구", "용인특례시"}
+            has_custom_kw = any(k not in default_kws for k in keywords)
+
+            # ⚡ Ultra-Fast SWR Pattern: If issues.json exists and no custom keywords requested
+            if os.path.exists(output_path) and not force_refresh and not has_custom_kw:
                 try:
                     with open(output_path, "r", encoding="utf-8") as f:
                         cached_issues = json.load(f)
