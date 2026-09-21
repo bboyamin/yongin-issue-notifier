@@ -131,11 +131,20 @@ const StorageManager = (() => {
     },
 
     getFeedCache() {
+      try {
+        const ver = localStorage.getItem('feed_cache_ver');
+        if (ver !== 'v51') {
+          localStorage.removeItem('feed_cache');
+          localStorage.setItem('feed_cache_ver', 'v51');
+          return [];
+        }
+      } catch (e) {}
       return safeGetJSON('feed_cache', []);
     },
 
     saveFeedCache(issues) {
       if (Array.isArray(issues)) {
+        try { localStorage.setItem('feed_cache_ver', 'v51'); } catch(e) {}
         safeSetJSON('feed_cache', issues.slice(0, 150));
       }
     },
