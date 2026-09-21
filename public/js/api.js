@@ -14,7 +14,7 @@ const IssueApi = (() => {
     async fetchKeywordIssues(keywordsList) {
       try {
         const kwParam = encodeURIComponent(keywordsList.join(','));
-        const res = await fetch(`/api/collect?keywords=${kwParam}&v=56&t=${Date.now()}`);
+        const res = await fetch(`/api/collect?keywords=${kwParam}&v=57&t=${Date.now()}`);
         if (res.ok) {
           const liveData = await res.json();
           if (Array.isArray(liveData) && liveData.length > 0) {
@@ -30,9 +30,9 @@ const IssueApi = (() => {
     async loadDefaultIssues() {
       const timestamp = Date.now();
       const paths = [
-        `./data/issues.json?v=56&t=${timestamp}`,
-        `data/issues.json?v=56&t=${timestamp}`,
-        `/data/issues.json?v=56&t=${timestamp}`
+        `./data/issues.json?v=57&t=${timestamp}`,
+        `data/issues.json?v=57&t=${timestamp}`,
+        `/data/issues.json?v=57&t=${timestamp}`
       ];
       for (const p of paths) {
         try {

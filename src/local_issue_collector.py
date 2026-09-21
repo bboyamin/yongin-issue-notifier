@@ -772,8 +772,10 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "�
     deduped_issues = deduplicate_issues(raw_issues)
     print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 중복 제거 후 {len(deduped_issues)}건 정리 완료")
 
-    # 뉴스 타이틀 100% 원문 보장 (속도 최적화: 뉴스 타입만 대상 & 20 스레드 병렬화)
+    # 뉴스 타이틀 원문 긁어오기 (Vercel 서벌리스 환경에서는 타임아웃 방지를 위해 건너뜀)
     def enrich_item_title(item_obj):
+        if os.getenv("VERCEL") == "1":
+            return item_obj
         if item_obj.get("type") != "news":
             return item_obj
         title = item_obj.get("title", "")
@@ -783,8 +785,9 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "�
                 item_obj["title"] = full_title
         return item_obj
 
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        deduped_issues = list(executor.map(enrich_item_title, deduped_issues))
+    if os.getenv("VERCEL") != "1":
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            deduped_issues = list(executor.map(enrich_item_title, deduped_issues))
 
     # 온디맨드 AI 요약 캐시 연동
     final_issues = []

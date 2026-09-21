@@ -144,21 +144,27 @@ function renderKeywordChips() {
   }
 }
 
+let isFetchingActive = false;
+
 async function fetchKeywordIssues(keywordsList) {
   const targetKw = keywordsList[0] || '최신';
+  isFetchingActive = true;
   showToast(`🔄 '${targetKw}' 관련 최신 소식 수집 중...`);
   try {
     const freshIssues = await IssueApi.fetchKeywordIssues(keywordsList);
     if (Array.isArray(freshIssues) && freshIssues.length > 0) {
       currentIssues = mergeIssues(currentIssues, freshIssues);
-      renderKeywordChips();
-      renderIssues();
       showToast(`✅ '${targetKw}' 최신 소식 수집 완료!`);
     } else {
-      showToast(`⚠️ '${targetKw}' 검색 결과가 없습니다.`);
+      showToast(`⚠️ '${targetKw}' 관련 소식을 찾지 못했습니다.`);
     }
   } catch (err) {
     console.warn('Keyword collect error:', err);
+    showToast(`⚠️ 네트워크 연동 상태를 확인해 주세요.`);
+  } finally {
+    isFetchingActive = false;
+    renderKeywordChips();
+    renderIssues();
   }
 }
 
@@ -591,13 +597,23 @@ function formatRelativeTime(timeStr) {
 
   renderedTitlesSet.clear();
   if (filtered.length === 0) {
-    html += `
-      <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
-        <p style="font-size:32px; margin-bottom:10px;" class="spin-icon">🔄</p>
-        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 관련 실시간 최신 소식을 수집 중입니다...</p>
-        <p style="font-size:12px; color:#64748B;">네이버 뉴스, 블로그, 포스트에서 소식을 연동 중입니다. 잠시만 기다려 주세요!</p>
-      </div>
-    `;
+    if (isFetchingActive) {
+      html += `
+        <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
+          <p style="font-size:32px; margin-bottom:10px;" class="spin-icon">🔄</p>
+          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 관련 실시간 최신 소식을 수집 중입니다...</p>
+          <p style="font-size:12px; color:#64748B;">네이버 뉴스, 블로그, 포스트에서 소식을 연동 중입니다. 잠시만 기다려 주세요!</p>
+        </div>
+      `;
+    } else {
+      html += `
+        <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
+          <p style="font-size:32px; margin-bottom:10px;">🔍</p>
+          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 조건에 일치하는 최신 이슈가 없습니다.</p>
+          <p style="font-size:12px; color:#64748B;">상단의 <strong>[+ 추가]</strong> 버튼을 눌러 다른 관심 키워드를 등록해 보세요!</p>
+        </div>
+      `;
+    }
   } else {
     filtered.forEach(item => {
       if (item && item.title) renderedTitlesSet.add(item.title);
