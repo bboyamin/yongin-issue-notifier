@@ -460,12 +460,9 @@ def fetch_naver_blog(keyword, limit=3):
 # ----------------------------------------------------
 # 3. 구글 뉴스 RSS 수집기
 # ----------------------------------------------------
-def fetch_google_news_rss(keyword, limit=15):
+def fetch_google_news_rss(keyword, limit=30):
     sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
-    if len(sub_terms) > 1:
-        query = f"({' OR '.join(sub_terms)})+when:7d"
-    else:
-        query = f"{keyword}+when:7d"
+    query = " OR ".join(sub_terms) if len(sub_terms) > 1 else keyword
         
     encoded_kw = urllib.parse.quote(query)
     rss_url = f"https://news.google.com/rss/search?q={encoded_kw}&hl=ko&gl=KR&ceid=KR:ko"

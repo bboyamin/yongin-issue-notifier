@@ -51,28 +51,34 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
             else:
                 keywords = [k.strip() for k in kw_param.split(",") if k.strip()]
 
-            default_kws = {"용인시", "처인구", "용인특례시"}
-            has_custom_kw = any(k not in default_kws for k in keywords)
-
-            # ⚡ Ultra-Fast SWR Pattern: If issues.json exists and no custom keywords requested
-            if os.path.exists(output_path) and not force_refresh and not has_custom_kw:
+            # ⚡ Ultra-Fast SWR Pattern: If issues.json exists and no custom missing keywords requested
+            if os.path.exists(output_path) and not force_refresh:
                 try:
                     with open(output_path, "r", encoding="utf-8") as f:
                         cached_issues = json.load(f)
                     if cached_issues:
-                        mtime = os.path.getmtime(output_path)
-                        import time
-                        # If cache is older than 15 minutes (900s), trigger async background refresh
-                        if time.time() - mtime > 900:
-                            import threading
-                            threading.Thread(target=run_background_collection, args=(keywords,), daemon=True).start()
+                        missing = []
+                        for kw in keywords:
+                            kw_clean = kw.lower().strip()
+                            if not kw_clean:
+                                continue
+                            matching_count = sum(1 for item in cached_issues if kw_clean == (item.get("keyword") or "").lower().strip() or kw_clean in (item.get("title") or "").lower())
+                            if matching_count < 5:
+                                missing.append(kw)
 
-                        print(f"⚡ [/api/collect] 캐시된 이슈 초고속 응답 ({len(cached_issues)}건, 0.018초)")
-                        self.send_response(200)
-                        self.send_header('Content-Type', 'application/json; charset=utf-8')
-                        self.end_headers()
-                        self.wfile.write(json.dumps(cached_issues, ensure_ascii=False).encode('utf-8'))
-                        return
+                        if not missing:
+                            mtime = os.path.getmtime(output_path)
+                            import time
+                            if time.time() - mtime > 900:
+                                import threading
+                                threading.Thread(target=run_background_collection, args=(keywords,), daemon=True).start()
+
+                            print(f"⚡ [/api/collect] 캐시된 이슈 초고속 응답 ({len(cached_issues)}건, 0.018초)")
+                            self.send_response(200)
+                            self.send_header('Content-Type', 'application/json; charset=utf-8')
+                            self.end_headers()
+                            self.wfile.write(json.dumps(cached_issues, ensure_ascii=False).encode('utf-8'))
+                            return
                 except Exception:
                     pass
 

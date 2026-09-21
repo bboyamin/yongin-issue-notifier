@@ -353,15 +353,14 @@ class handler(BaseHTTPRequestHandler):
         kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
         keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
 
-        # Check if all requested keywords exist in static_issues
-        static_text_blob = ""
-        if static_issues:
-            static_text_blob = " ".join([(item.get("title", "") + " " + item.get("content", "") + " " + item.get("keyword", "")).lower() for item in static_issues])
-
+        # Check if all requested keywords have at least 5 matching items in static_issues
         missing_keywords = []
         for kw in keywords:
             kw_clean = kw.lower().strip()
-            if kw_clean and kw_clean not in static_text_blob:
+            if not kw_clean:
+                continue
+            matching_count = sum(1 for item in static_issues if kw_clean == (item.get("keyword") or "").lower().strip() or kw_clean in (item.get("title") or "").lower())
+            if matching_count < 5:
                 missing_keywords.append(kw)
 
         # Serve static_issues instantly if no force_refresh AND no missing keywords
