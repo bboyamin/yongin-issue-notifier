@@ -486,7 +486,7 @@ def fetch_google_news_rss(keyword, limit=15):
 # ----------------------------------------------------
 def fetch_youtube_videos(keyword, limit=12):
     yt_items = []
-    yt_api_key = (os.getenv("YOUTUBE_API_KEY") or "").strip('"\'')
+    yt_api_key = (os.getenv("YOUTUBE_API_KEY") or "AIzaSyB6JCclxPyXmDf93XIMO4LJ0pIgnPFKWg4").strip('"\'')
 
     # Official YouTube Data API v3 Integration
     if yt_api_key:

@@ -230,23 +230,7 @@ async function refreshFeed() {
   try {
     if (userKeywords.length > 0) {
       const freshIssues = await IssueApi.fetchKeywordIssues(userKeywords);
-      const existingTitles = new Set((currentIssues || []).map(item => item && item.title));
-      if (existingTitles.size > 0) {
-        const newItems = freshIssues.filter(item => item && item.title && !existingTitles.has(item.title));
-        if (newItems.length > 0) {
-          pendingNewIssues = mergeIssues(currentIssues, freshIssues);
-          const toast = document.getElementById('newIssuesToast');
-          const countEl = document.getElementById('newIssuesCount');
-          if (toast && countEl) {
-            countEl.textContent = newItems.length;
-            toast.style.display = 'flex';
-          }
-        } else {
-          currentIssues = mergeIssues(currentIssues, freshIssues);
-        }
-      } else {
-        currentIssues = mergeIssues(currentIssues, freshIssues);
-      }
+      currentIssues = mergeIssues(currentIssues, freshIssues);
       StorageManager.saveFeedCache(currentIssues);
     }
   } catch (err) {
@@ -256,9 +240,7 @@ async function refreshFeed() {
     lastUpdatedTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     StorageManager.saveLastUpdatedTime(lastUpdatedTimeStr);
     renderKeywordChips();
-    if (!pendingNewIssues) {
-      renderIssues();
-    }
+    renderIssues();
     if (feedContainer) {
       feedContainer.style.opacity = '1';
     }
