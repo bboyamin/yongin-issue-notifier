@@ -431,7 +431,7 @@ function renderIssues() {
     const subKws = currentKeyword.replace(/ OR /gi, ',').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
     const itemContent = (item.content || '').toLowerCase();
 
-    // Universal 0% Hardcode Clean Filter
+    // Universal Clean Filter
     return subKws.some(kw => {
       const baseTerm = (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군'))) ? kw.slice(0, -1) : kw;
 
@@ -440,9 +440,8 @@ function renderIssues() {
         return true;
       }
 
-      // Rule 2: Core content snippet head match (first 80 chars)
-      const contentHead = itemContent.slice(0, 80);
-      if (contentHead.includes(kw) || (baseTerm && baseTerm.length >= 2 && contentHead.includes(baseTerm))) {
+      // Rule 2: Full content snippet match
+      if (itemContent.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemContent.includes(baseTerm))) {
         return true;
       }
 

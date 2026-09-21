@@ -133,9 +133,9 @@ const StorageManager = (() => {
     getFeedCache() {
       try {
         const ver = localStorage.getItem('feed_cache_ver');
-        if (ver !== 'v51') {
+        if (ver !== 'v52') {
           localStorage.removeItem('feed_cache');
-          localStorage.setItem('feed_cache_ver', 'v51');
+          localStorage.setItem('feed_cache_ver', 'v52');
           return [];
         }
       } catch (e) {}
@@ -144,7 +144,7 @@ const StorageManager = (() => {
 
     saveFeedCache(issues) {
       if (Array.isArray(issues)) {
-        try { localStorage.setItem('feed_cache_ver', 'v51'); } catch(e) {}
+        try { localStorage.setItem('feed_cache_ver', 'v52'); } catch(e) {}
         safeSetJSON('feed_cache', issues.slice(0, 150));
       }
     },

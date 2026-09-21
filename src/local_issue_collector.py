@@ -298,7 +298,7 @@ def is_clean_relevant_article(title_text, desc_text, terms):
     t_lower = (title_text or "").lower()
     d_lower = (desc_text or "").lower()
 
-    # Reject promo ad spam if title or description head contains promo keywords
+    # Reject promo ad spam if title or description contains promo keywords
     if any(s in t_lower for s in SPAM_PROMO_KEYWORDS):
         return False
 
@@ -313,9 +313,8 @@ def is_clean_relevant_article(title_text, desc_text, terms):
         if t_term in t_lower or (base_term and len(base_term) >= 2 and base_term in t_lower):
             return True
 
-        # Rule 2: Core description head match (first 80 chars)
-        d_head = d_lower[:80]
-        if t_term in d_head or (base_term and len(base_term) >= 2 and base_term in d_head):
+        # Rule 2: Full description snippet match
+        if t_term in d_lower or (base_term and len(base_term) >= 2 and base_term in d_lower):
             return True
 
     return False
