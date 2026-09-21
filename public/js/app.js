@@ -228,11 +228,13 @@ async function refreshFeed() {
 
   const userKeywords = StorageManager.getKeywords();
   try {
+    if (userKeywords.length > 0) {
       const freshIssues = await IssueApi.fetchKeywordIssues(userKeywords);
       if (Array.isArray(freshIssues) && freshIssues.length > 0) {
-        currentIssues = freshIssues;
+        currentIssues = mergeIssues(currentIssues, freshIssues);
         StorageManager.saveFeedCache(currentIssues);
       }
+    }
   } catch (err) {
     console.warn('Refresh error:', err);
   } finally {
@@ -1381,7 +1383,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial Load Issues: Fast UI directly from saved cache then refresh automatically
   const cachedFeed = StorageManager.getFeedCache();
-  if (cachedFeed && cachedFeed.length > 0) {
+  const hasYoutubeInCache = Array.isArray(cachedFeed) && cachedFeed.some(i => i && i.type === 'youtube');
+  if (cachedFeed && cachedFeed.length >= 50 && hasYoutubeInCache) {
     currentIssues = cachedFeed;
     renderKeywordChips();
     renderIssues();
