@@ -754,21 +754,20 @@ def fetch_multichannel_sns(keyword, limit=25):
 # ----------------------------------------------------
 # 메인 통합 수집 프로세스
 # ----------------------------------------------------
-def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "기흥구", "수지구"]):
+def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
     raw_issues = []
     is_vercel = os.getenv("VERCEL") == "1"
-    max_w = 3 if is_vercel else 12
+    max_w = 4 if is_vercel else 12
 
-    # Run collection tasks in parallel (lightweight workers on Vercel to prevent thread limit crashes)
     with ThreadPoolExecutor(max_workers=max_w) as executor:
         futures = []
         for kw in keywords:
-            futures.append(executor.submit(fetch_naver_news, kw, 35))
-            futures.append(executor.submit(fetch_google_news_rss, kw, 25))
-            futures.append(executor.submit(fetch_multichannel_sns, kw, 15))
+            futures.append(executor.submit(fetch_naver_news, kw, 20))
+            futures.append(executor.submit(fetch_google_news_rss, kw, 15))
+            futures.append(executor.submit(fetch_multichannel_sns, kw, 10))
             if not is_vercel:
-                futures.append(executor.submit(fetch_naver_blog, kw, 1))
-                futures.append(executor.submit(fetch_youtube_videos, kw, 12))
+                futures.append(executor.submit(fetch_naver_blog, kw, 2))
+                futures.append(executor.submit(fetch_youtube_videos, kw, 8))
 
         for f in futures:
             try:
@@ -780,7 +779,22 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시", "�
 
     # 중복 이슈 제거 (Deduplication)
     deduped_issues = deduplicate_issues(raw_issues)
-    print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 중복 제거 후 {len(deduped_issues)}건 정리 완료")
+
+    # Cap per keyword to top 30 fresh items to avoid clutter
+    by_kw = {}
+    for item in deduped_issues:
+        kw = item.get("keyword") or "기타"
+        if kw not in by_kw:
+            by_kw[kw] = []
+        if len(by_kw[kw]) < 30:
+            by_kw[kw].append(item)
+
+    final_deduped = []
+    for kw_items in by_kw.values():
+        final_deduped.extend(kw_items)
+
+    print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 정밀 필터링 및 중복 제거 후 {len(final_deduped)}건 정리 완료")
+    deduped_issues = final_deduped
 
     # 뉴스 타이틀 원문 긁어오기 (Vercel 서벌리스 환경에서는 타임아웃 방지를 위해 건너뜀)
     def enrich_item_title(item_obj):

@@ -3,6 +3,7 @@
  */
 let deferredPrompt = null;
 let currentIssues = [];
+const keywordFeeds = {};
 let currentCategory = 'all';
 let currentNavTab = 'feed'; // 'feed' or 'bookmark'
 let currentKeyword = '용인시';
@@ -147,14 +148,29 @@ function renderKeywordChips() {
 let isFetchingActive = false;
 
 async function fetchKeywordIssues(keywordsList) {
-  const targetKw = keywordsList[0] || '최신';
+  const targetKw = keywordsList[0] || '용인시';
   isFetchingActive = true;
   showToast(`🔄 '${targetKw}' 관련 최신 소식 수집 중...`);
+  renderIssues();
+
   try {
-    const freshIssues = await IssueApi.fetchKeywordIssues(keywordsList);
+    const freshIssues = await IssueApi.fetchKeywordIssues([targetKw]);
     if (Array.isArray(freshIssues) && freshIssues.length > 0) {
-      currentIssues = mergeIssues(currentIssues, freshIssues);
-      showToast(`✅ '${targetKw}' 최신 소식 수집 완료!`);
+      const targetKwClean = targetKw.trim().toLowerCase();
+      const targetItems = freshIssues.filter(item => {
+        const ik = (item.keyword || '').trim().toLowerCase();
+        const it = (item.title || '').toLowerCase();
+        const ic = (item.content || '').toLowerCase();
+        const kwSub = targetKwClean.replace(/ OR /gi, ',').split(',')[0].trim();
+        const shortTerm = (kwSub.endsWith('학교') && kwSub.length >= 3) ? kwSub.slice(0, -2) : kwSub;
+
+        return (ik === targetKwClean) || (kwSub && (it.includes(kwSub) || ic.includes(kwSub))) || (shortTerm && shortTerm.length >= 2 && (it.includes(shortTerm) || ic.includes(shortTerm)));
+      });
+
+      const cleanTopItems = (targetItems.length > 0 ? targetItems : freshIssues).slice(0, 30);
+      keywordFeeds[targetKw] = cleanTopItems.map(i => ({ ...i, keyword: targetKw }));
+      currentIssues = keywordFeeds[targetKw];
+      showToast(`✅ '${targetKw}' 최신 소식 ${currentIssues.length}건 수집 완료!`);
     } else {
       showToast(`ℹ️ '${targetKw}' 최신 소식 연동을 완료했습니다.`);
     }
@@ -170,17 +186,19 @@ async function fetchKeywordIssues(keywordsList) {
 
 async function selectKeyword(kw) {
   currentKeyword = kw;
-  isFetchingActive = true;
   renderKeywordChips();
-  renderIssues();
 
-  const userKeywords = StorageManager.getKeywords();
-  const fetchList = [kw, ...userKeywords.filter(k => k !== kw)];
-  await fetchKeywordIssues(fetchList);
+  if (keywordFeeds[kw] && keywordFeeds[kw].length > 0) {
+    currentIssues = keywordFeeds[kw];
+    renderIssues();
+  } else {
+    currentIssues = [];
+    await fetchKeywordIssues([kw]);
+  }
 }
 
 async function addNewKeyword() {
-  const input = prompt('추가할 모니터링 키워드를 입력하세요 (예: AI, 인공지능, 반도체 등):', '');
+  const input = prompt('추가할 모니터링 키워드를 입력하세요 (예: AI, 연세대, 서울대, 부동산 등):', '');
   if (!input) return;
 
   const kw = input.trim().replace(/^#\s*/, '');
@@ -192,24 +210,23 @@ async function addNewKeyword() {
   }
 
   currentKeyword = kw;
-  isFetchingActive = true;
-  const updated = StorageManager.getKeywords();
-  const fetchList = [kw, ...updated.filter(k => k !== kw)];
-
+  currentIssues = [];
   renderKeywordChips();
   renderIssues();
 
-  await fetchKeywordIssues(fetchList);
+  await fetchKeywordIssues([kw]);
 }
 
 function removeKeyword(kw, event) {
   if (event) event.stopPropagation();
   if (!confirm(`'${kw}' 키워드를 모니터링 목록에서 삭제하시겠습니까?`)) return;
 
+  delete keywordFeeds[kw];
   const updated = StorageManager.removeKeyword(kw);
 
   if (currentKeyword === kw) {
     currentKeyword = updated.length ? updated[0] : '';
+    if (currentKeyword) selectKeyword(currentKeyword);
   }
 
   renderKeywordChips();
@@ -245,15 +262,11 @@ async function refreshFeed() {
     feedContainer.style.opacity = '0.5';
   }
 
-  const userKeywords = StorageManager.getKeywords();
   try {
-    if (userKeywords.length > 0) {
-      const freshIssues = await IssueApi.fetchKeywordIssues(userKeywords);
-      if (Array.isArray(freshIssues) && freshIssues.length > 0) {
-        currentIssues = mergeIssues(currentIssues, freshIssues);
-        StorageManager.saveFeedCache(currentIssues);
-      }
-    }
+    const kw = currentKeyword || '용인시';
+    delete keywordFeeds[kw];
+    currentIssues = [];
+    await fetchKeywordIssues([kw]);
   } catch (err) {
     console.warn('Refresh error:', err);
   } finally {
@@ -1411,26 +1424,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 100% Fail-Safe Initial Load: Render cached feed immediately if present, then sync fresh dataset
-  const cachedFeed = StorageManager.getFeedCache();
-  if (Array.isArray(cachedFeed) && cachedFeed.length > 0) {
-    currentIssues = cachedFeed;
-    renderKeywordChips();
-    renderIssues();
-  }
+  // Clean initialization: reset any old tangled cache, load active keyword cleanly
+  try {
+    localStorage.removeItem('feed_cache');
+    localStorage.removeItem('feed_cache_ver');
+  } catch(e) {}
 
-  IssueApi.loadDefaultIssues().then(defaultIssues => {
-    if (Array.isArray(defaultIssues) && defaultIssues.length > 0) {
-      currentIssues = mergeIssues(currentIssues, defaultIssues);
-      StorageManager.saveFeedCache(currentIssues);
-    }
-    renderKeywordChips();
-    renderIssues();
-    refreshFeed();
-  }).catch(err => {
-    console.warn('loadDefaultIssues error:', err);
-    renderKeywordChips();
-    renderIssues();
-    refreshFeed();
-  });
+  const userKws = StorageManager.getKeywords();
+  currentKeyword = userKws.length ? userKws[0] : '용인시';
+  renderKeywordChips();
+  fetchKeywordIssues([currentKeyword]);
 });
