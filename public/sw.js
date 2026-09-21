@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yongin-issue-cache-v47';
+const CACHE_NAME = 'yongin-issue-cache-v48';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -42,9 +42,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Bypass cache completely for dynamic data/issues.json
-  if (url.pathname.includes('issues.json') || url.pathname.includes('/data/')) {
+  if (url.pathname.includes('issues.json') || url.pathname.includes('/data/') || url.pathname.includes('/api/')) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-cache' }).catch(() => caches.match(event.request))
+      fetch(event.request).catch(() => caches.match(event.request))
     );
     return;
   }
