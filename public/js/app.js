@@ -99,7 +99,7 @@ function mergeIssues(existingList, newList) {
   });
 
   const sortedMerged = merged.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-  const finalMerged = sortedMerged.slice(0, 450);
+  const finalMerged = sortedMerged.slice(0, 600);
   StorageManager.saveFeedCache(finalMerged);
   return finalMerged;
 }
@@ -153,13 +153,7 @@ async function fetchKeywordIssues(keywordsList) {
   try {
     const freshIssues = await IssueApi.fetchKeywordIssues(keywordsList);
     if (Array.isArray(freshIssues) && freshIssues.length > 0) {
-      const taggedIssues = freshIssues.map(item => {
-        if (!item.keyword || item.keyword === '용인시' || item.keyword === '최신') {
-          return { ...item, keyword: targetKw };
-        }
-        return item;
-      });
-      currentIssues = mergeIssues(currentIssues, taggedIssues);
+      currentIssues = mergeIssues(currentIssues, freshIssues);
       showToast(`✅ '${targetKw}' 최신 소식 수집 완료!`);
     } else {
       showToast(`ℹ️ '${targetKw}' 최신 소식 연동을 완료했습니다.`);
