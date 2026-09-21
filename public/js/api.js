@@ -27,21 +27,27 @@ const IssueApi = (() => {
       return await this.loadDefaultIssues();
     },
 
-    /**
-     * Load initial issues from static json file
-     * @returns {Promise<Array>}
-     */
     async loadDefaultIssues() {
-      try {
-        const res = await fetch(`./data/issues.json?v=41&t=${Date.now()}`);
-        if (res.ok) {
-          return await res.json();
+      const timestamp = Date.now();
+      const paths = [
+        `./data/issues.json?v=49&t=${timestamp}`,
+        `data/issues.json?v=49&t=${timestamp}`,
+        `/data/issues.json?v=49&t=${timestamp}`
+      ];
+      for (const p of paths) {
+        try {
+          const res = await fetch(p);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              return data;
+            }
+          }
+        } catch (err) {
+          console.warn(`Fetch error for ${p}:`, err);
         }
-        throw new Error(`Data load returned HTTP ${res.status}`);
-      } catch (err) {
-        console.error('IssueApi.loadDefaultIssues error:', err);
-        return [];
       }
+      return [];
     },
 
     /**

@@ -1372,35 +1372,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initial Load Issues: Fail-safe initialization with automatic cache fallback
+  // 100% Fail-Safe Initial Load: Render cached feed immediately if present, then sync fresh dataset
   const cachedFeed = StorageManager.getFeedCache();
-  const topWeight = (cachedFeed && cachedFeed.length > 0) ? getRecencyWeight(cachedFeed[0].time) : 0;
-  const isCacheFresh = topWeight > (Date.now() - 12 * 3600 * 1000);
-  const hasYoutubeInCache = Array.isArray(cachedFeed) && cachedFeed.some(i => i && i.type === 'youtube');
-
-  if (cachedFeed && cachedFeed.length >= 20 && hasYoutubeInCache && isCacheFresh) {
+  if (Array.isArray(cachedFeed) && cachedFeed.length > 0) {
     currentIssues = cachedFeed;
     renderKeywordChips();
     renderIssues();
-    refreshFeed();
-  } else {
-    IssueApi.loadDefaultIssues().then(defaultIssues => {
-      if (Array.isArray(defaultIssues) && defaultIssues.length > 0) {
-        currentIssues = defaultIssues;
-        StorageManager.saveFeedCache(defaultIssues);
-      } else if (cachedFeed && cachedFeed.length > 0) {
-        currentIssues = cachedFeed;
-      }
-      renderKeywordChips();
-      renderIssues();
-      refreshFeed();
-    }).catch(err => {
-      console.warn('loadDefaultIssues error, falling back:', err);
-      if (cachedFeed && cachedFeed.length > 0) {
-        currentIssues = cachedFeed;
-      }
-      renderKeywordChips();
-      renderIssues();
-    });
   }
+
+  IssueApi.loadDefaultIssues().then(defaultIssues => {
+    if (Array.isArray(defaultIssues) && defaultIssues.length > 0) {
+      currentIssues = mergeIssues(currentIssues, defaultIssues);
+      StorageManager.saveFeedCache(currentIssues);
+    }
+    renderKeywordChips();
+    renderIssues();
+    refreshFeed();
+  }).catch(err => {
+    console.warn('loadDefaultIssues error:', err);
+    renderKeywordChips();
+    renderIssues();
+    refreshFeed();
+  });
 });
