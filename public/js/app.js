@@ -98,7 +98,8 @@ function mergeIssues(existingList, newList) {
     }
   });
 
-  const finalMerged = merged.slice(0, 150);
+  const sortedMerged = merged.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+  const finalMerged = sortedMerged.slice(0, 150);
   StorageManager.saveFeedCache(finalMerged);
   return finalMerged;
 }
@@ -1371,10 +1372,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initial Load Issues: Fast UI directly from saved cache then refresh automatically
+  // Initial Load Issues: Check cache freshness (published within last 12h) and integrity
   const cachedFeed = StorageManager.getFeedCache();
+  const topWeight = (cachedFeed && cachedFeed.length > 0) ? getRecencyWeight(cachedFeed[0].time) : 0;
+  const isCacheFresh = topWeight > (Date.now() - 12 * 3600 * 1000);
   const hasYoutubeInCache = Array.isArray(cachedFeed) && cachedFeed.some(i => i && i.type === 'youtube');
-  if (cachedFeed && cachedFeed.length >= 50 && hasYoutubeInCache) {
+
+  if (cachedFeed && cachedFeed.length >= 50 && hasYoutubeInCache && isCacheFresh) {
     currentIssues = cachedFeed;
     renderKeywordChips();
     renderIssues();

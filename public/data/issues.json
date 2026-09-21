@@ -1,6 +1,48 @@
 [
   {
-    "id": "naver_news_용인시_0_1789963821",
+    "id": "naver_news_용인시_0_1789964054",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "추석 앞두고 장애인 시설에 따뜻한 손길",
+    "time": "Mon, 21 Sep 2026 13",
+    "url": "https://www.incheonilbo.com/news/articleView.html?idxno=1332580",
+    "content": "21일 한국수자원공사 한강서부사업단 직원들이 용인시 수지구에 위치한 장애인 복지시설 '해오름의 집'을 방문해 물품을 전달한 모습./김종성 기자 jskim3623@incheonilbo.com 한국수자원공사 한강서부사업단은 21일 민족...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_1_1789964054",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "추석 연휴 하천 오염 막는다…용인 수지구, 성복천·정평천 집중 점검",
+    "time": "Mon, 21 Sep 2026 13",
+    "url": "https://weekly.hankooki.com/news/articleView.html?idxno=7185220",
+    "content": "용인시 수지구는 추석 연휴 전후 환경오염 예방 특별감시를 진행하고 있다. 사진=용인시  추석 연휴를 전후해 각종 공사와 사업장 관리가 느슨해질 가능성에 대비해 용인 수지구가 지역 하천을 중심으로 환경오염 차단에...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_2_1789964054",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "용인시의회 의장배 태권도대회 개최…동호인 1000여명 참여",
+    "time": "Mon, 21 Sep 2026 13",
+    "url": "https://www.shinailbo.co.kr/news/articleView.html?idxno=5064634",
+    "content": "21일 용인특례시의회에 따르면 전날 처인구 마평동 용인실내체육관에서 '2026년 용인특례시의회 의장배 태권도대회'가 개최됐다. 용인시의회와 용인시체육회가 주최하고 용인시태권도협회가 주관한 이번 대회에는 태권도...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_3_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -14,7 +56,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_1_1789963821",
+    "id": "naver_news_용인시_4_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -28,7 +70,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_2_1789963821",
+    "id": "naver_news_용인시_5_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -42,7 +84,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_3_1789963821",
+    "id": "naver_news_용인시_6_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -56,7 +98,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_4_1789963821",
+    "id": "naver_news_용인시_7_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -70,7 +112,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_5_1789963821",
+    "id": "naver_news_용인시_8_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -84,7 +126,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_6_1789963821",
+    "id": "naver_news_용인시_9_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -98,7 +140,7 @@
     "is_negative": true
   },
   {
-    "id": "naver_news_용인시_7_1789963821",
+    "id": "naver_news_용인시_10_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 기호일보",
@@ -112,21 +154,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_8_1789963821",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "용인시의회 의장배 태권도대회 개최…1000여명 참가",
-    "time": "Mon, 21 Sep 2026 11",
-    "url": "https://www.m-i.kr/news/articleView.html?idxno=1416669",
-    "content": "마평동 용인실내체육관에서 열렸다. 정정순 의장이 20일 열린 2026년 용인특례시의회 의장배 장정순 태권도대회에서 대회사를 하고 있다.사진=용인륵례시의회 이번 대회는 용인특례시의회와 용인시체육회가 주최하고...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_9_1789963821",
+    "id": "naver_news_용인시_12_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -140,7 +168,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_11_1789963821",
+    "id": "naver_news_용인시_14_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -154,7 +182,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_12_1789963821",
+    "id": "naver_news_용인시_15_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 기호일보",
@@ -168,7 +196,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_13_1789963821",
+    "id": "naver_news_용인시_16_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -182,7 +210,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_14_1789963821",
+    "id": "naver_news_용인시_17_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -196,21 +224,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_15_1789963821",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "수도권 무순위…'용인 반도체클러스터 동일하이빌' 줍줍, 분양가는?",
-    "time": "Mon, 21 Sep 2026 10",
-    "url": "https://www.wikitree.co.kr/articles/1160938",
-    "content": "청약홈에 따르면 경기도 용인시 처인구 원삼면 용인 반도체클러스터 일반산업단지 D1-1블록에 들어서는... 당첨자는 자격 검증을 거치기 위해 29일부터 30일 사이 오전 10시부터 오후 4시까지 경기도 용인시 수지구...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_16_1789963821",
+    "id": "naver_news_용인시_18_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -224,7 +238,21 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_17_1789963821",
+    "id": "naver_news_용인시_19_1789964054",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "수도권 무순위…'용인 반도체클러스터 동일하이빌' 줍줍, 분양가는?",
+    "time": "Mon, 21 Sep 2026 10",
+    "url": "https://www.wikitree.co.kr/articles/1160938",
+    "content": "청약홈에 따르면 경기도 용인시 처인구 원삼면 용인 반도체클러스터 일반산업단지 D1-1블록에 들어서는... 당첨자는 자격 검증을 거치기 위해 29일부터 30일 사이 오전 10시부터 오후 4시까지 경기도 용인시 수지구...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_20_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -238,7 +266,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_18_1789963821",
+    "id": "naver_news_용인시_21_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -252,21 +280,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_20_1789963821",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "용인시의회 의장배 태권도대회 개최…선수·동호인 기량 겨뤄",
-    "time": "Mon, 21 Sep 2026 10",
-    "url": "https://www.discoverynews.kr/news/articleView.html?idxno=1102244",
-    "content": "지난 20일 용인시 처인구 마평동 용인실내체육관에서 열린 2026년 용인특례시의회 의장배 태권도대회에서 참가 선수와 시의원, 대회 관계자들이 기념촬영을 하고 있다. [사진제공=용인특례시의회] 용인 지역 태권도 선수와...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_21_1789963821",
+    "id": "naver_news_용인시_24_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -280,21 +294,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_22_1789963821",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "용인시, 추석 연휴 종합상황실 가동…안전·의료 등 시민 불편 최소화",
-    "time": "Mon, 21 Sep 2026 10",
-    "url": "https://www.job-post.co.kr/news/articleView.html?idxno=228337",
-    "content": "연휴 기간 진료 공백을 줄이기 위해 문을 여는 병·의원과 약국 정보도 용인시 누리집을 통해 안내한다. 귀성... 연휴 기간 생활폐기물과 관련한 불편 사항 등 시민 민원은 용인시 민원상담 콜센터(1577-1122)를 통해...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": true
-  },
-  {
-    "id": "naver_news_용인시_23_1789963821",
+    "id": "naver_news_용인시_25_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -308,7 +308,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_24_1789963821",
+    "id": "naver_news_용인시_26_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -322,35 +322,21 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_25_1789963821",
+    "id": "naver_news_용인시_27_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
     "publisher": "네이버 뉴스",
-    "title": "이상일 시장 \"시민 문화 향유 기회 넓히겠다\"",
+    "title": "용인시, 추석 연휴 종합상황실 가동…안전·의료 등 시민 불편 최소화",
     "time": "Mon, 21 Sep 2026 10",
-    "url": "https://www.job-post.co.kr/news/articleView.html?idxno=228349",
-    "content": "용인특례시는 19일 처인구 마평동 용인실내체육관 잔디광장에서 열린 '제23회 용인예술제' 개막공연에 이상일... 이 시장은 \"좋은 가을밤에 시민들을 위한 특별한 행사를 마련한 한국예총용인시지회 관계자들에게...",
+    "url": "https://www.job-post.co.kr/news/articleView.html?idxno=228337",
+    "content": "연휴 기간 진료 공백을 줄이기 위해 문을 여는 병·의원과 약국 정보도 용인시 누리집을 통해 안내한다. 귀성... 연휴 기간 생활폐기물과 관련한 불편 사항 등 시민 민원은 용인시 민원상담 콜센터(1577-1122)를 통해...",
     "dedup_badge": null,
     "summary": [],
-    "is_negative": false
+    "is_negative": true
   },
   {
-    "id": "naver_news_용인시_26_1789963821",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "용인서 전국장애인탁구대회…선수들 열띤 경쟁",
-    "time": "Mon, 21 Sep 2026 10",
-    "url": "https://www.job-post.co.kr/news/articleView.html?idxno=228347",
-    "content": "마평동 용인실내체육관에서 '제14회 용인특례시장배 전국장애인탁구대회'가 열렸다고 밝혔다. 이번 대회에는 전국 각지에서 참가한 장애인 탁구선수를 비롯해 가족과 보호자 등 500여 명이 함께했다. 용인특례시와 용인시...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_27_1789963821",
+    "id": "naver_news_용인시_28_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -364,7 +350,35 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_28_1789963821",
+    "id": "naver_news_용인시_29_1789964054",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "용인서 전국장애인탁구대회…선수들 열띤 경쟁",
+    "time": "Mon, 21 Sep 2026 10",
+    "url": "https://www.job-post.co.kr/news/articleView.html?idxno=228347",
+    "content": "마평동 용인실내체육관에서 '제14회 용인특례시장배 전국장애인탁구대회'가 열렸다고 밝혔다. 이번 대회에는 전국 각지에서 참가한 장애인 탁구선수를 비롯해 가족과 보호자 등 500여 명이 함께했다. 용인특례시와 용인시...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_30_1789964054",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "이상일 시장 \"시민 문화 향유 기회 넓히겠다\"",
+    "time": "Mon, 21 Sep 2026 10",
+    "url": "https://www.job-post.co.kr/news/articleView.html?idxno=228349",
+    "content": "용인특례시는 19일 처인구 마평동 용인실내체육관 잔디광장에서 열린 '제23회 용인예술제' 개막공연에 이상일... 이 시장은 \"좋은 가을밤에 시민들을 위한 특별한 행사를 마련한 한국예총용인시지회 관계자들에게...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_31_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -378,7 +392,7 @@
     "is_negative": true
   },
   {
-    "id": "naver_news_용인시_31_1789963821",
+    "id": "naver_news_용인시_34_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -392,7 +406,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_32_1789963821",
+    "id": "naver_news_용인시_35_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -406,7 +420,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_33_1789963821",
+    "id": "naver_news_용인시_36_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -420,7 +434,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_34_1789963821",
+    "id": "naver_news_용인시_37_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -434,7 +448,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_35_1789963821",
+    "id": "naver_news_용인시_38_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -448,21 +462,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_36_1789963821",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "용인특례시, '2026년 용인 유아숲축제' 열고 숲체험 운영",
-    "time": "Mon, 21 Sep 2026 09",
-    "url": "https://www.m-i.kr/news/articleView.html?idxno=1416418",
-    "content": "용인시와 산림청, 한국산림복지진흥원이 후원했으며, 용인지역 숲유치원 원생과 종사자 등 1300여 명이... 용인시는 곤충을 주제로 한 프로그램 등을 포함해 체험 부스 14개를 마련했다. 벌집과 곤충 표본 전시 등 관찰...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_38_1789963821",
+    "id": "naver_news_용인시_43_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -476,21 +476,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_39_1789963821",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "경기관광공사, 한가위 가족 나들이 '야경 명소' 6곳 소개",
-    "time": "Mon, 21 Sep 2026 09",
-    "url": "http://www.metroseoul.co.kr/article/20260920500293",
-    "content": "매일 오후 8시부터 10시까지 운영되며 별도 입장료나 예약 없이 야외 광장에서 관람할 수 있다.용인시 수지구 포은대로 435에 있으며 미디어파사드 관람 후 탄천 산책로를 따라 보정동 카페거리까지 이어지는 도심 야간...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_45_1789963821",
+    "id": "naver_news_용인시_46_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -504,21 +490,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_48_1789963821",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "용인시, 어려운 이웃에 온정 나누며 풍성한 한가위 기원",
-    "time": "Mon, 21 Sep 2026 08",
-    "url": "https://www.gukjenews.com/news/articleView.html?idxno=3701018",
-    "content": "수지구, 추석 맞아 장애인 복지시설 위문(사진=용인시)  용인시(시장 이상일)는 주민단체와 기업 등이 추석을 맞아 어려운 이웃에 나눔을 실천하고 지역 곳곳을 깨끗하게 단장하는 등 따뜻한 지역 공동체를 만들기 위한...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_49_1789963821",
+    "id": "naver_news_용인시_49_1789964054",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -532,7 +504,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_blog_용인시_0_1789963821",
+    "id": "naver_blog_용인시_0_1789964053",
     "keyword": "용인시",
     "type": "sns",
     "badge": "📱 네이버블로그",
@@ -554,7 +526,7 @@
     "title": "경기 용인시 처인구 역북동 80평대 피부과 인테리어 💉│인테리어베이 INTERIORBAY",
     "time": "2026-09-21T04:00:39",
     "url": "https://www.youtube.com/watch?v=fsp8qVqqA8k",
-    "content": "[인테리어베이] 조회수 1회 | 경기 용인시 처인구 역북동 80평대 피부과 인테리어 💉│인테리어베이 INTERIORBAY",
+    "content": "[인테리어베이] 조회수 2회 | 경기 용인시 처인구 역북동 80평대 피부과 인테리어 💉│인테리어베이 INTERIORBAY",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
@@ -624,7 +596,7 @@
     "title": "'가족 외식으로 최고'... 용인 주민들이 줄 서서 먹는 용인 맛집 BEST 5",
     "time": "2026-09-21T00:07:11",
     "url": "https://www.youtube.com/watch?v=EnRgOpUwcho",
-    "content": "[숏쳐스] 조회수 923회 | '가족 외식으로 최고'... 용인 주민들이 줄 서서 먹는 용인 맛집 BEST 5",
+    "content": "[숏쳐스] 조회수 930회 | '가족 외식으로 최고'... 용인 주민들이 줄 서서 먹는 용인 맛집 BEST 5",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
@@ -638,7 +610,7 @@
     "title": "[용인시 단독주택] 고품격 고급주택의 선택이 가능한 집. 처인구 모현읍 능원리 전원주택(포레피아 더 레이크)",
     "time": "2026-09-20T23:00:15",
     "url": "https://www.youtube.com/watch?v=RijKfyMGLWQ",
-    "content": "[현이네 집 이야기] 조회수 311회 | [용인시 단독주택] 고품격 고급주택의 선택이 가능한 집. 처인구 모현읍 능원리 전원주택(포레피아 더 레이크)",
+    "content": "[현이네 집 이야기] 조회수 314회 | [용인시 단독주택] 고품격 고급주택의 선택이 가능한 집. 처인구 모현읍 능원리 전원주택(포레피아 더 레이크)",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
@@ -652,7 +624,7 @@
     "title": "2억6천 - 1억6700 버티기 포기한 용인시",
     "time": "2026-09-20T22:30:15",
     "url": "https://www.youtube.com/watch?v=3va4u2QsI38",
-    "content": "[아가정] 조회수 608회 | 2억6천 - 1억6700 버티기 포기한 용인시",
+    "content": "[아가정] 조회수 612회 | 2억6천 - 1억6700 버티기 포기한 용인시",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
@@ -666,7 +638,7 @@
     "title": "용인 어정역 맛집 황고집 후기 #어정역맛집 #용인맛집 #용인황고집",
     "time": "2026-09-20T22:00:28",
     "url": "https://www.youtube.com/watch?v=9lF60RdjKQw",
-    "content": "[프롬나드의 세상 모든 리뷰] 조회수 1,272회 | 용인 어정역 맛집 황고집 후기 #어정역맛집 #용인맛집 #용인황고집",
+    "content": "[프롬나드의 세상 모든 리뷰] 조회수 1,262회 | 용인 어정역 맛집 황고집 후기 #어정역맛집 #용인맛집 #용인황고집",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
@@ -784,7 +756,7 @@
     "is_negative": false
   },
   {
-    "id": "threads_rss_6353179701786470913",
+    "id": "threads_rss_-7974518053119573967",
     "keyword": "용인시",
     "type": "sns",
     "badge": "🧵 쓰레드 (Threads)",
@@ -798,7 +770,7 @@
     "is_negative": false
   },
   {
-    "id": "threads_rss_-5996185198615126799",
+    "id": "threads_rss_-250453428846100329",
     "keyword": "용인시",
     "type": "sns",
     "badge": "🧵 쓰레드 (Threads)",
@@ -812,7 +784,7 @@
     "is_negative": false
   },
   {
-    "id": "threads_rss_-4625632146103873636",
+    "id": "threads_rss_6425963223191564108",
     "keyword": "용인시",
     "type": "sns",
     "badge": "🧵 쓰레드 (Threads)",
@@ -826,7 +798,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_1830575899688496066",
+    "id": "sns_3261652012643294518",
     "keyword": "용인시",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -840,7 +812,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_1203103497583683635",
+    "id": "sns_-7972786949967223094",
     "keyword": "용인시",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -854,7 +826,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_8040439610578257816",
+    "id": "sns_4222117752771944523",
     "keyword": "용인시",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -868,7 +840,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_1805992581975763040",
+    "id": "sns_-5774176662916185768",
     "keyword": "용인시",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -882,7 +854,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-3188493795854015359",
+    "id": "sns_-7883203403821034176",
     "keyword": "용인시",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -896,7 +868,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_6025439968525134205",
+    "id": "sns_5896330394395316450",
     "keyword": "용인시",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -910,7 +882,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_8201185843543681759",
+    "id": "sns_512993806523706326",
     "keyword": "용인시",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -924,7 +896,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_5546646858475028104",
+    "id": "sns_942237184738819625",
     "keyword": "용인시",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -938,7 +910,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_2880172847258894668",
+    "id": "sns_3085176924165072652",
     "keyword": "용인시",
     "type": "sns",
     "badge": "📱 페이스북",
@@ -952,7 +924,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_6238225829216050972",
+    "id": "sns_-3355766093460275388",
     "keyword": "용인시",
     "type": "sns",
     "badge": "📱 페이스북",
@@ -966,7 +938,7 @@
     "is_negative": false
   },
   {
-    "id": "cafe_3619861313273264366",
+    "id": "cafe_881544375071379254",
     "keyword": "용인시",
     "type": "sns",
     "badge": "💬 카페 · 전진 부동산(거성가",
@@ -980,7 +952,7 @@
     "is_negative": false
   },
   {
-    "id": "cafe_-2408688136865889683",
+    "id": "cafe_-3370233461010457873",
     "keyword": "용인시",
     "type": "sns",
     "badge": "💬 카페 · 땅파는남자",
@@ -994,7 +966,7 @@
     "is_negative": false
   },
   {
-    "id": "cafe_-60836842831112518",
+    "id": "cafe_-6312128243330684022",
     "keyword": "용인시",
     "type": "sns",
     "badge": "💬 카페 · 다픽 지원금·혜택 ",
@@ -1008,7 +980,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_7_1789963821",
+    "id": "naver_news_처인구_8_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1022,7 +994,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_11_1789963821",
+    "id": "naver_news_처인구_12_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1036,7 +1008,21 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_14_1789963821",
+    "id": "naver_news_처인구_13_1789964054",
+    "keyword": "처인구",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "용인시, 어려운 이웃에 온정 나누며 풍성한 한가위 기원",
+    "time": "Mon, 21 Sep 2026 08",
+    "url": "https://www.gukjenews.com/news/articleView.html?idxno=3701018",
+    "content": "처인구 원삼면 천일주유소 난방유 600리터 기탁(사진=용인시) 같은 날 처인구 원삼면에선 천일주유소 김길자 대표가 지역 내 어려운 이웃에 전해달라며 난방유 600리터를 기탁했다. 김 대표는 \"어려운 이웃이 추운 날씨에...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_처인구_15_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1050,7 +1036,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_15_1789963821",
+    "id": "naver_news_처인구_16_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1064,7 +1050,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_16_1789963821",
+    "id": "naver_news_처인구_17_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1078,7 +1064,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_17_1789963821",
+    "id": "naver_news_처인구_18_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1092,7 +1078,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_19_1789963821",
+    "id": "naver_news_처인구_20_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1106,7 +1092,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_20_1789963821",
+    "id": "naver_news_처인구_21_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1120,7 +1106,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_21_1789963821",
+    "id": "naver_news_처인구_22_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1134,7 +1120,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_22_1789963821",
+    "id": "naver_news_처인구_23_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1148,7 +1134,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_23_1789963821",
+    "id": "naver_news_처인구_24_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1162,7 +1148,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_24_1789963821",
+    "id": "naver_news_처인구_25_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1176,7 +1162,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_25_1789963821",
+    "id": "naver_news_처인구_26_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1190,7 +1176,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_27_1789963821",
+    "id": "naver_news_처인구_28_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1204,7 +1190,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_28_1789963821",
+    "id": "naver_news_처인구_29_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1218,7 +1204,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_30_1789963821",
+    "id": "naver_news_처인구_31_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1232,7 +1218,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_31_1789963821",
+    "id": "naver_news_처인구_32_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1246,7 +1232,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_32_1789963821",
+    "id": "naver_news_처인구_33_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1260,7 +1246,7 @@
     "is_negative": true
   },
   {
-    "id": "naver_news_처인구_33_1789963821",
+    "id": "naver_news_처인구_34_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1274,7 +1260,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_34_1789963821",
+    "id": "naver_news_처인구_35_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1288,7 +1274,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_36_1789963821",
+    "id": "naver_news_처인구_37_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1302,7 +1288,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_40_1789963821",
+    "id": "naver_news_처인구_40_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1316,7 +1302,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_41_1789963821",
+    "id": "naver_news_처인구_41_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1330,7 +1316,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_42_1789963821",
+    "id": "naver_news_처인구_42_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1344,7 +1330,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_처인구_43_1789963821",
+    "id": "naver_news_처인구_43_1789964054",
     "keyword": "처인구",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1450,7 +1436,7 @@
     "title": "용인 맛집 낮술 마시기 좋은 처인구 제주흑돼지 #용인맛집 #흑돼지 #낮술",
     "time": "2026-09-20T04:00:04",
     "url": "https://www.youtube.com/watch?v=Xz94dLa64-Q",
-    "content": "[포토리VIEW] 조회수 1,034회 | 용인 맛집 낮술 마시기 좋은 처인구 제주흑돼지 #용인맛집 #흑돼지 #낮술",
+    "content": "[포토리VIEW] 조회수 1,032회 | 용인 맛집 낮술 마시기 좋은 처인구 제주흑돼지 #용인맛집 #흑돼지 #낮술",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
@@ -1470,7 +1456,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-1006141300882181775",
+    "id": "sns_7556311506635380357",
     "keyword": "처인구",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -1484,7 +1470,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-5273042868121876714",
+    "id": "sns_9203281793086925723",
     "keyword": "처인구",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -1498,7 +1484,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-1587978188147917714",
+    "id": "sns_-5772994016198748178",
     "keyword": "처인구",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -1512,7 +1498,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-2250666264844626274",
+    "id": "sns_3590912851316818779",
     "keyword": "처인구",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -1526,7 +1512,7 @@
     "is_negative": true
   },
   {
-    "id": "sns_-8519088823317409285",
+    "id": "sns_4806603367668753191",
     "keyword": "처인구",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -1540,7 +1526,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_2050392898265297293",
+    "id": "sns_6231671591224546438",
     "keyword": "처인구",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -1554,7 +1540,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_5136672702543659954",
+    "id": "sns_8173897734987411657",
     "keyword": "처인구",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -1568,7 +1554,7 @@
     "is_negative": true
   },
   {
-    "id": "sns_1466822366954606699",
+    "id": "sns_-5409911163327739811",
     "keyword": "처인구",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -1582,7 +1568,7 @@
     "is_negative": true
   },
   {
-    "id": "sns_-4066481290197680901",
+    "id": "sns_3518114487102910685",
     "keyword": "처인구",
     "type": "sns",
     "badge": "📱 페이스북",
@@ -1596,7 +1582,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-8245349564785169085",
+    "id": "sns_-642539498341563982",
     "keyword": "처인구",
     "type": "sns",
     "badge": "📱 페이스북",
@@ -1610,7 +1596,7 @@
     "is_negative": false
   },
   {
-    "id": "cafe_-7992265037010160618",
+    "id": "cafe_-1155303561738584472",
     "keyword": "처인구",
     "type": "sns",
     "badge": "💬 카페 · 헌옷전담",
@@ -1624,35 +1610,21 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_0_1789963821",
+    "id": "naver_news_용인특례시_0_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
     "publisher": "네이버 뉴스",
     "title": "의정부시의회, 2026 제21회 대한민국 문화경영대상 수상",
-    "time": "Mon, 21 Sep 2026 12",
-    "url": "https://www.ksilbo.co.kr/news/articleView.html?idxno=1067876",
-    "content": "한국프레스센터에서 진행된 이번 시상식에는 경기도 용인특례시, 세종문화회관, 통일문화연구원, OBS 경인 TV, 서울문화재단 등 총 39개 기업/기관/인물/브랜드가 수상의 영예를 안았다. 이 행사는 조혜진 아나운서의 사회...",
+    "time": "Mon, 21 Sep 2026 13",
+    "url": "https://www.gosiweek.com/article/1065585943031219",
+    "content": "서울 한국프레스센터에서 개최된 이번 시상식에서는 블링신타로를 비롯해 경기도 용인특례시, 세종문화회관, 통일문화연구원, OBS 경인 TV 등 총 39개 기업·기관·인물·브랜드가 각 분야별 수상자로 선정됐다. 이날 행사는...",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_2_1789963821",
-    "keyword": "용인특례시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "용인특례시, 유아숲축제 성황리 마무리",
-    "time": "Mon, 21 Sep 2026 11",
-    "url": "http://www.breaknews.com/1238160",
-    "content": "용인자연휴양림에서 열린 이번 행사는 숲유치원 원생과 종사자 등 1300여 명이 참여한 가운데 개회식과 다양한 숲체험 프로그램으로 진행됐다. 시는 곤충 주제 체험...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인특례시_3_1789963821",
+    "id": "naver_news_용인특례시_6_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1666,12 +1638,26 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_4_1789963821",
+    "id": "naver_news_용인특례시_7_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
     "publisher": "네이버 뉴스",
-    "title": "용인특례시 수지구, 추석 연휴 환경오염 특별감시…주요 하천·사업장 점검",
+    "title": "용인특례시, 유아숲축제 성황리 마무리",
+    "time": "Mon, 21 Sep 2026 11",
+    "url": "http://www.breaknews.com/1238160",
+    "content": "용인자연휴양림에서 열린 이번 행사는 숲유치원 원생과 종사자 등 1300여 명이 참여한 가운데 개회식과 다양한 숲체험 프로그램으로 진행됐다. 시는 곤충 주제 체험...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인특례시_9_1789964054",
+    "keyword": "용인특례시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "용인특례시 수지구, 추석 환경 감시",
     "time": "Mon, 21 Sep 2026 11",
     "url": "http://www.breaknews.com/1238162",
     "content": "추석 명절을 앞두고 도심 내 수질 오염을 선제적으로 차단하기 위한 행정력이 집중된다. 수지구는 주요 하천과 공사 현장을 대상으로 상시 감시 체계를 가동하여...",
@@ -1680,7 +1666,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_6_1789963821",
+    "id": "naver_news_용인특례시_10_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1694,7 +1680,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_8_1789963821",
+    "id": "naver_news_용인특례시_12_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1708,7 +1694,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_16_1789963821",
+    "id": "naver_news_용인특례시_21_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1722,7 +1708,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_21_1789963821",
+    "id": "naver_news_용인특례시_25_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1736,7 +1722,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_22_1789963821",
+    "id": "naver_news_용인특례시_26_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1750,7 +1736,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_24_1789963821",
+    "id": "naver_news_용인특례시_28_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1764,7 +1750,7 @@
     "is_negative": true
   },
   {
-    "id": "naver_news_용인특례시_25_1789963821",
+    "id": "naver_news_용인특례시_29_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1778,7 +1764,21 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_31_1789963821",
+    "id": "naver_news_용인특례시_32_1789964054",
+    "keyword": "용인특례시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "용인특례시, '2026년 용인 유아숲축제' 열고 숲체험 운영",
+    "time": "Mon, 21 Sep 2026 09",
+    "url": "https://www.m-i.kr/news/articleView.html?idxno=1416418",
+    "content": "사진=용인특례시 매일일보 = 김길수 기자  |  용인특례시는 지난 18일 용인자연휴양림에서 '2026년 용인 유아숲축제'를 열고 영유아 대상 숲체험 프로그램을 운영했다고 21일 밝혔다. '숲을 지키는 아이, 미래를 지키는 우리...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인특례시_35_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1792,7 +1792,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_32_1789963821",
+    "id": "naver_news_용인특례시_36_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1806,7 +1806,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_33_1789963821",
+    "id": "naver_news_용인특례시_37_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1820,7 +1820,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_34_1789963821",
+    "id": "naver_news_용인특례시_38_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1834,7 +1834,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_35_1789963821",
+    "id": "naver_news_용인특례시_39_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1848,21 +1848,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인특례시_39_1789963821",
-    "keyword": "용인특례시",
-    "type": "news",
-    "badge": "📰 뉴스",
-    "publisher": "네이버 뉴스",
-    "title": "용인특례시의회, 청년부모 돌봄·보육 정책 발굴",
-    "time": "Sun, 20 Sep 2026 22",
-    "url": "http://www.newstown.co.kr/news/articleView.html?idxno=716388",
-    "content": "용인특례시의회 의원연구단체 '스타트업 101Ⅲ(미래세대LAB)'가 17일 용인시청 에이스홀에서 청년부모를 대상으로 결혼·출산·양육 과정의 어려움과 필요한 지원정책에 관한 의견을 듣고 있다. /용인특례시의회...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인특례시_40_1789963821",
+    "id": "naver_news_용인특례시_40_1789964054",
     "keyword": "용인특례시",
     "type": "news",
     "badge": "📰 뉴스",
@@ -1876,7 +1862,21 @@
     "is_negative": false
   },
   {
-    "id": "naver_blog_용인특례시_0_1789963821",
+    "id": "naver_news_용인특례시_43_1789964054",
+    "keyword": "용인특례시",
+    "type": "news",
+    "badge": "📰 뉴스",
+    "publisher": "네이버 뉴스",
+    "title": "용인특례시 수지구, 추석 연휴 환경오염 특별감시…주요 하천·사업장 점검",
+    "time": "Mon, 21 Sep 2026 06",
+    "url": "http://www.econonews.co.kr/news/articleView.html?idxno=444631",
+    "content": "용인특례시 수지구는 추석 연휴 전후 환경오염 예방 특별감시를 진행하고 있다 (사진=용인특례시) 용인특례시(시장 이상일) 수지구는 오는 27일까지 추석 연휴를 전후해 환경오염 사고를 예방하고 지역 하천의 수질을...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_blog_용인특례시_0_1789964053",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "📱 네이버블로그",
@@ -1960,7 +1960,7 @@
     "is_negative": false
   },
   {
-    "id": "threads_rss_6441949879515398200",
+    "id": "threads_rss_1327778197684821185",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "🧵 쓰레드 (Threads)",
@@ -1974,7 +1974,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_1355391736264813244",
+    "id": "sns_-3646973587287032681",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -1988,7 +1988,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-2763571433610972782",
+    "id": "sns_837815479521966856",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -2002,7 +2002,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_3536587985985789570",
+    "id": "sns_-6100953002139284569",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -2016,7 +2016,7 @@
     "is_negative": true
   },
   {
-    "id": "sns_-460677763808517185",
+    "id": "sns_4108694494509264860",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "📱 인스타그램",
@@ -2030,7 +2030,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_1314392174276113988",
+    "id": "sns_9126288166801956743",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -2044,7 +2044,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_7960628575704607925",
+    "id": "sns_-2669044636643310156",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -2058,7 +2058,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-5916537587204268817",
+    "id": "sns_-5435467761119310940",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -2072,7 +2072,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_8589734516507954053",
+    "id": "sns_803072407912848969",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "🐦 X (트위터)",
@@ -2086,7 +2086,7 @@
     "is_negative": false
   },
   {
-    "id": "sns_-1403606479123798153",
+    "id": "sns_7696726849968711467",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "📱 페이스북",
@@ -2100,7 +2100,7 @@
     "is_negative": false
   },
   {
-    "id": "cafe_1078493495168043609",
+    "id": "cafe_-5623206223466595247",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "💬 카페 · 동백시민연합[동백I",
@@ -2114,7 +2114,7 @@
     "is_negative": true
   },
   {
-    "id": "cafe_1142283880248742990",
+    "id": "cafe_1621371320928242641",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "💬 카페 · 동백시민연합[동백I",
@@ -2128,7 +2128,7 @@
     "is_negative": false
   },
   {
-    "id": "cafe_2727357791758586652",
+    "id": "cafe_6430903593337215500",
     "keyword": "용인특례시",
     "type": "sns",
     "badge": "💬 카페 · 밤도깨비의 용한점집",
