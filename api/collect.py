@@ -331,9 +331,24 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
-        # --------------------------------------------------
-        # 2. Route for Yongin Live Issues (/api/collect)
-        # --------------------------------------------------
+        debug_mode = params.get('debug', ['false'])[0].lower() == 'true'
+        if debug_mode:
+            yt_key = (os.getenv("YOUTUBE_API_KEY") or "").strip('"\'')
+            debug_info = {
+                "youtube_key_configured": bool(yt_key),
+                "youtube_key_preview": (yt_key[:6] + "...") if yt_key else "NOT_FOUND_IN_VERCEL_ENV",
+                "server_time": datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S KST")
+            }
+            body = json.dumps(debug_info, ensure_ascii=False, indent=2).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         force_refresh = params.get('force', ['false'])[0].lower() == 'true'
 
         static_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json"))

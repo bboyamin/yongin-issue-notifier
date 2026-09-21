@@ -228,11 +228,11 @@ async function refreshFeed() {
 
   const userKeywords = StorageManager.getKeywords();
   try {
-    if (userKeywords.length > 0) {
       const freshIssues = await IssueApi.fetchKeywordIssues(userKeywords);
-      currentIssues = mergeIssues(currentIssues, freshIssues);
-      StorageManager.saveFeedCache(currentIssues);
-    }
+      if (Array.isArray(freshIssues) && freshIssues.length > 0) {
+        currentIssues = freshIssues;
+        StorageManager.saveFeedCache(currentIssues);
+      }
   } catch (err) {
     console.warn('Refresh error:', err);
   } finally {
