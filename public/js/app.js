@@ -592,9 +592,10 @@ function formatRelativeTime(timeStr) {
   renderedTitlesSet.clear();
   if (filtered.length === 0) {
     html += `
-      <div style="text-align:center; padding: 40px 20px; color: var(--text-sub);">
-        <p style="font-size:24px; margin-bottom:8px;">🔍</p>
-        <p style="font-size:14px; font-weight:600;">선택하신 조건에 일치하는 이슈가 없습니다.</p>
+      <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
+        <p style="font-size:32px; margin-bottom:10px;" class="spin-icon">🔄</p>
+        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 관련 실시간 최신 소식을 수집 중입니다...</p>
+        <p style="font-size:12px; color:#64748B;">네이버 뉴스, 블로그, 포스트에서 소식을 연동 중입니다. 잠시만 기다려 주세요!</p>
       </div>
     `;
   } else {

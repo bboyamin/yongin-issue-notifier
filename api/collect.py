@@ -353,8 +353,19 @@ class handler(BaseHTTPRequestHandler):
         kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
         keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
 
-        # ⚡ Ultra-Fast SWR Pattern: Serve static_issues instantly (< 0.02s) if present and force_refresh is False
-        if static_issues and not force_refresh:
+        # Check if all requested keywords exist in static_issues
+        static_text_blob = ""
+        if static_issues:
+            static_text_blob = " ".join([(item.get("title", "") + " " + item.get("content", "") + " " + item.get("keyword", "")).lower() for item in static_issues])
+
+        missing_keywords = []
+        for kw in keywords:
+            kw_clean = kw.lower().strip()
+            if kw_clean and kw_clean not in static_text_blob:
+                missing_keywords.append(kw)
+
+        # Serve static_issues instantly if no force_refresh AND no missing keywords
+        if static_issues and not force_refresh and not missing_keywords:
             body = json.dumps(static_issues, ensure_ascii=False).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -366,17 +377,22 @@ class handler(BaseHTTPRequestHandler):
             return
 
         try:
-            live_issues = collect_all_issues(keywords=keywords)
+            # Fetch live issues for missing keywords (or all keywords if force_refresh)
+            target_fetch_kws = keywords if force_refresh or not static_issues else missing_keywords
+            live_issues = collect_all_issues(keywords=target_fetch_kws)
             if live_issues and len(live_issues) > 0:
-                # Merge live issues with static issues if present
+                # Merge live issues with static issues
                 if static_issues:
-                    existing_urls = {item.get('url') or item.get('title') for item in live_issues if item.get('url') or item.get('title')}
+                    existing_keys = {item.get('url') or item.get('title') for item in static_issues if item.get('url') or item.get('title')}
+                    merged_list = list(live_issues)
                     for s_item in static_issues:
                         k = s_item.get('url') or s_item.get('title')
-                        if k and k not in existing_urls:
-                            existing_urls.add(k)
-                            live_issues.append(s_item)
-                issues = live_issues
+                        if k and k not in existing_keys:
+                            existing_keys.add(k)
+                            merged_list.append(s_item)
+                    issues = merged_list
+                else:
+                    issues = live_issues
             else:
                 issues = static_issues
         except Exception as e:
