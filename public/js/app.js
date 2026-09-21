@@ -452,33 +452,20 @@ function renderIssues() {
 function getRecencyWeight(timeStr) {
   if (!timeStr) return 0;
   const s = String(timeStr).trim();
-  const now = Date.now();
 
-  // 1. Relative times
-  if (s.includes('방금') || s.includes('최신')) return now;
-
-  let match = s.match(/^(\d+)\s*분\s*전/);
+  // 1. Formatted datetime: "YYYY-MM-DD HH:mm:ss" or "YYYY.MM.DD HH:mm"
+  let match = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
   if (match) {
-    const mins = parseInt(match[1], 10);
-    return now - (mins * 60 * 1000);
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    const hour = parseInt(match[4], 10);
+    const min = parseInt(match[5], 10);
+    const sec = match[6] ? parseInt(match[6], 10) : 0;
+    return new Date(year, month, day, hour, min, sec).getTime();
   }
 
-  match = s.match(/^(\d+)\s*시간\s*전/);
-  if (match) {
-    const hours = parseInt(match[1], 10);
-    return now - (hours * 3600 * 1000);
-  }
-
-  match = s.match(/^(\d+)\s*일\s*전/);
-  if (match) {
-    const days = parseInt(match[1], 10);
-    return now - (days * 86400 * 1000);
-  }
-
-  if (s.includes('오늘')) return now - (2 * 3600 * 1000);
-  if (s.includes('어제')) return now - (24 * 3600 * 1000);
-
-  // 2. Formatted date: "MM/DD HH:mm" (e.g. "09/16 10:45")
+  // 2. Formatted date: "MM/DD HH:mm"
   match = s.match(/^(\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
   if (match) {
     const month = parseInt(match[1], 10) - 1;
@@ -486,25 +473,10 @@ function getRecencyWeight(timeStr) {
     const hour = parseInt(match[3], 10);
     const min = parseInt(match[4], 10);
     const currentYear = new Date().getFullYear();
-    let d = new Date(currentYear, month, day, hour, min);
-    if (d.getTime() > now + 86400000) {
-      d = new Date(currentYear - 1, month, day, hour, min);
-    }
-    return d.getTime();
+    return new Date(currentYear, month, day, hour, min).getTime();
   }
 
-  // 3. Formatted date: "YYYY.MM.DD" or "YYYY-MM-DD" with optional time
-  match = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2}))?/);
-  if (match) {
-    const year = parseInt(match[1], 10);
-    const month = parseInt(match[2], 10) - 1;
-    const day = parseInt(match[3], 10);
-    const hour = match[4] ? parseInt(match[4], 10) : 0;
-    const min = match[5] ? parseInt(match[5], 10) : 0;
-    return new Date(year, month, day, hour, min).getTime();
-  }
-
-  // 4. 8-digit date string: "20260916"
+  // 3. 8-digit date string: "20260921"
   if (/^\d{8}$/.test(s)) {
     const year = parseInt(s.slice(0, 4), 10);
     const month = parseInt(s.slice(4, 6), 10) - 1;
@@ -512,7 +484,7 @@ function getRecencyWeight(timeStr) {
     return new Date(year, month, day).getTime();
   }
 
-  // 5. General JS Date parsing fallback (e.g. RSS pubDate)
+  // 4. General JS Date parsing fallback (e.g. RSS / RFC pubDate)
   const parsed = Date.parse(s);
   if (!isNaN(parsed)) {
     return parsed;
@@ -530,7 +502,13 @@ function formatRelativeTime(timeStr) {
   if (diffSec < 0 || diffSec < 60) return '방금 전';
   if (diffSec < 3600) return `${Math.max(1, Math.floor(diffSec / 60))}분 전`;
   if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}시간 전`;
-  return timeStr;
+
+  const d = new Date(weight);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${mm}/${dd} ${hh}:${min}`;
 }
 
 // Calculate category tab counts based strictly on the selected keyword's contents
