@@ -145,12 +145,18 @@ function renderKeywordChips() {
 }
 
 async function fetchKeywordIssues(keywordsList) {
+  const targetKw = keywordsList[0] || '최신';
+  showToast(`🔄 '${targetKw}' 관련 최신 소식 수집 중...`);
   try {
     const freshIssues = await IssueApi.fetchKeywordIssues(keywordsList);
-    currentIssues = mergeIssues(currentIssues, freshIssues);
-    renderKeywordChips();
-    renderIssues();
-    showToast(`✅ 최신 소식 수집이 완료되었습니다.`);
+    if (Array.isArray(freshIssues) && freshIssues.length > 0) {
+      currentIssues = mergeIssues(currentIssues, freshIssues);
+      renderKeywordChips();
+      renderIssues();
+      showToast(`✅ '${targetKw}' 최신 소식 수집 완료!`);
+    } else {
+      showToast(`⚠️ '${targetKw}' 검색 결과가 없습니다.`);
+    }
   } catch (err) {
     console.warn('Keyword collect error:', err);
   }
@@ -160,28 +166,32 @@ async function selectKeyword(kw) {
   currentKeyword = kw;
   renderKeywordChips();
   renderIssues();
+
+  const userKeywords = StorageManager.getKeywords();
+  const fetchList = [kw, ...userKeywords.filter(k => k !== kw)];
+  await fetchKeywordIssues(fetchList);
 }
 
 async function addNewKeyword() {
-  const input = prompt('추가할 모니터링 키워드를 입력하세요 (예: 주식,주가,증시 또는 용인시):', '');
+  const input = prompt('추가할 모니터링 키워드를 입력하세요 (예: AI, 인공지능, 반도체 등):', '');
   if (!input) return;
 
   const kw = input.trim().replace(/^#\s*/, '');
   if (!kw) return;
 
   const currentKeywords = StorageManager.getKeywords();
-  if (currentKeywords.includes(kw)) {
-    selectKeyword(kw);
-    return;
+  if (!currentKeywords.includes(kw)) {
+    StorageManager.addKeyword(kw);
   }
 
-  const updated = StorageManager.addKeyword(kw);
   currentKeyword = kw;
+  const updated = StorageManager.getKeywords();
+  const fetchList = [kw, ...updated.filter(k => k !== kw)];
+
   renderKeywordChips();
   renderIssues();
 
-  showToast(`🔄 '${kw}' 실시간 관련 콘텐츠 수집 중...`);
-  await fetchKeywordIssues(updated);
+  await fetchKeywordIssues(fetchList);
 }
 
 function removeKeyword(kw, event) {

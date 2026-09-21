@@ -14,10 +14,10 @@ const IssueApi = (() => {
     async fetchKeywordIssues(keywordsList) {
       try {
         const kwParam = encodeURIComponent(keywordsList.join(','));
-        const res = await fetch(`/api/collect?keywords=${kwParam}&v=53&t=${Date.now()}`);
+        const res = await fetch(`/api/collect?keywords=${kwParam}&v=54&t=${Date.now()}`);
         if (res.ok) {
           const liveData = await res.json();
-          if (Array.isArray(liveData) && liveData.length >= 10) {
+          if (Array.isArray(liveData) && liveData.length > 0) {
             return liveData;
           }
         }
@@ -30,9 +30,9 @@ const IssueApi = (() => {
     async loadDefaultIssues() {
       const timestamp = Date.now();
       const paths = [
-        `./data/issues.json?v=53&t=${timestamp}`,
-        `data/issues.json?v=53&t=${timestamp}`,
-        `/data/issues.json?v=53&t=${timestamp}`
+        `./data/issues.json?v=54&t=${timestamp}`,
+        `data/issues.json?v=54&t=${timestamp}`,
+        `/data/issues.json?v=54&t=${timestamp}`
       ];
       for (const p of paths) {
         try {
