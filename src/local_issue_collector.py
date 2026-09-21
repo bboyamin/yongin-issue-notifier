@@ -322,7 +322,7 @@ def is_clean_relevant_article(title_text, desc_text, terms):
 # ----------------------------------------------------
 # 1. 네이버 뉴스 API 수집기 (하이브리드 sim+date 및 고품질 정밀 수집)
 # ----------------------------------------------------
-def fetch_naver_news(keyword, limit=35):
+def fetch_naver_news(keyword, limit=50):
     client_id = (os.getenv("NAVER_CLIENT_ID") or "").strip('"\'')
     client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "").strip('"\'')
     
@@ -338,12 +338,12 @@ def fetch_naver_news(keyword, limit=35):
     }
     
     raw_results = []
-    # Freshness Priority: 40 items sorted by date (newest first) + 10 items sorted by sim (relevance)
+    # Freshness Priority: 50 items sorted by date (newest first) + 10 items sorted by sim (relevance)
     for sort_mode in ["date", "sim"]:
-        display_num = 40 if sort_mode == "date" else 10
+        display_num = 50 if sort_mode == "date" else 10
         url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote(query_str)}&display={display_num}&sort={sort_mode}"
         try:
-            res = requests.get(url, headers=headers, timeout=2.5)
+            res = requests.get(url, headers=headers, timeout=3.0)
             if res.status_code == 200:
                 raw_results.extend(res.json().get("items", []))
         except Exception as e:
@@ -459,45 +459,42 @@ def fetch_naver_blog(keyword, limit=3):
     return items
 
 # ----------------------------------------------------
-# 3. 구글 뉴스 RSS 수집기
+# 3. 실시간 구글 뉴스 RSS 수집기 (보완용 15건)
 # ----------------------------------------------------
-def fetch_google_news_rss(keyword, limit=30):
-    sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
-    query = " OR ".join(sub_terms) if len(sub_terms) > 1 else keyword
-        
-    encoded_kw = urllib.parse.quote(query)
-    rss_url = f"https://news.google.com/rss/search?q={encoded_kw}&hl=ko&gl=KR&ceid=KR:ko"
-    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
-
+def fetch_google_news_rss(keyword, limit=15):
     items = []
+    sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
+    search_q = f'"{keyword}"' if " " not in keyword else keyword
+    rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(search_q)}&hl=ko&gl=KR&ceid=KR:ko"
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+
     try:
-        res = requests.get(rss_url, headers=headers, timeout=2.5)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, "xml")
-            rss_items = soup.find_all("item")[:limit]
-            for idx, item in enumerate(rss_items):
-                title = item.title.text.strip() if item.title else ""
-                link = item.link.text.strip() if item.link else ""
-                pub_date = item.pubDate.text.strip() if item.pubDate else "최신 속보"
-                publisher = item.source.text.strip() if item.source else "주요 언론사"
+        r = requests.get(rss_url, headers=headers, timeout=3.0)
+        if r.status_code == 200:
+            root = ET.fromstring(r.text)
+            for idx, item in enumerate(root.findall('.//item')[:limit]):
+                title = item.findtext('title') or ""
+                link = item.findtext('link') or ""
+                pub_date = item.findtext('pubDate') or ""
                 
-                desc = item.description.text if item.description else title
-                clean_desc = BeautifulSoup(desc, "html.parser").text
+                if title and link:
+                    clean_t = title.split(' - ')[0]
+                    pub_name = title.split(' - ')[-1] if ' - ' in title else "구글 뉴스"
+                    
+                    if sub_terms and not is_clean_relevant_article(clean_t, "", sub_terms):
+                        continue
 
-                if sub_terms and not is_clean_relevant_article(title, clean_desc, sub_terms):
-                    continue
-
-                items.append({
-                    "id": f"gnews_{keyword}_{idx}_{int(datetime.now().timestamp())}",
-                    "keyword": keyword,
-                    "type": "news",
-                    "badge": "📰 뉴스",
-                    "publisher": publisher,
-                    "title": title,
-                    "time": format_pub_date(pub_date),
-                    "url": link,
-                    "content": clean_desc
-                })
+                    items.append({
+                        "id": f"g_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
+                        "keyword": keyword,
+                        "type": "news",
+                        "badge": f"📰 {pub_name[:12]}",
+                        "publisher": pub_name,
+                        "title": clean_t,
+                        "time": format_pub_date(pub_date),
+                        "url": link,
+                        "content": clean_t
+                    })
     except Exception as e:
         print(f"구글 뉴스 RSS 수집 중 에러: {e}")
 
@@ -557,45 +554,48 @@ def fetch_youtube_videos(keyword, limit=12):
         except Exception as e:
             print(f"YouTube Official API fetch error for {keyword}: {e}")
 
-    # 4.2 Supplementary Fresh Video Search (site:youtube.com/watch "{keyword}" when:7d)
+    # 4.2 Supplementary Fresh Video Search (site:youtube.com/watch "{keyword}" when:2d -> when:7d)
     if len(yt_items) < limit:
-        try:
-            q_yt = f'site:youtube.com/watch "{keyword}" when:7d'
-            rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q_yt)}&hl=ko&gl=KR&ceid=KR:ko"
-            r = requests.get(rss_url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}, timeout=2.5)
-            if r.status_code == 200:
-                root = ET.fromstring(r.text)
-                seen_urls = {i["url"] for i in yt_items}
-                for item in root.findall('.//item'):
-                    title = item.findtext('title') or ""
-                    link = item.findtext('link') or ""
-                    pub_date = item.findtext('pubDate') or ""
-                    if title and link and link not in seen_urls:
-                        seen_urls.add(link)
-                        clean_t = title.replace(' - YouTube', '').strip()
-                        if ' - ' in clean_t:
-                            parts = clean_t.rsplit(' - ', 1)
-                            video_title = parts[0].strip()
-                            channel = parts[1].strip()
-                        else:
-                            video_title = clean_t
-                            channel = "유튜브"
+        for tf in ["when:2d", "when:7d"]:
+            if len(yt_items) >= limit:
+                break
+            try:
+                q_yt = f'site:youtube.com/watch "{keyword}" {tf}'
+                rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q_yt)}&hl=ko&gl=KR&ceid=KR:ko"
+                r = requests.get(rss_url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}, timeout=2.5)
+                if r.status_code == 200:
+                    root = ET.fromstring(r.text)
+                    seen_urls = {i["url"] for i in yt_items}
+                    for item in root.findall('.//item'):
+                        title = item.findtext('title') or ""
+                        link = item.findtext('link') or ""
+                        pub_date = item.findtext('pubDate') or ""
+                        if title and link and link not in seen_urls:
+                            seen_urls.add(link)
+                            clean_t = title.replace(' - YouTube', '').strip()
+                            if ' - ' in clean_t:
+                                parts = clean_t.rsplit(' - ', 1)
+                                video_title = parts[0].strip()
+                                channel = parts[1].strip()
+                            else:
+                                video_title = clean_t
+                                channel = "유튜브"
 
-                        yt_items.append({
-                            "id": f"yt_rss_{abs(hash(link))}",
-                            "keyword": keyword,
-                            "type": "youtube",
-                            "badge": f"🎥 유튜브 · {channel[:15]}",
-                            "publisher": channel,
-                            "title": video_title,
-                            "time": format_pub_date(pub_date),
-                            "url": link,
-                            "content": f"[{channel}] {video_title}"
-                        })
-                        if len(yt_items) >= limit:
-                            break
-        except Exception as e:
-            print(f"YouTube RSS fetch error for {keyword}: {e}")
+                            yt_items.append({
+                                "id": f"yt_rss_{abs(hash(link))}",
+                                "keyword": keyword,
+                                "type": "youtube",
+                                "badge": f"🎥 유튜브 · {channel[:15]}",
+                                "publisher": channel,
+                                "title": video_title,
+                                "time": format_pub_date(pub_date),
+                                "url": link,
+                                "content": f"[{channel}] {video_title}"
+                            })
+                            if len(yt_items) >= limit:
+                                break
+            except Exception as e:
+                print(f"YouTube RSS fetch error for {keyword}: {e}")
 
     return yt_items[:limit]
 
@@ -700,12 +700,12 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
     with ThreadPoolExecutor(max_workers=max_w) as executor:
         futures = []
         for kw in keywords:
-            futures.append(executor.submit(fetch_naver_news, kw, 20))
-            futures.append(executor.submit(fetch_google_news_rss, kw, 15))
-            futures.append(executor.submit(fetch_multichannel_sns, kw, 10))
-            futures.append(executor.submit(fetch_youtube_videos, kw, 6))
+            futures.append(executor.submit(fetch_naver_news, kw, 50))
+            futures.append(executor.submit(fetch_google_news_rss, kw, 20))
+            futures.append(executor.submit(fetch_multichannel_sns, kw, 12))
+            futures.append(executor.submit(fetch_youtube_videos, kw, 8))
             if not is_vercel:
-                futures.append(executor.submit(fetch_naver_blog, kw, 2))
+                futures.append(executor.submit(fetch_naver_blog, kw, 3))
 
         for f in futures:
             try:
@@ -718,7 +718,7 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
     # 중복 이슈 제거 (Deduplication)
     deduped_issues = deduplicate_issues(raw_issues)
 
-    # Balanced category selection per keyword (News: max 16, SNS: max 7, YouTube: max 7 -> Total 30)
+    # Rich & Full Selection per keyword (News: max 45, SNS: max 8, YouTube: max 8 -> Total 60)
     by_kw = {}
     for item in deduped_issues:
         kw = item.get("keyword") or "기타"
@@ -737,24 +737,23 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
         kw_yt = categorized["youtube"]
         kw_other = categorized["other"]
 
-        selected_yt = kw_yt[:7]
-        selected_sns = kw_sns[:7]
-        rem_slots = max(16, 30 - len(selected_yt) - len(selected_sns))
-        selected_news = kw_news[:rem_slots]
+        selected_yt = kw_yt[:8]
+        selected_sns = kw_sns[:8]
+        selected_news = kw_news[:45]
 
         kw_combined = selected_news + selected_sns + selected_yt + kw_other
-        if len(kw_combined) < 30:
+        if len(kw_combined) < 60:
             seen_ids = {i["id"] for i in kw_combined}
             for extra in (kw_news + kw_sns + kw_yt + kw_other):
                 if extra["id"] not in seen_ids:
                     kw_combined.append(extra)
                     seen_ids.add(extra["id"])
-                    if len(kw_combined) >= 30:
+                    if len(kw_combined) >= 60:
                         break
 
-        final_deduped.extend(kw_combined[:30])
+        final_deduped.extend(kw_combined[:60])
 
-    print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 정밀 균형 조합 및 중복 제거 후 {len(final_deduped)}건 정리 완료")
+    print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 오늘 풍성한 전체 이슈 보장 후 {len(final_deduped)}건 정리 완료")
     deduped_issues = final_deduped
 
     # 뉴스 타이틀 원문 긁어오기 (Vercel 서벌리스 환경에서는 타임아웃 방지를 위해 건너뜀)
