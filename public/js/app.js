@@ -169,7 +169,7 @@ async function selectKeyword(kw) {
 
   const userKeywords = StorageManager.getKeywords();
   const fetchList = [kw, ...userKeywords.filter(k => k !== kw)];
-  await fetchKeywordIssues(fetchList);
+  fetchKeywordIssues(fetchList);
 }
 
 async function addNewKeyword() {
@@ -191,7 +191,7 @@ async function addNewKeyword() {
   renderKeywordChips();
   renderIssues();
 
-  await fetchKeywordIssues(fetchList);
+  fetchKeywordIssues(fetchList);
 }
 
 function removeKeyword(kw, event) {

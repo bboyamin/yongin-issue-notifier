@@ -353,23 +353,8 @@ class handler(BaseHTTPRequestHandler):
         kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
         keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
 
-        default_kws = {"용인시", "처인구", "용인특례시"}
-        has_custom_kw = any(k not in default_kws for k in keywords)
-
-        static_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json"))
-        if not os.path.exists(static_file):
-            static_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "LocalIssueNotifier", "data", "issues.json"))
-
-        static_issues = []
-        if os.path.exists(static_file):
-            try:
-                with open(static_file, 'r', encoding='utf-8') as f:
-                    static_issues = json.load(f)
-            except Exception:
-                pass
-
-        # Fast SWR: Serve pre-collected static_issues ONLY IF no custom keywords are requested AND force_refresh is False
-        if static_issues and not force_refresh and not has_custom_kw:
+        # ⚡ Ultra-Fast SWR Pattern: Serve static_issues instantly (< 0.02s) if present and force_refresh is False
+        if static_issues and not force_refresh:
             body = json.dumps(static_issues, ensure_ascii=False).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
