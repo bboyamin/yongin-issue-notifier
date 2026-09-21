@@ -515,7 +515,7 @@ def fetch_youtube_videos(keyword, limit=12):
     if yt_api_key:
         try:
             search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults={limit}&q={urllib.parse.quote(keyword)}&order=date&type=video&regionCode=KR&key={yt_api_key}"
-            r = requests.get(search_url, timeout=3)
+            r = requests.get(search_url, timeout=5)
             if r.status_code == 200:
                 data = r.json()
                 items = data.get("items", [])
@@ -523,7 +523,7 @@ def fetch_youtube_videos(keyword, limit=12):
 
                 if video_ids:
                     stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id={','.join(video_ids)}&key={yt_api_key}"
-                    r_stats = requests.get(stats_url, timeout=3)
+                    r_stats = requests.get(stats_url, timeout=5)
                     stats_dict = {}
                     if r_stats.status_code == 200:
                         for item in r_stats.json().get("items", []):
