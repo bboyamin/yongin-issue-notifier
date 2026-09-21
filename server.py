@@ -59,8 +59,8 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
                     if cached_issues:
                         mtime = os.path.getmtime(output_path)
                         import time
-                        # If cache is older than 2 minutes, trigger async background refresh
-                        if time.time() - mtime > 120:
+                        # If cache is older than 15 minutes (900s), trigger async background refresh
+                        if time.time() - mtime > 900:
                             import threading
                             threading.Thread(target=run_background_collection, args=(keywords,), daemon=True).start()
 
