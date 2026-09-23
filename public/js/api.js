@@ -77,7 +77,7 @@ const IssueApi = (() => {
      */
     async fetchPaperNews(provider = 'etnews', dateStr = '') {
       try {
-        const url = `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&v=108&t=${Date.now()}`;
+        const url = `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&v=120&t=${Date.now()}`;
         const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
@@ -89,7 +89,7 @@ const IssueApi = (() => {
         console.warn(`Fetch paper news API error for ${provider}:`, err);
       }
 
-      // Client-side Direct RSS Fallback (Zero-failure mechanism for browser)
+      // Multi-Proxy Client Fallback if Server API returns 0 articles or fails
       try {
         const domainMap = {
           chosun: { domain: 'chosun.com', name: '조선일보', badge: '🗞️ 조선일보' },
@@ -98,49 +98,61 @@ const IssueApi = (() => {
         };
         const info = domainMap[provider];
         if (info) {
-          const gUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://news.google.com/rss/search?q=site:${info.domain}&hl=ko&gl=KR&ceid=KR:ko`)}`;
-          const gRes = await fetch(gUrl);
-          if (gRes.ok) {
-            const xmlText = await gRes.text();
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-            const items = Array.from(xmlDoc.querySelectorAll('item'));
-            const articles = [];
-            const categorized = {};
-            const curDate = new Date().toISOString().split('T')[0].replace(/-/g, '/');
+          const rssTarget = encodeURIComponent(`https://news.google.com/rss/search?q=site:${info.domain}&hl=ko&gl=KR&ceid=KR:ko`);
+          const proxies = [
+            `https://corsproxy.io/?url=${rssTarget}`,
+            `https://api.allorigins.win/raw?url=${rssTarget}`,
+            `https://api.codetabs.com/v1/proxy?quest=${rssTarget}`
+          ];
 
-            items.forEach((item, idx) => {
-              let title = item.querySelector('title')?.textContent || '';
-              if (title.includes(' - ')) title = title.split(' - ')[0].trim();
-              if (!title || title.length < 5) return;
+          for (const proxyUrl of proxies) {
+            try {
+              const gRes = await fetch(proxyUrl);
+              if (gRes.ok) {
+                const xmlText = await gRes.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                const items = Array.from(xmlDoc.querySelectorAll('item'));
+                const articles = [];
+                const categorized = {};
+                const curDate = new Date().toISOString().split('T')[0].replace(/-/g, '/');
 
-              const link = item.querySelector('link')?.textContent || '#';
+                items.forEach((item, idx) => {
+                  let title = item.querySelector('title')?.textContent || '';
+                  if (title.includes(' - ')) title = title.split(' - ')[0].trim();
+                  if (!title || title.length < 4) return;
 
-              let section = '주요뉴스';
-              if (/정치|대통령|국회|정당|여당|야당/.test(title)) section = '정치면';
-              else if (/경제|금융|증시|주식|금리|부동산|기업/.test(title)) section = '경제면';
-              else if (/사회|검찰|경찰|사건|사고/.test(title)) section = '사회면';
-              else if (/IT|AI|과학|반도체|기술/.test(title)) section = 'IT·과학면';
+                  const link = item.querySelector('link')?.textContent || '#';
 
-              const art = {
-                id: `${provider}_client_${idx}`,
-                keyword: info.name,
-                type: 'news',
-                badge: `${info.badge} · ${section}`,
-                publisher: info.name,
-                title: title,
-                time: curDate,
-                url: link,
-                content: title,
-                section: section
-              };
-              articles.push(art);
-              if (!categorized[section]) categorized[section] = [];
-              categorized[section].push(art);
-            });
+                  let section = '주요뉴스';
+                  if (/정치|대통령|국회|정당|여당|야당/.test(title)) section = '정치면';
+                  else if (/경제|금융|증시|주식|금리|부동산|기업/.test(title)) section = '경제면';
+                  else if (/사회|검찰|경찰|사건|사고/.test(title)) section = '사회면';
+                  else if (/IT|AI|과학|반도체|기술/.test(title)) section = 'IT·과학면';
 
-            if (articles.length > 0) {
-              return { sections: Object.keys(categorized), categorized, articles };
+                  const art = {
+                    id: `${provider}_client_${idx}`,
+                    keyword: info.name,
+                    type: 'news',
+                    badge: `${info.badge} · ${section}`,
+                    publisher: info.name,
+                    title: title,
+                    time: curDate,
+                    url: link,
+                    content: title,
+                    section: section
+                  };
+                  articles.push(art);
+                  if (!categorized[section]) categorized[section] = [];
+                  categorized[section].push(art);
+                });
+
+                if (articles.length > 0) {
+                  return { sections: Object.keys(categorized), categorized, articles };
+                }
+              }
+            } catch (e) {
+              console.warn('Proxy failed:', proxyUrl, e);
             }
           }
         }
