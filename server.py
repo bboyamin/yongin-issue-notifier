@@ -70,15 +70,13 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(issues, ensure_ascii=False).encode('utf-8'))
             return
 
-        elif parsed_path.path in ["/api/papernews", "/api/etnews", "/api/mknews", "/api/jtbc"]:
+        elif parsed_path.path in ["/api/papernews", "/api/etnews", "/api/mknews"]:
             query_params = urllib.parse.parse_qs(parsed_path.query)
             provider = query_params.get("provider", ["etnews"])[0]
             if parsed_path.path == "/api/mknews":
                 provider = "mknews"
             elif parsed_path.path == "/api/etnews":
                 provider = "etnews"
-            elif parsed_path.path == "/api/jtbc":
-                provider = "jtbc"
 
             ymd = query_params.get("date", [datetime.now().strftime("%Y%m%d")])[0].replace("-", "")
             try:

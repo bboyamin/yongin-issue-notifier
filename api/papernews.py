@@ -39,17 +39,6 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         except Exception as e:
             print("mknews dispatch error:", e)
 
-    # 3. JTBC
-    elif provider == "jtbc":
-        try:
-            try:
-                from jtbc import fetch_jtbc_by_date
-            except ImportError:
-                from api.jtbc import fetch_jtbc_by_date
-            return fetch_jtbc_by_date(clean_ymd)
-        except Exception as e:
-            print("jtbc dispatch error:", e)
-
     return {"sections": [], "categorized": {}, "articles": []}
 
 class handler(BaseHTTPRequestHandler):

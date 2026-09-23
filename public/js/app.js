@@ -10,15 +10,14 @@ let currentKeyword = '용인시';
 let currentPaperDate = getTodayKstStr();
 let currentPaperSection = 'all';
 const PAPER_PROVIDERS = [
-  { id: 'etnews', name: '전자신문', badge: '📰', type: 'paper', label: '지면 PDF' },
-  { id: 'mknews', name: '매일경제', badge: '📈', type: 'paper', label: '지면 PDF' },
-  { id: 'jtbc', name: 'JTBC', badge: '📺', type: 'broadcast', label: '방송 RSS' }
+  { id: 'mknews', name: '매일경제', badge: '📈' },
+  { id: 'etnews', name: '전자신문', badge: '📰' }
 ];
 
-let currentPaperProvider = StorageManager.getPaperProvider() || 'etnews';
+let currentPaperProvider = StorageManager.getPaperProvider() || 'mknews';
 if (!PAPER_PROVIDERS.some(p => p.id === currentPaperProvider)) {
-  currentPaperProvider = 'etnews';
-  StorageManager.savePaperProvider('etnews');
+  currentPaperProvider = 'mknews';
+  StorageManager.savePaperProvider('mknews');
 }
 let currentPressDept = 'all';
 let paperData = null;
@@ -80,7 +79,7 @@ function renderPaperProviderChips() {
     const isActive = currentPaperProvider === p.id;
     html += `
       <span class="chip ${isActive ? 'active' : ''}" onclick="selectPaperProvider('${p.id}')" style="cursor:pointer; font-weight:700;">
-        ${p.badge} ${p.name} <span style="font-size:10px; opacity:0.8; font-weight:400;">(${p.label || '지면'})</span>
+        ${p.badge} ${p.name}
       </span>
     `;
   });
@@ -653,13 +652,9 @@ function renderPaperSections() {
   const sectionContainer = document.getElementById('etnewsSectionChips');
   if (!sectionContainer || !paperData || !paperData.sections) return;
 
-  const providerObj = PAPER_PROVIDERS.find(p => p.id === currentPaperProvider) || PAPER_PROVIDERS[0];
-  const isBroadcast = providerObj.type === 'broadcast';
-  const mainChipLabel = isBroadcast ? '전체 카테고리' : '전체 면';
-
   let html = `
     <span class="chip ${currentPaperSection === 'all' ? 'active' : ''}" onclick="selectPaperSection('all')">
-      ${mainChipLabel} (${paperData.articles ? paperData.articles.length : 0})
+      전체 면 (${paperData.articles ? paperData.articles.length : 0})
     </span>
   `;
   paperData.sections.forEach(sec => {
@@ -700,23 +695,13 @@ function renderPaperView() {
   if (!container) return;
 
   const providerObj = PAPER_PROVIDERS.find(p => p.id === currentPaperProvider) || PAPER_PROVIDERS[0];
-  const isBroadcast = providerObj.type === 'broadcast';
 
   if (!paperData || !paperData.articles || paperData.articles.length === 0) {
     container.innerHTML = `
-      <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
-        <p style="font-size:36px; margin-bottom:12px;">${providerObj.badge}</p>
-        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">${providerObj.name} ${isBroadcast ? '방송 RSS' : '지면'} 기사 수집 안내</p>
-        <p style="font-size:12px; color:#64748B; line-height:1.5; margin-bottom:16px;">
-          ${isBroadcast 
-            ? `선택하신 날짜(${currentPaperDate})의 방송 기사 데이터가 없거나 RSS 갱신 범위를 벗어났습니다.<br>JTBC는 방송 뉴스로 실시간 최신 기사를 제공합니다.`
-            : `선택하신 날짜(${currentPaperDate})의 ${providerObj.name} 지면 기사를 준비하고 있습니다.`}
-        </p>
-        ${isBroadcast ? `
-          <button onclick="setPaperToday()" style="padding: 9px 18px; border-radius: 8px; background: #2563EB; color: #FFF; font-size:12px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,0.3);">
-            📺 JTBC 최신 방송 기사 불러오기
-          </button>
-        ` : ''}
+      <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
+        <p style="font-size:36px; margin-bottom:12px;">📰</p>
+        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">${providerObj.name} 지면 기사 수집 중</p>
+        <p style="font-size:12px; color:#64748B;">선택하신 날짜(${currentPaperDate})의 지면 기사를 준비하고 있습니다.</p>
       </div>
     `;
     return;
@@ -727,14 +712,12 @@ function renderPaperView() {
     articlesToRender = paperData.categorized[currentPaperSection];
   }
 
-  const labelStr = isBroadcast ? '방송 RSS' : '지면';
-
   let html = `
     <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155;">
       <div class="realtime-indicator">
-        <span>${providerObj.badge} ${providerObj.name} ${labelStr} (${articlesToRender.length}건)</span>
+        <span>${providerObj.badge} ${providerObj.name} 지면 (${articlesToRender.length}건)</span>
       </div>
-      <span style="font-size: 11px; opacity: 0.8;">${isBroadcast ? '실시간 RSS' : currentPaperDate}</span>
+      <span style="font-size: 11px; opacity: 0.8;">${currentPaperDate}</span>
     </div>
   `;
 
