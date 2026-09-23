@@ -125,4 +125,31 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         "articles": all_articles
     }
 
+from http.server import BaseHTTPRequestHandler
+from datetime import timezone
+
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+
+        provider = params.get('provider', ['chosun'])[0]
+        date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
+
+        if not date_param:
+            kst = timezone(timedelta(hours=9))
+            date_param = datetime.now(kst).strftime("%Y%m%d")
+
+        result = fetch_paper_news(provider=provider, ymd_str=date_param)
+
+        body = json.dumps(result, ensure_ascii=False).encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
 
