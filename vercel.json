@@ -13,5 +13,21 @@
     { "source": "/api/chosun", "destination": "/api/chosun.py" },
     { "source": "/api/joongang", "destination": "/api/joongang.py" },
     { "source": "/api/donga", "destination": "/api/donga.py" }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
   ]
 }
