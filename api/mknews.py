@@ -47,7 +47,6 @@ def fetch_single_mk_rss(section_tuple):
                 pub_date = item.pubDate.text.strip() if item.pubDate else ""
                 if pub_date:
                     try:
-                        # e.g. Mon, 24 Sep 2026 08:00:00 +0900
                         pub_time = datetime.strptime(pub_date[:16], "%a, %d %b %Y").strftime("%Y/%m/%d")
                     except Exception:
                         pub_time = formatted_date
@@ -92,20 +91,94 @@ def fetch_mknews_from_rss():
 
     return None
 
-def categorize_mk_title(clean_title):
-    if any(k in clean_title for k in ["증권", "주식", "코스피", "코스닥", "서학개미", "상장", "공모"]):
+def categorize_mk_title(t):
+    if any(k in t for k in ["증권", "주식", "코스피", "코스닥", "서학개미", "동학개미", "상장", "공모", "지수", "시총", "매수", "매도", "주가", "펀드", "채권", "종목", "ETF"]):
         return "증권"
-    elif any(k in clean_title for k in ["부동산", "아파트", "분양", "건설", "전세", "월세", "청약", "재개발", "한강뷰"]):
+    elif any(k in t for k in ["부동산", "아파트", "분양", "건설", "전세", "월세", "청약", "재개발", "재건축", "한강뷰", "집값", "매매", "주택", "빌딩", "토지", "경매", "상가", "LH", "SH", "국토부"]):
         return "부동산"
-    elif any(k in clean_title for k in ["금리", "금융", "환율", "적금", "은행", "물가", "소비자"]):
+    elif any(k in t for k in ["금리", "금융", "환율", "적금", "은행", "물가", "무역", "수출", "수입", "대출", "자산", "소비자", "한국은행", "세금", "예산", "경제"]):
         return "경제"
-    elif any(k in clean_title for k in ["정부", "대통령", "국회", "정치", "검찰", "군", "육군", "사단", "DMZ", "북한", "외교"]):
+    elif any(k in t for k in ["정치", "정부", "대통령", "국회", "여당", "야당", "의원", "총리", "장관", "청와대", "용산", "국방", "군", "육군", "해군", "공군", "DMZ", "사단", "북한", "통일", "외교", "특검", "계엄", "검찰", "경찰", "법원", "사회"]):
         return "정치"
-    elif any(k in clean_title for k in ["연예", "가수", "배우", "드라마", "영화", "스포츠", "금메달", "예능", "방송"]):
+    elif any(k in t for k in ["기업", "경영", "회장", "사장", "대표", "실적", "영업이익", "매출", "인수", "합병", "M&A", "투자", "사업", "공장", "생산", "신제품", "현대차", "삼성", "LG", "SK", "한화", "롯데"]):
+        return "기업"
+    elif any(k in t for k in ["연예", "가수", "배우", "드라마", "영화", "스포츠", "올림픽", "아시안게임", "선수", "축구", "야구", "농구", "골프", "펜싱", "UFC", "홈런", "승리", "패배", "감독", "공연", "전시", "예능", "방송", "MK포토", "MK현장", "포토"]):
         return "문화·연예"
     return "종합"
 
-def fetch_mknews_from_naver():
+def fetch_past_q(q):
+    url = f"https://news.google.com/rss/search?q={q}&hl=ko&gl=KR&ceid=KR:ko"
+    try:
+        res = requests.get(url, headers=headers, timeout=5, verify=False)
+        if res.status_code == 200:
+            soup = BeautifulSoup(res.text, "xml")
+            return soup.find_all("item")
+    except Exception:
+        pass
+    return []
+
+def fetch_mknews_for_past_date(ymd_str):
+    try:
+        dt = datetime.strptime(ymd_str, "%Y%m%d")
+        dt_next = dt + timedelta(days=1)
+        after_str = dt.strftime("%Y-%m-%d")
+        before_str = dt_next.strftime("%Y-%m-%d")
+        formatted_date = dt.strftime("%Y/%m/%d")
+
+        queries = [
+            f"site:mk.co.kr after:{after_str} before:{before_str}",
+            f"site:mk.co.kr (정치 OR 사회 OR 정부 OR 국회 OR 북한 OR 외교) after:{after_str} before:{before_str}",
+            f"site:mk.co.kr (경제 OR 금융 OR 금리 OR 환율 OR 은행) after:{after_str} before:{before_str}",
+            f"site:mk.co.kr (증권 OR 주식 OR 코스피 OR 코스닥 OR 주가) after:{after_str} before:{before_str}",
+            f"site:mk.co.kr (부동산 OR 아파트 OR 분양 OR 전세 OR 집값) after:{after_str} before:{before_str}",
+            f"site:mk.co.kr (기업 OR 경영 OR 회장 OR 실적 OR 매출) after:{after_str} before:{before_str}"
+        ]
+
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            results = list(executor.map(fetch_past_q, queries))
+
+        dedup_items = {}
+        for items in results:
+            for item in items:
+                link = item.link.text.strip() if item.link else ""
+                raw_title = item.title.text.strip() if item.title else ""
+                clean_title = raw_title.replace(" - 매일경제", "").strip()
+                if link and clean_title:
+                    dedup_items[link] = clean_title
+
+        categorized = {}
+        all_articles = []
+        for idx, (link, title) in enumerate(dedup_items.items()):
+            section = categorize_mk_title(title)
+            article_obj = {
+                "id": f"mknews_past_{ymd_str}_{idx}",
+                "keyword": "매일경제",
+                "type": "news",
+                "badge": f"📈 매일경제 · {section}",
+                "publisher": "매일경제",
+                "title": title,
+                "time": formatted_date,
+                "url": link,
+                "content": title,
+                "section": section
+            }
+            all_articles.append(article_obj)
+            if section not in categorized:
+                categorized[section] = []
+            categorized[section].append(article_obj)
+
+        if all_articles:
+            return {
+                "sections": list(categorized.keys()),
+                "categorized": categorized,
+                "articles": all_articles
+            }
+    except Exception as e:
+        print(f"MKNews past date ({ymd_str}) fetch error:", e)
+
+    return fetch_mknews_from_naver(ymd_str)
+
+def fetch_mknews_from_naver(clean_ymd=None):
     client_id = (os.getenv("NAVER_CLIENT_ID") or "MKJiyEIjWKeda674OX9l").strip('"\'')
     client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "Q313QS0JpL").strip('"\'')
     if not client_id or not client_secret:
@@ -123,7 +196,12 @@ def fetch_mknews_from_naver():
             items = res.json().get("items", [])
             categorized = {}
             all_articles = []
-            today_str = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
+            formatted_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
+            if clean_ymd and len(clean_ymd) == 8:
+                try:
+                    formatted_date = datetime.strptime(clean_ymd, "%Y%m%d").strftime("%Y/%m/%d")
+                except Exception:
+                    pass
 
             for idx, item in enumerate(items):
                 clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
@@ -139,7 +217,7 @@ def fetch_mknews_from_naver():
                     "badge": f"📈 매일경제 · {section}",
                     "publisher": "매일경제",
                     "title": clean_title,
-                    "time": today_str,
+                    "time": formatted_date,
                     "url": link,
                     "content": clean_desc,
                     "section": section
@@ -160,59 +238,6 @@ def fetch_mknews_from_naver():
 
     return None
 
-def fetch_mknews_for_past_date(ymd_str):
-    try:
-        dt = datetime.strptime(ymd_str, "%Y%m%d")
-        dt_next = dt + timedelta(days=1)
-        after_str = dt.strftime("%Y-%m-%d")
-        before_str = dt_next.strftime("%Y-%m-%d")
-        formatted_date = dt.strftime("%Y/%m/%d")
-
-        rss_url = f"https://news.google.com/rss/search?q=site:mk.co.kr+after:{after_str}+before:{before_str}&hl=ko&gl=KR&ceid=KR:ko"
-        res = requests.get(rss_url, headers=headers, verify=False, timeout=8)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, "xml")
-            items = soup.find_all("item")
-            categorized = {}
-            all_articles = []
-
-            for idx, item in enumerate(items):
-                raw_title = item.title.text.strip() if item.title else ""
-                clean_title = raw_title.replace(" - 매일경제", "").strip()
-                link = item.link.text.strip() if item.link else ""
-                if not clean_title or not link:
-                    continue
-
-                section = categorize_mk_title(clean_title)
-
-                article_obj = {
-                    "id": f"mknews_past_{ymd_str}_{idx}",
-                    "keyword": "매일경제",
-                    "type": "news",
-                    "badge": f"📈 매일경제 · {section}",
-                    "publisher": "매일경제",
-                    "title": clean_title,
-                    "time": formatted_date,
-                    "url": link,
-                    "content": clean_title,
-                    "section": section
-                }
-                all_articles.append(article_obj)
-                if section not in categorized:
-                    categorized[section] = []
-                categorized[section].append(article_obj)
-
-            if all_articles:
-                return {
-                    "sections": list(categorized.keys()),
-                    "categorized": categorized,
-                    "articles": all_articles
-                }
-    except Exception as e:
-        print(f"MKNews past date ({ymd_str}) fetch error:", e)
-
-    return None
-
 def fetch_mknews_by_date(ymd_str=None):
     kst = timezone(timedelta(hours=9))
     today_ymd = datetime.now(kst).strftime("%Y%m%d")
@@ -230,7 +255,7 @@ def fetch_mknews_by_date(ymd_str=None):
 
     # 2nd tier: Naver News API search for MK
     if not result or not result.get("articles"):
-        result = fetch_mknews_from_naver()
+        result = fetch_mknews_from_naver(clean_ymd)
 
     return result or {"sections": [], "categorized": {}, "articles": []}
 

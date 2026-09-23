@@ -84,9 +84,33 @@ def fetch_single_feed(item_tuple):
         print(f"Kyunghyang RSS feed fetch error ({section_name}):", e)
     return section_name, articles
 
+def categorize_khan_title(t):
+    if any(k in t for k in ['정치', '대통령', '국회', '정당', '청와대', '외교', '총리', '장관', '의원', '특검', '계엄', '북한', '통일', '군', 'DMZ']):
+        return "정치"
+    elif any(k in t for k in ['경제', '금융', '증시', '부동산', '기업', '주식', '은행', '배당', '환율', '금리', '물가', '수출', '무역', '자산']):
+        return "경제"
+    elif any(k in t for k in ['사회', '검찰', '경찰', '법원', '사건', '수사', '노동', '교육', '복지', '환경']):
+        return "사회"
+    elif any(k in t for k in ['문화', '연예', '스포츠', '방송', '영화', '공연', '전시', '배우', '가수', '예능', '올림픽', '아시안게임', '선수', '축구', '야구', '골프']):
+        return "문화"
+    elif any(k in t for k in ['IT', '과학', 'AI', '반도체', '통신', '스마트폰', '우주', '기술']):
+        return "IT·과학"
+    elif any(k in t for k in ['사설', '칼럼', '오피니언', '시선', '기고', '그림마당', '아침을']):
+        return "오피니언"
+    return "전체"
+
+def fetch_khan_past_q(q):
+    url = f"https://news.google.com/rss/search?q={q}&hl=ko&gl=KR&ceid=KR:ko"
+    try:
+        res = requests.get(url, headers=headers, timeout=5, verify=False)
+        if res.status_code == 200 and len(res.content) > 100:
+            soup = ET.fromstring(res.content)
+            return soup.findall('.//item')
+    except Exception:
+        pass
+    return []
+
 def fetch_past_khan(clean_ymd):
-    categorized = {}
-    all_articles = []
     try:
         dt = datetime.strptime(clean_ymd, "%Y%m%d")
         dt_next = dt + timedelta(days=1)
@@ -94,52 +118,56 @@ def fetch_past_khan(clean_ymd):
         before_str = dt_next.strftime("%Y-%m-%d")
         formatted_date = dt.strftime("%Y/%m/%d")
 
-        url = f"https://news.google.com/rss/search?q=site:khan.co.kr+after:{after_str}+before:{before_str}&hl=ko&gl=KR&ceid=KR:ko"
-        res = requests.get(url, headers=headers, timeout=6, verify=False)
-        if res.status_code == 200 and len(res.content) > 100:
-            soup = ET.fromstring(res.content)
-            items = soup.findall('.//item')
-            for idx, item in enumerate(items):
+        queries = [
+            f"site:khan.co.kr after:{after_str} before:{before_str}",
+            f"site:khan.co.kr (정치 OR 사회 OR 정부 OR 국회 OR 북한 OR 외교) after:{after_str} before:{before_str}",
+            f"site:khan.co.kr (경제 OR 금융 OR 금리 OR 환율 OR 증시 OR 주식 OR 부동산) after:{after_str} before:{before_str}",
+            f"site:khan.co.kr (문화 OR 스포츠 OR 연예 OR 오피니언 OR 사설 OR 칼럼) after:{after_str} before:{before_str}",
+            f"site:khan.co.kr (IT OR 과학 OR AI OR 반도체) after:{after_str} before:{before_str}"
+        ]
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            results = list(executor.map(fetch_khan_past_q, queries))
+
+        dedup_items = {}
+        for items in results:
+            for item in items:
                 t_el = item.find('title')
                 l_el = item.find('link')
                 title = clean_html(t_el.text) if t_el is not None and t_el.text else ""
                 if " - " in title:
                     title = title.rsplit(" - ", 1)[0].strip()
-                if not title or len(title) < 4:
-                    continue
-                link = l_el.text.strip() if l_el is not None and l_el.text else "#"
+                link = l_el.text.strip() if l_el is not None and l_el.text else ""
+                if link and title and len(title) >= 4:
+                    dedup_items[link] = title
 
-                section = "종합"
-                if any(w in title for w in ['정치', '대통령', '국회', '정당', '청와대', '외교']): section = "정치"
-                elif any(w in title for w in ['경제', '금융', '증시', '부동산', '기업', '주식', '은행', '배당']): section = "경제"
-                elif any(w in title for w in ['사회', '검찰', '경찰', '법원', '사건', '수사', '노동']): section = "사회"
-                elif any(w in title for w in ['문화', '연예', '스포츠', '방송', '영화', '공연']): section = "문화"
-                elif any(w in title for w in ['IT', '과학', 'AI', '반도체', '통신', '스마트폰']): section = "IT·과학"
-                elif any(w in title for w in ['사설', '칼럼', '오피니언', '시선', '기고', '그림마당']): section = "오피니언"
+        categorized = {}
+        all_articles = []
+        for idx, (link, title) in enumerate(dedup_items.items()):
+            section = categorize_khan_title(title)
+            article_obj = {
+                "id": f"khan_past_{clean_ymd}_{idx}",
+                "keyword": "경향신문",
+                "type": "news",
+                "badge": f"🗞️ 경향신문 · {section}",
+                "publisher": "경향신문",
+                "title": title,
+                "time": formatted_date,
+                "url": link,
+                "content": title,
+                "section": section
+            }
+            all_articles.append(article_obj)
+            if section not in categorized:
+                categorized[section] = []
+            categorized[section].append(article_obj)
 
-                article_obj = {
-                    "id": f"khan_past_{clean_ymd}_{idx}",
-                    "keyword": "경향신문",
-                    "type": "news",
-                    "badge": f"🗞️ 경향신문 · {section}",
-                    "publisher": "경향신문",
-                    "title": title,
-                    "time": formatted_date,
-                    "url": link,
-                    "content": title,
-                    "section": section
-                }
-                all_articles.append(article_obj)
-                if section not in categorized:
-                    categorized[section] = []
-                categorized[section].append(article_obj)
-
-            if all_articles:
-                return {
-                    "sections": list(categorized.keys()),
-                    "categorized": categorized,
-                    "articles": all_articles
-                }
+        if all_articles:
+            return {
+                "sections": list(categorized.keys()),
+                "categorized": categorized,
+                "articles": all_articles
+            }
     except Exception as e:
         print(f"Kyunghyang past date fetch error ({clean_ymd}):", e)
 
@@ -188,7 +216,7 @@ def fetch_khan_from_naver(clean_ymd=None):
     if not client_id or not client_secret:
         return {"sections": [], "categorized": {}, "articles": []}
 
-    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote('경향신문')}&display=40&sort=date"
+    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote('경향신문')}&display=50&sort=date"
     headers_naver = {
         "X-Naver-Client-Id": client_id,
         "X-Naver-Client-Secret": client_secret
@@ -216,12 +244,7 @@ def fetch_khan_from_naver(clean_ymd=None):
                 link = item.get("originallink") or item.get("link") or "#"
                 desc = clean_html(item.get("description", "")) or title
 
-                section = "종합"
-                if any(w in title for w in ['정치', '대통령', '국회', '정당']): section = "정치"
-                elif any(w in title for w in ['경제', '금융', '증시', '부동산']): section = "경제"
-                elif any(w in title for w in ['사회', '검찰', '경찰', '법원']): section = "사회"
-                elif any(w in title for w in ['문화', '연예', '스포츠', '방송']): section = "문화"
-                elif any(w in title for w in ['IT', '과학', 'AI', '반도체']): section = "IT·과학"
+                section = categorize_khan_title(title)
 
                 article_obj = {
                     "id": f"khan_naver_{idx}",
