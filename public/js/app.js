@@ -10,7 +10,7 @@ let currentKeyword = '용인시';
 let currentPaperDate = getTodayKstStr();
 let currentPaperSection = 'all';
 let currentPaperProvider = StorageManager.getPaperProvider() || 'mknews';
-if (!['mknews', 'etnews'].includes(currentPaperProvider)) {
+if (!['mknews', 'etnews', 'joongang'].includes(currentPaperProvider)) {
   currentPaperProvider = 'mknews';
   StorageManager.savePaperProvider('mknews');
 }
@@ -20,7 +20,8 @@ let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
 
 const PAPER_PROVIDERS = [
   { id: 'mknews', name: '매일경제', badge: '📈' },
-  { id: 'etnews', name: '전자신문', badge: '📰' }
+  { id: 'etnews', name: '전자신문', badge: '📰' },
+  { id: 'joongang', name: '중앙일보', badge: '🏢' }
 ];
 
 function getTodayKstStr() {

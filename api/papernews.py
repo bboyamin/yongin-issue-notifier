@@ -39,6 +39,17 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         except Exception as e:
             print("mknews dispatch error:", e)
 
+    # 3. Joongang
+    elif provider == "joongang":
+        try:
+            try:
+                from joongang import fetch_joongang_by_date
+            except ImportError:
+                from api.joongang import fetch_joongang_by_date
+            return fetch_joongang_by_date(clean_ymd)
+        except Exception as e:
+            print("joongang dispatch error:", e)
+
     return {"sections": [], "categorized": {}, "articles": []}
 
 class handler(BaseHTTPRequestHandler):
