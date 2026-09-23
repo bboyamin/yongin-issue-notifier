@@ -700,7 +700,19 @@ function renderPaperView() {
 
   const providerObj = PAPER_PROVIDERS.find(p => p.id === currentPaperProvider) || PAPER_PROVIDERS[0];
 
+  let holidayNotice = '';
+  if (paperData.is_holiday_fallback && paperData.actual_date) {
+    const act = paperData.actual_date;
+    const actualFmt = `${act.slice(0,4)}-${act.slice(4,6)}-${act.slice(6,8)}`;
+    holidayNotice = `
+      <div style="background:#FFFBEB; border:1px solid #FDE68A; color:#B45309; padding:10px 14px; border-radius:10px; font-size:12px; font-weight:700; margin-bottom:12px; line-height:1.5;">
+        📅 선택하신 날짜(${currentPaperDate})는 신문 휴간일(일요일/공휴일)입니다.<br/>가장 최근 발행된 <strong>${actualFmt}</strong> 지면 기사를 안내합니다.
+      </div>
+    `;
+  }
+
   let html = `
+    ${holidayNotice}
     <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155;">
       <div class="realtime-indicator">
         <span>${providerObj.badge} ${providerObj.name} 지면 (${articlesToRender.length}건)</span>

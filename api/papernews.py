@@ -4,8 +4,8 @@ import json
 import urllib.parse
 import requests
 import urllib3
-import re
 import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -13,76 +13,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Ensure api directory is in python module path for Vercel
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-def clean_html(text):
-    if not text:
-        return ""
-    return re.sub(r'<[^>]+>', '', text).strip()
-
-def parse_rss_items_with_elementtree(xml_content, press_name, press_badge, provider):
-    articles = []
-    categorized = {}
-    cur_fmt_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
-
-    try:
-        root = ET.fromstring(xml_content)
-        items = root.findall('.//item')
-
-        for idx, item in enumerate(items):
-            title_el = item.find('title')
-            link_el = item.find('link')
-            desc_el = item.find('description')
-            pub_el = item.find('pubDate')
-
-            title = clean_html(title_el.text) if title_el is not None and title_el.text else ""
-            if " - " in title:
-                title = title.rsplit(" - ", 1)[0].strip()
-            if not title or len(title) < 4:
-                continue
-
-            link = link_el.text.strip() if link_el is not None and link_el.text else "#"
-            desc = clean_html(desc_el.text) if desc_el is not None and desc_el.text else title
-
-            # Section categorization
-            section = "주요뉴스"
-            if any(w in title for w in ['정치', '대통령', '국회', '정당', '여당', '야당', '총리', '선거']):
-                section = "정치면"
-            elif any(w in title for w in ['경제', '금융', '증시', '주식', '금리', '부동산', '기업', '산업', '시황']):
-                section = "경제면"
-            elif any(w in title for w in ['사회', '검찰', '경찰', '법원', '사건', '사고', '교육', '복지']):
-                section = "사회면"
-            elif any(w in title for w in ['IT', 'AI', '과학', '반도체', '기술', '모바일', '통신', '로봇']):
-                section = "IT·과학면"
-            elif any(w in title for w in ['문화', '연예', '스포츠', '축구', '야구', '방송', '영화', '공연']):
-                section = "문화·스포츠면"
-
-            article_obj = {
-                "id": f"{provider}_{section}_{idx}",
-                "keyword": press_name,
-                "type": "news",
-                "badge": f"{press_badge} · {section}",
-                "publisher": press_name,
-                "title": title,
-                "time": cur_fmt_date,
-                "url": link,
-                "content": desc or title,
-                "section": section
-            }
-            articles.append(article_obj)
-            if section not in categorized:
-                categorized[section] = []
-            categorized[section].append(article_obj)
-
-    except Exception as e:
-        print(f"ElementTree parsing error for {provider}:", e)
-
-    if articles:
-        return {
-            "sections": list(categorized.keys()),
-            "categorized": categorized,
-            "articles": articles
-        }
-    return None
 
 def fetch_paper_news(provider="etnews", ymd_str=None):
     if not ymd_str:
@@ -105,7 +35,7 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         except Exception as e:
             print("etnews paper fetch error:", e)
 
-    # 2. MKNews (매일경제) -> Direct MK RSS fetcher (mk.co.kr)
+    # 2. MKNews (매일경제) -> Direct MK paper fetcher (mk.co.kr)
     elif provider == "mknews":
         try:
             try:
@@ -118,54 +48,165 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         except Exception as e:
             print("mknews paper fetch error:", e)
 
-    # 3. Chosun (조선일보), Joongang (중앙일보), Donga (동아일보)
-    press_configs = {
-        "chosun": {
-            "name": "조선일보",
-            "badge": "🗞️ 조선일보",
-            "urls": [
-                "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml",
-                "https://news.google.com/rss/search?q=site:chosun.com&hl=ko&gl=KR&ceid=KR:ko"
-            ]
-        },
-        "joongang": {
-            "name": "중앙일보",
-            "badge": "🏢 중앙일보",
-            "urls": [
-                "https://news.google.com/rss/search?q=site:joongang.co.kr&hl=ko&gl=KR&ceid=KR:ko",
-                "https://news.google.com/rss/search?q=%EC%A4%91%EC%95%99%EC%9D%BC%EB%B3%B4&hl=ko&gl=KR&ceid=KR:ko"
-            ]
-        },
-        "donga": {
-            "name": "동아일보",
-            "badge": "📰 동아일보",
-            "urls": [
-                "https://rss.donga.com/total.xml",
-                "https://news.google.com/rss/search?q=site:donga.com&hl=ko&gl=KR&ceid=KR:ko"
-            ]
-        }
+    # 3. Chosun (조선일보), Joongang (중앙일보), Donga (동아일보) -> Date-aware Paper Edition Engine
+    press_map = {
+        "chosun": ("023", "조선일보", "🗞️ 조선일보", "chosun.com"),
+        "joongang": ("025", "중앙일보", "🏢 중앙일보", "joongang.co.kr"),
+        "donga": ("020", "동아일보", "📰 동아일보", "donga.com")
     }
 
-    if provider not in press_configs:
+    if provider not in press_map:
         provider = "chosun"
 
-    config = press_configs[provider]
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "application/xml,text/xml,text/html;q=0.9,*/*;q=0.8"
-    }
+    press_code, press_name, press_badge, press_domain = press_map[provider]
 
-    for url in config["urls"]:
+    try:
+        dt_obj = datetime.strptime(clean_ymd, "%Y%m%d")
+    except Exception:
+        dt_obj = datetime.now(timezone(timedelta(hours=9)))
+        clean_ymd = dt_obj.strftime("%Y%m%d")
+
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://media.naver.com/",
+        "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Windows"'
+    })
+
+    # Step A: Naver Media Paper Edition Scraper by requested date (and previous 4 days if Sunday/holiday)
+    try_dates = [clean_ymd]
+    for i in range(1, 5):
+        try_dates.append((dt_obj - timedelta(days=i)).strftime("%Y%m%d"))
+
+    for current_ymd in try_dates:
+        url = f"https://media.naver.com/press/{press_code}/newspaper?date={current_ymd}"
         try:
-            res = requests.get(url, headers=headers, verify=False, timeout=4)
-            if res.status_code == 200 and len(res.content) > 200:
-                parsed_res = parse_rss_items_with_elementtree(res.content, config["name"], config["badge"], provider)
-                if parsed_res and parsed_res.get("articles"):
-                    return parsed_res
+            res = session.get(url, timeout=5, verify=False)
+            if res.status_code == 200:
+                soup = BeautifulSoup(res.text, "html.parser")
+                pages = soup.select(".newspaper_inner")
+                if not pages:
+                    continue
+
+                cur_fmt_date = f"{current_ymd[:4]}/{current_ymd[4:6]}/{current_ymd[6:8]}"
+                categorized = {}
+                all_articles = []
+                article_idx = 0
+
+                for page in pages:
+                    page_elem = page.select_one(".page_notation")
+                    section = page_elem.text.strip() if page_elem else "지면"
+                    if not section.endswith("면") and "면" not in section:
+                        section += "면"
+
+                    items = page.select("ul.newspaper_article_lst li a")
+                    for item in items:
+                        title_elem = item.select_one("strong") or item
+                        clean_title = title_elem.text.strip()
+                        href = item.get("href", "")
+                        if not clean_title or not href:
+                            continue
+
+                        if href.startswith("//"):
+                            href = "https:" + href
+
+                        article_obj = {
+                            "id": f"{provider}_{current_ymd}_{article_idx}",
+                            "keyword": press_name,
+                            "type": "news",
+                            "badge": f"{press_badge} · {section}",
+                            "publisher": press_name,
+                            "title": clean_title,
+                            "time": cur_fmt_date,
+                            "url": href,
+                            "content": clean_title,
+                            "section": section
+                        }
+                        all_articles.append(article_obj)
+                        if section not in categorized:
+                            categorized[section] = []
+                        categorized[section].append(article_obj)
+                        article_idx += 1
+
+                if all_articles:
+                    return {
+                        "requested_date": clean_ymd,
+                        "actual_date": current_ymd,
+                        "is_holiday_fallback": (current_ymd != clean_ymd),
+                        "sections": list(categorized.keys()),
+                        "categorized": categorized,
+                        "articles": all_articles
+                    }
         except Exception as e:
-            print(f"Direct RSS fetch error for {provider} ({url}):", e)
+            print(f"Paper print fetch error for {provider} ({current_ymd}):", e)
+
+    # Step B: Fallback - Google News Date Range Search (after:YYYY-MM-DD before:YYYY-MM-DD)
+    dt_next = dt_obj + timedelta(days=1)
+    after_str = dt_obj.strftime("%Y-%m-%d")
+    before_str = dt_next.strftime("%Y-%m-%d")
+    fmt_target_date = dt_obj.strftime("%Y/%m/%d")
+
+    g_url = f"https://news.google.com/rss/search?q=site:{press_domain}+after:{after_str}+before:{before_str}&hl=ko&gl=KR&ceid=KR:ko"
+    try:
+        r = session.get(g_url, timeout=5, verify=False)
+        if r.status_code == 200 and len(r.content) > 200:
+            root = ET.fromstring(r.content)
+            items = root.findall('.//item')
+            categorized = {}
+            all_articles = []
+
+            for idx, item in enumerate(items):
+                t_el = item.find('title')
+                l_el = item.find('link')
+                title = t_el.text.strip() if t_el is not None and t_el.text else ""
+                if " - " in title:
+                    title = title.rsplit(" - ", 1)[0].strip()
+                if not title or len(title) < 4:
+                    continue
+
+                link = l_el.text.strip() if l_el is not None and l_el.text else "#"
+                section = "주요뉴스"
+                if any(w in title for w in ['정치', '대통령', '국회', '정당', '여당', '야당']): section = "정치면"
+                elif any(w in title for w in ['경제', '금융', '증시', '주식', '금리', '부동산', '기업']): section = "경제면"
+                elif any(w in title for w in ['사회', '검찰', '경찰', '법원', '사건', '사고']): section = "사회면"
+                elif any(w in title for w in ['IT', 'AI', '과학', '반도체', '기술']): section = "IT·과학면"
+
+                art = {
+                    "id": f"{provider}_gdate_{idx}",
+                    "keyword": press_name,
+                    "type": "news",
+                    "badge": f"{press_badge} · {section}",
+                    "publisher": press_name,
+                    "title": title,
+                    "time": fmt_target_date,
+                    "url": link,
+                    "content": title,
+                    "section": section
+                }
+                all_articles.append(art)
+                if section not in categorized: categorized[section] = []
+                categorized[section].append(art)
+
+            if all_articles:
+                return {
+                    "requested_date": clean_ymd,
+                    "actual_date": clean_ymd,
+                    "is_holiday_fallback": False,
+                    "sections": list(categorized.keys()),
+                    "categorized": categorized,
+                    "articles": all_articles
+                }
+    except Exception as e:
+        print(f"Google date search fallback error for {provider}:", e)
 
     return {
+        "requested_date": clean_ymd,
+        "actual_date": clean_ymd,
+        "is_holiday_fallback": False,
         "sections": [],
         "categorized": {},
         "articles": []
