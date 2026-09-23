@@ -76,17 +76,23 @@ const IssueApi = (() => {
      * @param {string} dateStr 
      */
     async fetchPaperNews(provider = 'etnews', dateStr = '') {
-      try {
-        const url = `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&v=120&t=${Date.now()}`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.articles && data.articles.length > 0) {
-            return data;
+      const endpoints = [
+        `/api/${encodeURIComponent(provider)}?date=${encodeURIComponent(dateStr)}&v=300&t=${Date.now()}`,
+        `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&v=300&t=${Date.now()}`
+      ];
+
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.articles && data.articles.length > 0) {
+              return data;
+            }
           }
+        } catch (err) {
+          console.warn(`Fetch paper news error for ${provider} (${url}):`, err);
         }
-      } catch (err) {
-        console.warn(`Fetch paper news API error for ${provider}:`, err);
       }
 
       // Multi-Proxy Client Fallback if Server API returns 0 articles or fails
