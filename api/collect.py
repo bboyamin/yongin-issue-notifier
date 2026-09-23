@@ -300,6 +300,83 @@ class handler(BaseHTTPRequestHandler):
         params = urllib.parse.parse_qs(parsed.query)
 
         # --------------------------------------------------
+        # 0. Route for Khan (경향신문 지면 기사)
+        # --------------------------------------------------
+        is_khan = ("khan" in path_str) or (params.get('provider', [None])[0] in ['khan', 'kyunghyang']) or (params.get('mode', [None])[0] in ['khan', 'kyunghyang'])
+        if is_khan:
+            date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
+            if not date_param:
+                kst = timezone(timedelta(hours=9))
+                date_param = datetime.now(kst).strftime("%Y%m%d")
+            
+            ymd_str = date_param.replace("-", "").strip()
+            try:
+                from api.khan import fetch_khan_by_date
+            except ImportError:
+                try:
+                    from khan import fetch_khan_by_date
+                except ImportError:
+                    fetch_khan_by_date = None
+            
+            try:
+                if fetch_khan_by_date:
+                    result = fetch_khan_by_date(ymd_str)
+                else:
+                    result = {"sections": [], "categorized": {}, "articles": []}
+            except Exception as e:
+                print("Khan fetch in collect.py error:", e)
+                result = {"sections": [], "categorized": {}, "articles": []}
+
+            body = json.dumps(result, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        # --------------------------------------------------
+        # Route for Papernews (통합 지면 기사 API)
+        # --------------------------------------------------
+        is_papernews = ("papernews" in path_str)
+        if is_papernews:
+            provider = params.get('provider', ['etnews'])[0]
+            date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
+            if not date_param:
+                kst = timezone(timedelta(hours=9))
+                date_param = datetime.now(kst).strftime("%Y%m%d")
+            
+            ymd_str = date_param.replace("-", "").strip()
+            try:
+                from api.papernews import fetch_paper_news
+            except ImportError:
+                try:
+                    from papernews import fetch_paper_news
+                except ImportError:
+                    fetch_paper_news = None
+
+            try:
+                if fetch_paper_news:
+                    result = fetch_paper_news(provider=provider, ymd_str=ymd_str)
+                else:
+                    result = {"sections": [], "categorized": {}, "articles": []}
+            except Exception as e:
+                print("Papernews fetch in collect.py error:", e)
+                result = {"sections": [], "categorized": {}, "articles": []}
+
+            body = json.dumps(result, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        # --------------------------------------------------
         # 1. Route for MKNews (매일경제 지면 기사)
         # --------------------------------------------------
         is_mknews = ("mknews" in path_str) or (params.get('provider', [None])[0] == 'mknews') or (params.get('mode', [None])[0] == 'mknews')
@@ -312,7 +389,17 @@ class handler(BaseHTTPRequestHandler):
             ymd_str = date_param.replace("-", "").strip()
             try:
                 from api.mknews import fetch_mknews_by_date
-                result = fetch_mknews_by_date(ymd_str)
+            except ImportError:
+                try:
+                    from mknews import fetch_mknews_by_date
+                except ImportError:
+                    fetch_mknews_by_date = None
+
+            try:
+                if fetch_mknews_by_date:
+                    result = fetch_mknews_by_date(ymd_str)
+                else:
+                    result = {"sections": [], "categorized": {}, "articles": []}
             except Exception as e:
                 print("MKNews fetch in collect.py error:", e)
                 result = {"sections": [], "categorized": {}, "articles": []}

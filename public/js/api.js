@@ -76,7 +76,7 @@ const IssueApi = (() => {
      * @param {string} dateStr 
      */
     async fetchPaperNews(provider = 'etnews', dateStr = '') {
-      const cleanProvider = (provider || 'etnews').toLowerCase().strip ? provider.toLowerCase().strip() : String(provider).toLowerCase();
+      const cleanProvider = String(provider || 'etnews').toLowerCase().trim();
       const endpoints = [
         `/api/${cleanProvider}?date=${encodeURIComponent(dateStr)}&t=${Date.now()}`,
         `/api/papernews?provider=${encodeURIComponent(cleanProvider)}&date=${encodeURIComponent(dateStr)}&t=${Date.now()}`
