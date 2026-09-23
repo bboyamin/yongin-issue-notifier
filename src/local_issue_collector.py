@@ -526,73 +526,93 @@ def fetch_korea_kr_rss(limit=100):
     items = []
     seen_ids = set()
 
-    for page in range(1, 6):
+    def fetch_single_page(page):
         url = f"https://www.korea.kr/briefing/pressReleaseList.do?pageIndex={page}"
         try:
-            res = requests.get(url, headers=headers, timeout=6)
+            res = requests.get(url, headers=headers, timeout=4)
             if res.status_code == 200:
-                soup = BeautifulSoup(res.text, "html.parser")
-                links = soup.find_all("a", href=True)
-
-                for a in links:
-                    href = a["href"]
-                    if "pressReleaseView.do" not in href:
-                        continue
-
-                    match = re.search(r"newsId=(\d+)", href)
-                    news_id = match.group(1) if match else None
-                    if not news_id or news_id in seen_ids:
-                        continue
-                    seen_ids.add(news_id)
-
-                    full_url = href if href.startswith("http") else "https://www.korea.kr" + href
-                    parent = a.find_parent("li") or a.find_parent("div") or a
-                    raw_text = parent.text.strip() if parent else a.text.strip()
-
-                    title_elem = a.select_one("strong") or a.select_one(".title") or a
-                    title = BeautifulSoup(title_elem.text, "html.parser").text.strip()
-                    title = re.sub(r"^\s*보도자료\s*", "", title).strip()
-                    if not title or len(title) < 5:
-                        continue
-
-                    source_elem = parent.select_one(".source") or parent.select_one(".writer") or parent.select_one(".info")
-                    source_text = source_elem.text.strip() if source_elem else ""
-                    search_target = f"{source_text} {raw_text}"
-
-                    dept = None
-                    for official_name, aliases in DEPT_MAP:
-                        if any(alias in search_target or alias in title for alias in aliases):
-                            dept = official_name
-                            break
-
-                    if not dept:
-                        clean_s = re.sub(r"\d{4}[./-]\d{2}[./-]\d{2}", "", source_text).strip()
-                        if clean_s and len(clean_s) <= 15:
-                            dept = clean_s
-                        else:
-                            dept = "정부부처"
-
-                    date_str = datetime.now().strftime("%Y-%m-%d 09:00:00")
-                    date_match = re.search(r"(\d{4}[./-]\d{2}[./-]\d{2})", raw_text)
-                    if date_match:
-                        date_str = date_match.group(1).replace(".", "-").replace("/", "-") + " 09:00:00"
-
-                    items.append({
-                        "id": f"gov_press_{news_id}",
-                        "keyword": "보도자료",
-                        "type": "news",
-                        "badge": f"🏛️ {dept}",
-                        "publisher": dept,
-                        "title": title,
-                        "time": date_str,
-                        "url": full_url,
-                        "content": title
-                    })
-
-                    if len(items) >= limit:
-                        break
+                return (page, res.text)
         except Exception as e:
-            print(f"Error fetching gov press releases (page {page}):", e)
+            print(f"Error fetching gov press releases page {page}:", e)
+        return (page, None)
+
+    pages_html = []
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [executor.submit(fetch_single_page, p) for p in range(1, 4)]
+        for f in futures:
+            try:
+                pages_html.append(f.result(timeout=4.0))
+            except Exception:
+                pass
+
+    pages_html.sort(key=lambda x: x[0])
+
+    for page, html_text in pages_html:
+        if not html_text:
+            continue
+        try:
+            soup = BeautifulSoup(html_text, "html.parser")
+            links = soup.find_all("a", href=True)
+
+            for a in links:
+                href = a["href"]
+                if "pressReleaseView.do" not in href:
+                    continue
+
+                match = re.search(r"newsId=(\d+)", href)
+                news_id = match.group(1) if match else None
+                if not news_id or news_id in seen_ids:
+                    continue
+                seen_ids.add(news_id)
+
+                full_url = href if href.startswith("http") else "https://www.korea.kr" + href
+                parent = a.find_parent("li") or a.find_parent("div") or a
+                raw_text = parent.text.strip() if parent else a.text.strip()
+
+                title_elem = a.select_one("strong") or a.select_one(".title") or a
+                title = BeautifulSoup(title_elem.text, "html.parser").text.strip()
+                title = re.sub(r"^\s*보도자료\s*", "", title).strip()
+                if not title or len(title) < 5:
+                    continue
+
+                source_elem = parent.select_one(".source") or parent.select_one(".writer") or parent.select_one(".info")
+                source_text = source_elem.text.strip() if source_elem else ""
+                search_target = f"{source_text} {raw_text}"
+
+                dept = None
+                for official_name, aliases in DEPT_MAP:
+                    if any(alias in search_target or alias in title for alias in aliases):
+                        dept = official_name
+                        break
+
+                if not dept:
+                    clean_s = re.sub(r"\d{4}[./-]\d{2}[./-]\d{2}", "", source_text).strip()
+                    if clean_s and len(clean_s) <= 15:
+                        dept = clean_s
+                    else:
+                        dept = "정부부처"
+
+                date_str = datetime.now().strftime("%Y-%m-%d 09:00:00")
+                date_match = re.search(r"(\d{4}[./-]\d{2}[./-]\d{2})", raw_text)
+                if date_match:
+                    date_str = date_match.group(1).replace(".", "-").replace("/", "-") + " 09:00:00"
+
+                items.append({
+                    "id": f"gov_press_{news_id}",
+                    "keyword": "보도자료",
+                    "type": "news",
+                    "badge": f"🏛️ {dept}",
+                    "publisher": dept,
+                    "title": title,
+                    "time": date_str,
+                    "url": full_url,
+                    "content": title
+                })
+
+                if len(items) >= limit:
+                    break
+        except Exception as e:
+            print(f"Error parsing gov press releases page {page}:", e)
 
         if len(items) >= limit:
             break

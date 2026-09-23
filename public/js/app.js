@@ -38,10 +38,17 @@ function formatRelativeTime(timeStr) {
   if (timeStr.includes('방금') || timeStr.includes('전') || timeStr.includes('어제')) return timeStr;
   
   try {
-    const pubDate = new Date(timeStr.replace(/-/g, '/'));
+    let cleanStr = String(timeStr).trim().replace(/\//g, '-');
+    if (cleanStr.length === 10) cleanStr += ' 00:00:00';
+    let isoStr = cleanStr.replace(' ', 'T');
+    if (!isoStr.includes('+') && !isoStr.includes('Z')) {
+      isoStr += '+09:00';
+    }
+    const pubDate = new Date(isoStr);
     if (isNaN(pubDate.getTime())) return timeStr;
     const diffMin = Math.floor((Date.now() - pubDate.getTime()) / 60000);
 
+    if (diffMin < 0) return '방금 전';
     if (diffMin < 1) return '방금 전';
     if (diffMin < 60) return `${diffMin}분 전`;
     const diffHours = Math.floor(diffMin / 60);

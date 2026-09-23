@@ -19,10 +19,16 @@ except ImportError:
     def collect_all_issues(keywords=None):
         return []
 
-def load_static_issues():
+def load_static_issues(tab="realtime"):
+    file_map = {
+        "exclusive": "issues_exclusive.json",
+        "press": "issues_press.json",
+        "realtime": "issues_realtime.json"
+    }
+    target_filename = file_map.get(tab, "issues.json")
     paths = [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json")),
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "LocalIssueNotifier", "data", "issues.json"))
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", target_filename)),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json"))
     ]
     for p in paths:
         if os.path.exists(p):
@@ -379,11 +385,11 @@ class handler(BaseHTTPRequestHandler):
             if live_issues and len(live_issues) > 0:
                 issues = live_issues
             else:
-                current_static = load_static_issues()
+                current_static = load_static_issues(tab=tab)
                 issues = current_static or []
         except Exception as e:
             print("Vercel collect error:", e)
-            issues = load_static_issues() or []
+            issues = load_static_issues(tab=tab) or []
 
         body = json.dumps(issues, ensure_ascii=False).encode('utf-8')
 
