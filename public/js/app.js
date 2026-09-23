@@ -790,6 +790,15 @@ function showToast(msg) {
 
 // Initializer
 document.addEventListener('DOMContentLoaded', () => {
+  // Force update PWA Service Worker and clear stale app shell cache
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (let reg of registrations) {
+        reg.update();
+      }
+    });
+  }
+
   const userKws = StorageManager.getKeywords();
   currentKeyword = userKws.length ? userKws[0] : '용인시';
   renderKeywordChips();
