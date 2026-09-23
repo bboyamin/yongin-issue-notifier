@@ -76,95 +76,18 @@ const IssueApi = (() => {
      * @param {string} dateStr 
      */
     async fetchPaperNews(provider = 'etnews', dateStr = '') {
-      const endpoints = [
-        `/api/${encodeURIComponent(provider)}?date=${encodeURIComponent(dateStr)}&v=300&t=${Date.now()}`,
-        `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&v=300&t=${Date.now()}`
-      ];
-
-      for (const url of endpoints) {
-        try {
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.articles && data.articles.length > 0) {
-              return data;
-            }
-          }
-        } catch (err) {
-          console.warn(`Fetch paper news error for ${provider} (${url}):`, err);
-        }
-      }
-
-      // Multi-Proxy Client Fallback if Server API returns 0 articles or fails
       try {
-        const domainMap = {
-          etnews: { domain: 'etnews.com', name: '전자신문', badge: '📰 전자신문' },
-          mknews: { domain: 'mk.co.kr', name: '매일경제', badge: '📈 매일경제' }
-        };
-        const info = domainMap[provider];
-        if (info) {
-          const rssTarget = encodeURIComponent(`https://news.google.com/rss/search?q=site:${info.domain}&hl=ko&gl=KR&ceid=KR:ko`);
-          const proxies = [
-            `https://corsproxy.io/?url=${rssTarget}`,
-            `https://api.allorigins.win/raw?url=${rssTarget}`,
-            `https://api.codetabs.com/v1/proxy?quest=${rssTarget}`
-          ];
-
-          for (const proxyUrl of proxies) {
-            try {
-              const gRes = await fetch(proxyUrl);
-              if (gRes.ok) {
-                const xmlText = await gRes.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-                const items = Array.from(xmlDoc.querySelectorAll('item'));
-                const articles = [];
-                const categorized = {};
-                const curDate = new Date().toISOString().split('T')[0].replace(/-/g, '/');
-
-                items.forEach((item, idx) => {
-                  let title = item.querySelector('title')?.textContent || '';
-                  if (title.includes(' - ')) title = title.split(' - ')[0].trim();
-                  if (!title || title.length < 4) return;
-
-                  const link = item.querySelector('link')?.textContent || '#';
-
-                  let section = '주요뉴스';
-                  if (/정치|대통령|국회|정당|여당|야당/.test(title)) section = '정치면';
-                  else if (/경제|금융|증시|주식|금리|부동산|기업/.test(title)) section = '경제면';
-                  else if (/사회|검찰|경찰|사건|사고/.test(title)) section = '사회면';
-                  else if (/IT|AI|과학|반도체|기술/.test(title)) section = 'IT·과학면';
-
-                  const art = {
-                    id: `${provider}_client_${idx}`,
-                    keyword: info.name,
-                    type: 'news',
-                    badge: `${info.badge} · ${section}`,
-                    publisher: info.name,
-                    title: title,
-                    time: curDate,
-                    url: link,
-                    content: title,
-                    section: section
-                  };
-                  articles.push(art);
-                  if (!categorized[section]) categorized[section] = [];
-                  categorized[section].push(art);
-                });
-
-                if (articles.length > 0) {
-                  return { sections: Object.keys(categorized), categorized, articles };
-                }
-              }
-            } catch (e) {
-              console.warn('Proxy failed:', proxyUrl, e);
-            }
+        const url = `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&t=${Date.now()}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && (data.articles || data.sections)) {
+            return data;
           }
         }
       } catch (err) {
-        console.warn('Client-side RSS fallback error:', err);
+        console.warn(`Fetch paper news error for ${provider}:`, err);
       }
-
       return { sections: [], categorized: {}, articles: [] };
     },
 

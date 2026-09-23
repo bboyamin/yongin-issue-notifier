@@ -10,10 +10,6 @@ let currentKeyword = '용인시';
 let currentPaperDate = getTodayKstStr();
 let currentPaperSection = 'all';
 let currentPaperProvider = StorageManager.getPaperProvider() || 'mknews';
-if (!['mknews', 'etnews', 'joongang'].includes(currentPaperProvider)) {
-  currentPaperProvider = 'mknews';
-  StorageManager.savePaperProvider('mknews');
-}
 let currentPressDept = 'all';
 let paperData = null;
 let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
@@ -21,7 +17,9 @@ let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
 const PAPER_PROVIDERS = [
   { id: 'mknews', name: '매일경제', badge: '📈' },
   { id: 'etnews', name: '전자신문', badge: '📰' },
-  { id: 'joongang', name: '중앙일보', badge: '🏢' }
+  { id: 'chosun', name: '조선일보', badge: '🗞️' },
+  { id: 'joongang', name: '중앙일보', badge: '🏢' },
+  { id: 'donga', name: '동아일보', badge: '📰' }
 ];
 
 function getTodayKstStr() {
@@ -48,8 +46,7 @@ function formatRelativeTime(timeStr) {
     if (isNaN(pubDate.getTime())) return timeStr;
     const diffMin = Math.floor((Date.now() - pubDate.getTime()) / 60000);
 
-    if (diffMin < 0) return '방금 전';
-    if (diffMin < 1) return '방금 전';
+    if (diffMin < 0 || diffMin < 1) return '방금 전';
     if (diffMin < 60) return `${diffMin}분 전`;
     const diffHours = Math.floor(diffMin / 60);
     if (diffHours < 24) return `${diffHours}시간 전`;
@@ -214,11 +211,7 @@ async function fetchKeywordIssues(keywordsList) {
 }
 
 async function fetchTabIssues(tabName) {
-  const tabTitles = {
-    press: '📋 공식 보도자료',
-    exclusive: '🎯 단독 뉴스'
-  };
-  showToast(`🔄 [${tabTitles[tabName] || tabName}] 수집 중...`);
+  showToast(`🔄 [${tabName}] 수집 중...`);
   try {
     const issues = await IssueApi.fetchTabIssues(tabName);
     tabFeeds[tabName] = issues || [];
@@ -234,7 +227,6 @@ async function fetchTabIssues(tabName) {
 
 async function switchNavTab(tab, btn) {
   currentNavTab = tab;
-  currentIssues = [];
 
   const navBtns = document.querySelectorAll('.app-bottom-nav .nav-item');
   navBtns.forEach(b => b.classList.remove('active'));
@@ -243,7 +235,6 @@ async function switchNavTab(tab, btn) {
   const keywordChips = document.getElementById('keywordChips');
   const etnewsHeader = document.getElementById('etnewsHeader');
   const pressHeader = document.getElementById('pressHeader');
-  const container = document.getElementById('feedContainer');
 
   if (pressHeader) pressHeader.style.display = (tab === 'press') ? 'block' : 'none';
 
@@ -254,21 +245,6 @@ async function switchNavTab(tab, btn) {
     await loadPaperForCurrentDate();
   } else {
     if (etnewsHeader) etnewsHeader.style.display = 'none';
-
-    if (container && tab !== 'bookmark') {
-      const titleMap = {
-        press: '📋 정부/지자체 공식 보도자료 수집 중...',
-        exclusive: '🎯 단독 뉴스 수집 중...',
-        feed: '🔄 실시간 이슈 수집 중...'
-      };
-      container.innerHTML = `
-        <div style="text-align:center; padding: 60px 20px; color:#64748B;">
-          <span class="spin-icon" style="font-size:28px; display:inline-block; margin-bottom:10px;">🔄</span>
-          <p style="font-size:15px; font-weight:700; color:var(--text-main);">${titleMap[tab] || '데이터 수집 중...'}</p>
-          <p style="font-size:12px; color:#64748B; margin-top:4px;">최신 소식을 가져오고 있습니다.</p>
-        </div>
-      `;
-    }
 
     if (tab === 'feed') {
       if (keywordChips) keywordChips.style.display = 'flex';
@@ -730,19 +706,7 @@ function renderPaperView() {
 
   const providerObj = PAPER_PROVIDERS.find(p => p.id === currentPaperProvider) || PAPER_PROVIDERS[0];
 
-  let holidayNotice = '';
-  if (paperData.is_holiday_fallback && paperData.actual_date) {
-    const act = paperData.actual_date;
-    const actualFmt = `${act.slice(0,4)}-${act.slice(4,6)}-${act.slice(6,8)}`;
-    holidayNotice = `
-      <div style="background:#FFFBEB; border:1px solid #FDE68A; color:#B45309; padding:10px 14px; border-radius:10px; font-size:12px; font-weight:700; margin-bottom:12px; line-height:1.5;">
-        📅 선택하신 날짜(${currentPaperDate})는 신문 휴간일(일요일/공휴일)입니다.<br/>가장 최근 발행된 <strong>${actualFmt}</strong> 지면 기사를 안내합니다.
-      </div>
-    `;
-  }
-
   let html = `
-    ${holidayNotice}
     <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155;">
       <div class="realtime-indicator">
         <span>${providerObj.badge} ${providerObj.name} 지면 (${articlesToRender.length}건)</span>
@@ -820,15 +784,6 @@ function showToast(msg) {
 
 // Initializer
 document.addEventListener('DOMContentLoaded', () => {
-  // Force update PWA Service Worker and clear stale app shell cache
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-      for (let reg of registrations) {
-        reg.update();
-      }
-    });
-  }
-
   const userKws = StorageManager.getKeywords();
   currentKeyword = userKws.length ? userKws[0] : '용인시';
   renderKeywordChips();
