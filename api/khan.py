@@ -53,6 +53,8 @@ def fetch_single_feed(item_tuple):
                     continue
 
                 link = l_el.text.strip() if l_el is not None and l_el.text else "#"
+                if "khan.co.kr" in link and "?" in link:
+                    link = link.split("?")[0]
                 desc = clean_html(d_el.text) if d_el is not None and d_el.text else title
 
                 kst = timezone(timedelta(hours=9))

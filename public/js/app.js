@@ -233,10 +233,16 @@ async function fetchTabIssues(tabName) {
 
 async function switchNavTab(tab, btn) {
   currentNavTab = tab;
+  StorageManager.saveActiveNavTab(tab);
 
   const navBtns = document.querySelectorAll('.app-bottom-nav .nav-item');
   navBtns.forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
+  if (btn) {
+    btn.classList.add('active');
+  } else {
+    const targetBtn = document.querySelector(`.app-bottom-nav .nav-item[data-tab="${tab}"]`);
+    if (targetBtn) targetBtn.classList.add('active');
+  }
 
   const keywordChips = document.getElementById('keywordChips');
   const etnewsHeader = document.getElementById('etnewsHeader');
@@ -795,5 +801,12 @@ document.addEventListener('DOMContentLoaded', () => {
   currentKeyword = userKws.length ? userKws[0] : '용인시';
   renderKeywordChips();
   updateHeaderScrapBadge();
-  fetchKeywordIssues([currentKeyword]);
+
+  const savedTab = StorageManager.getActiveNavTab();
+  if (savedTab && savedTab !== 'feed') {
+    const navBtn = document.querySelector(`.app-bottom-nav .nav-item[data-tab="${savedTab}"]`);
+    switchNavTab(savedTab, navBtn);
+  } else {
+    fetchKeywordIssues([currentKeyword]);
+  }
 });

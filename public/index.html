@@ -114,19 +114,19 @@
 
       <!-- Bottom Navigation Bar (4 Main Content Categories) -->
       <div class="app-bottom-nav">
-        <button class="nav-item active" onclick="switchNavTab('feed', this)">
+        <button class="nav-item active" data-tab="feed" onclick="switchNavTab('feed', this)">
           <span class="nav-icon">🏠</span>
           <span>실시간 피드</span>
         </button>
-        <button class="nav-item" onclick="switchNavTab('paper', this)">
+        <button class="nav-item" data-tab="paper" onclick="switchNavTab('paper', this)">
           <span class="nav-icon">📰</span>
           <span>지면보기</span>
         </button>
-        <button class="nav-item" onclick="switchNavTab('exclusive', this)">
+        <button class="nav-item" data-tab="exclusive" onclick="switchNavTab('exclusive', this)">
           <span class="nav-icon">🎯</span>
           <span>단독뉴스</span>
         </button>
-        <button class="nav-item" onclick="switchNavTab('press', this)">
+        <button class="nav-item" data-tab="press" onclick="switchNavTab('press', this)">
           <span class="nav-icon">📋</span>
           <span>보도자료</span>
         </button>

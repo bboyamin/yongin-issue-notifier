@@ -178,6 +178,23 @@ const StorageManager = (() => {
       try {
         if (provider) localStorage.setItem('paper_provider', provider);
       } catch (e) {}
+    },
+
+    getActiveNavTab() {
+      try {
+        return sessionStorage.getItem('active_nav_tab') || localStorage.getItem('active_nav_tab') || 'feed';
+      } catch (e) {
+        return 'feed';
+      }
+    },
+
+    saveActiveNavTab(tab) {
+      try {
+        if (tab) {
+          sessionStorage.setItem('active_nav_tab', tab);
+          localStorage.setItem('active_nav_tab', tab);
+        }
+      } catch (e) {}
     }
   };
 })();
