@@ -53,6 +53,14 @@ def fetch_jtbc_by_date(ymd_str=None):
                     link = l_el.text.strip() if l_el is not None and l_el.text else "#"
                     desc = clean_html(d_el.text) if d_el is not None and d_el.text else title
 
+                    p_el = item.find('pubDate')
+                    raw_pub = p_el.text.strip() if p_el is not None and p_el.text else ""
+                    pub_time = formatted_date
+                    if raw_pub:
+                        clean_pub = raw_pub.replace('.', '-').strip()
+                        if len(clean_pub) >= 10 and clean_pub[:4].isdigit():
+                            pub_time = clean_pub[:10].replace('-', '/')
+
                     article_obj = {
                         "id": f"jtbc_rss_{section_name}_{idx}",
                         "keyword": "JTBC",
@@ -60,7 +68,7 @@ def fetch_jtbc_by_date(ymd_str=None):
                         "badge": f"📺 JTBC · {section_name}",
                         "publisher": "JTBC",
                         "title": title,
-                        "time": formatted_date,
+                        "time": pub_time,
                         "url": link,
                         "content": desc or title,
                         "section": section_name
