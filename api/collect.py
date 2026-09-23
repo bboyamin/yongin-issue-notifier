@@ -369,26 +369,17 @@ class handler(BaseHTTPRequestHandler):
             return
 
         force_refresh = params.get('force', ['false'])[0].lower() == 'true'
-        kw_str = params.get('keywords', ['용인시,처인구,용인특례시'])[0]
-        keywords = [k.strip() for k in kw_str.split(',') if k.strip()]
+        tab = params.get('tab', ['realtime'])[0].lower().strip()
+        kw_str = params.get('keywords', [None])[0]
+        keywords = [k.strip() for k in kw_str.split(',') if k.strip()] if kw_str else None
 
         issues = []
         try:
-            current_static = load_static_issues()
-            live_issues = collect_all_issues(keywords=keywords)
+            live_issues = collect_all_issues(keywords=keywords, tab=tab)
             if live_issues and len(live_issues) > 0:
-                if current_static:
-                    existing_keys = {item.get('url') or item.get('title') for item in live_issues if item.get('url') or item.get('title')}
-                    merged_list = list(live_issues)
-                    for s_item in current_static:
-                        k = s_item.get('url') or s_item.get('title')
-                        if k and k not in existing_keys:
-                            existing_keys.add(k)
-                            merged_list.append(s_item)
-                    issues = merged_list
-                else:
-                    issues = live_issues
+                issues = live_issues
             else:
+                current_static = load_static_issues()
                 issues = current_static or []
         except Exception as e:
             print("Vercel collect error:", e)

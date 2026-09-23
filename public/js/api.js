@@ -7,14 +7,14 @@ const IssueApi = (() => {
 
   return {
     /**
-     * Collect issues dynamically for the provided keywords
+     * Collect issues dynamically for the provided keywords (Realtime feed 100% original)
      * @param {string[]} keywordsList 
      * @returns {Promise<Array>}
      */
-    async fetchKeywordIssues(keywordsList) {
+    async fetchKeywordIssues(keywordsList = ['용인시']) {
       try {
         const kwParam = encodeURIComponent(keywordsList.join(','));
-        const res = await fetch(`/api/collect?keywords=${kwParam}&force=true&v=75&t=${Date.now()}`);
+        const res = await fetch(`/api/collect?keywords=${kwParam}&force=true&v=78&t=${Date.now()}`);
         if (res.ok) {
           const liveData = await res.json();
           if (Array.isArray(liveData) && liveData.length > 0) {
@@ -22,17 +22,37 @@ const IssueApi = (() => {
           }
         }
       } catch (err) {
-        console.warn('Live API collect error, loading default dataset:', err);
+        console.warn('Live API collect error for keywords, loading default dataset:', err);
       }
-      return await this.loadDefaultIssues();
+      return await this.loadDefaultIssues('realtime');
     },
 
-    async loadDefaultIssues() {
+    /**
+     * Collect issues dynamically for the specified tab ('exclusive', 'ranking', 'press')
+     * @param {string} tabName 
+     * @returns {Promise<Array>}
+     */
+    async fetchTabIssues(tabName = 'realtime') {
+      try {
+        const res = await fetch(`/api/collect?tab=${tabName}&force=true&v=78&t=${Date.now()}`);
+        if (res.ok) {
+          const liveData = await res.json();
+          if (Array.isArray(liveData) && liveData.length > 0) {
+            return liveData;
+          }
+        }
+      } catch (err) {
+        console.warn(`Live API collect error for tab [${tabName}]:`, err);
+      }
+      return await this.loadDefaultIssues(tabName);
+    },
+
+    async loadDefaultIssues(tabName = 'realtime') {
       const timestamp = Date.now();
       const paths = [
-        `./data/issues.json?v=75&t=${timestamp}`,
-        `data/issues.json?v=75&t=${timestamp}`,
-        `/data/issues.json?v=75&t=${timestamp}`
+        `./data/issues_${tabName}.json?v=78&t=${timestamp}`,
+        `data/issues_${tabName}.json?v=78&t=${timestamp}`,
+        `./data/issues.json?v=78&t=${timestamp}`
       ];
       for (const p of paths) {
         try {
@@ -51,20 +71,39 @@ const IssueApi = (() => {
     },
 
     /**
-     * Generate On-Demand 3-line AI summary via FactChat Gateway
-     * @param {Object} params { title, keyword, content, apiKey }
-     * @returns {Promise<{ summary: string[], is_negative: boolean }>}
+     * Fetch paper news for 5 newspapers (etnews, mknews, chosun, joongang, donga)
+     * @param {string} provider 
+     * @param {string} dateStr 
      */
-    async generateSummary({ title, keyword = '용인시', content = '', apiKey }) {
+    async fetchPaperNews(provider = 'etnews', dateStr = '') {
+      try {
+        const url = `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&t=${Date.now()}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && (data.articles || data.sections)) {
+            return data;
+          }
+        }
+      } catch (err) {
+        console.warn(`Fetch paper news error for ${provider}:`, err);
+      }
+      return { sections: [], categorized: {}, articles: [] };
+    },
+
+    /**
+     * Generate On-Demand 3-line AI summary via FactChat Gateway
+     */
+    async generateSummary({ title, keyword = '이슈', content = '', apiKey }) {
       if (!apiKey) {
         throw new Error('FactChat API Key is missing');
       }
 
-      const prompt = `아래 이슈 기사를 읽고 핵심 요약 3줄(번호 1,2,3 형태)과 부정/위험 여부를 판단해 JSON으로 응답해 주세요.
+      const prompt = `아래 이슈 기사/보도자료를 읽고 핵심 내용과 주요 팩트(2~4개 포인트)를 명확히 정리하고 부정/위험 여부를 판단해 JSON으로 응답해 주세요.
 [제목]: ${title}
 [키워드]: ${keyword}
 [내용]: ${(content || title).slice(0, 1500)}
-JSON 응답 형식: {"summary": ["요약1", "요약2", "요약3"], "is_negative": true 또는 false}`;
+JSON 응답 형식: {"summary": ["핵심 포인트1", "핵심 포인트2", "핵심 포인트3"], "is_negative": true 또는 false}`;
 
       const res = await fetch(FACTCHAT_ENDPOINT, {
         method: 'POST',

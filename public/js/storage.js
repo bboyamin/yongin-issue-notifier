@@ -10,7 +10,7 @@ const StorageManager = (() => {
     FACTCHAT_KEY: 'factchat_api_key'
   };
 
-  const DEFAULT_KEYWORDS = ['용인시', '처인구', '용인특례시'];
+  const DEFAULT_KEYWORDS = ['용인시'];
   const DEFAULT_NOTIFY = { realtime: true, negative: true, briefing: true };
   const DEFAULT_FACTCHAT_KEY = '';
 
@@ -61,7 +61,10 @@ const StorageManager = (() => {
     },
 
     removeKeyword(kw) {
-      const current = this.getKeywords().filter(k => k !== kw);
+      let current = this.getKeywords().filter(k => k !== kw);
+      if (current.length === 0) {
+        current = DEFAULT_KEYWORDS;
+      }
       this.saveKeywords(current);
       return current;
     },

@@ -106,16 +106,20 @@ def factchat_summarize(title, content, keyword):
         "Content-Type": "application/json"
     }
 
-    prompt = f"""아래 지역 관련 이슈 글을 읽고 핵심 요약 3줄과 부정/위험 여부를 판단해 주세요.
+    prompt = f"""아래 지역 관련 뉴스/보도자료 글을 읽고 핵심 내용과 주요 팩트를 명확하게 요약해 주세요.
 
 [이슈 제목]: {title}
 [이슈 키워드]: {keyword}
 [이슈 내용]:
 {content[:1500]}
 
+작성 지침:
+1. 형식적인 문장 늘리기를 피하고, 기사의 핵심 내용, 주요 수치/일정/장소, 주요 영향/반응 등 가장 핵심적인 팩트 위주로 2~4개 포인트를 정리해 주세요.
+2. 공무원 및 시청 직원들이 보기에 명확하고 직관적인 어조로 작성해 주세요.
+
 응답 형식 (JSON):
 {{
-  "summary": ["요약1", "요약2", "요약3"],
+  "summary": ["핵심 포인트1", "핵심 포인트2", "핵심 포인트3"],
   "is_negative": true 또는 false
 }}
 """
@@ -149,7 +153,7 @@ def factchat_summarize(title, content, keyword):
             summary = parsed.get("summary", [])
             is_neg = parsed.get("is_negative", False)
         else:
-            summary = [line.strip("- 1.2.3.").strip() for line in ai_text.split("\n") if line.strip()][:3]
+            summary = [line.strip("- 1.2.3.").strip() for line in ai_text.split("\n") if line.strip()][:4]
             is_neg = False
 
         # Save to Cache
@@ -163,9 +167,9 @@ def factchat_summarize(title, content, keyword):
 
 def mock_llm_summarize(title, content, keyword):
     summary = [
-        f"'{keyword}' 관련 최신 온라인 이슈 현황",
-        f"핵심 내용: {title[:45]}...",
-        "상세원문 내용은 하단 링크 클릭 시 원본 포스트로 연결"
+        f"'{keyword}' 관련 주요 언론 보도 내용",
+        f"핵심 제목: {title[:50]}",
+        "상세 세부내용 및 원문 팩트는 하단 [원문 보기] 버튼을 참고해 주세요."
     ]
     is_negative = any(word in title for word in ["수질", "악취", "민원", "우려", "논란", "지연", "정체", "사고", "화재", "불편", "갈등"])
     return summary, is_negative
@@ -286,11 +290,88 @@ SPAM_PROMO_KEYWORDS = [
     "소정의 원고료", "협찬 받아", "할인 쿠폰"
 ]
 
+DOMAIN_PRESS_MAP = {
+    "siminilbo.co.kr": "시민일보",
+    "cfnews.kr": "CF뉴스",
+    "nspna.com": "NSP통신",
+    "kbmaeil.com": "경북매일",
+    "pointdaily.co.kr": "포인트데일리",
+    "sportsseoul.com": "스포츠서울",
+    "weekly.hankooki.com": "주간한국",
+    "gukjenews.com": "국제뉴스",
+    "tf.co.kr": "더팩트",
+    "newsprime.co.kr": "프라임경제",
+    "sisaon.co.kr": "시사오늘",
+    "inews24.com": "아이뉴스24",
+    "newspim.com": "뉴스핌",
+    "etoday.co.kr": "이투데이",
+    "ajunews.com": "아주뉴스",
+    "yna.co.kr": "연합뉴스",
+    "kbs.co.kr": "KBS",
+    "imbc.com": "MBC",
+    "sbs.co.kr": "SBS",
+    "ytn.co.kr": "YTN",
+    "mk.co.kr": "매일경제",
+    "hankyung.com": "한국경제",
+    "chosun.com": "조선일보",
+    "donga.com": "동아일보",
+    "joongang.co.kr": "중앙일보",
+    "hani.co.kr": "한겨레",
+    "khan.co.kr": "경향신문",
+    "kyeonggi.com": "경기일보",
+    "kyeongin.com": "경인일보",
+    "joongboo.com": "중부일보",
+    "incheonilbo.com": "인천일보",
+    "kyeongho.com": "기호일보",
+    "news1.kr": "뉴스1",
+    "newsis.com": "뉴시스",
+    "etnews.com": "전자신문",
+    "mt.co.kr": "머니투데이",
+    "edaily.co.kr": "이데일리",
+    "dt.co.kr": "디지털타임스",
+    "heraldcorp.com": "헤럴드경제",
+    "fnnews.com": "파이낸셜뉴스",
+    "segye.com": "세계일보",
+    "seoul.co.kr": "서울신문",
+    "kmib.co.kr": "국민일보",
+    "munhwa.com": "문화일보",
+    "nocutnews.co.kr": "노컷뉴스",
+    "asiae.co.kr": "아시아경제",
+    "sedaily.com": "서울경제",
+    "biz.chosun.com": "조선비즈",
+    "newstown.co.kr": "뉴스타운",
+    "breaknews.com": "브레이크뉴스",
+    "sportsworldi.com": "스포츠월드",
+    "sports.chosun.com": "스포츠조선",
+    "sports.khan.co.kr": "스포츠경향"
+}
+
 TRUSTED_PRESS = [
     "연합뉴스", "KBS", "MBC", "SBS", "YTN", "매일경제", "한국경제", "조선일보", 
     "중앙일보", "동아일보", "경향신문", "한겨레", "경기일보", "경인일보", "중부일보", 
-    "인천일보", "기호일보", "뉴스1", "뉴시스", "전자신문", "머니투데이", "이데일리"
+    "인천일보", "기호일보", "뉴스1", "뉴시스", "전자신문", "머니투데이", "이데일리",
+    "시민일보", "NSP통신", "스포츠서울", "경북매일", "포인트데일리", "아주뉴스"
 ]
+
+def extract_press_name(url, title_text, desc_text):
+    if url:
+        netloc = urllib.parse.urlparse(url).netloc.lower().replace("www.", "")
+        for domain, press in DOMAIN_PRESS_MAP.items():
+            if domain in netloc:
+                return press
+        # Clean host fallback if not in dictionary
+        host_part = netloc.split(".")[0]
+        if host_part and len(host_part) >= 3 and host_part not in ["news", "article", "m", "blog"]:
+            return host_part.upper()
+
+    for tp in TRUSTED_PRESS:
+        if tp in title_text or tp in desc_text:
+            return tp
+    if " - " in title_text:
+        parts = title_text.rsplit(" - ", 1)
+        if len(parts[1].strip()) <= 12:
+            return parts[1].strip()
+    return "뉴스"
 
 def is_clean_relevant_article(title_text, desc_text, terms):
     if not terms:
@@ -367,17 +448,13 @@ def fetch_naver_news(keyword, limit=50):
             continue
 
         # Extract publisher or estimate press name
-        publisher = "네이버 뉴스"
-        for tp in TRUSTED_PRESS:
-            if tp in clean_title or tp in clean_desc:
-                publisher = tp
-                break
+        publisher = extract_press_name(link, clean_title, clean_desc)
 
         items.append({
             "id": f"naver_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
             "keyword": keyword,
             "type": "news",
-            "badge": f"📰 {publisher}" if publisher != "네이버 뉴스" else "📰 뉴스",
+            "badge": f"📰 {publisher}",
             "publisher": publisher,
             "title": clean_title,
             "time": format_pub_date(pub_date_raw),
@@ -400,299 +477,143 @@ def fetch_naver_news(keyword, limit=50):
     print(f"✅ [네이버 뉴스 (고품질 정밀 수집)] '{keyword}' {len(items)}건 수집 완료!")
     return items
 
-# ----------------------------------------------------
-# 2. 네이버 블로그 API 수집기 (실제 블로그 포스트 연동)
-# ----------------------------------------------------
-def fetch_naver_blog(keyword, limit=3):
-    client_id = (os.getenv("NAVER_CLIENT_ID") or "").strip('"\'')
-    client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "").strip('"\'')
-    
-    if not client_id or not client_secret:
-        return []
-        
-    sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
-    query_str = " | ".join(sub_terms) if len(sub_terms) > 1 else keyword
-    url = f"https://openapi.naver.com/v1/search/blog.json?query={urllib.parse.quote(query_str)}&display={limit}&sort=date"
+def fetch_korea_kr_rss(limit=100):
     headers = {
-        "X-Naver-Client-Id": client_id,
-        "X-Naver-Client-Secret": client_secret
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
-    
+
+    DEPT_MAP = [
+        ('기획재정부', ['기획재정부', '기재부', '재정경제부']),
+        ('국토교통부', ['국토교통부', '국토부']),
+        ('행정안전부', ['행정안전부', '행안부']),
+        ('보건복지부', ['보건복지부', '복지부']),
+        ('과학기술정보통신부', ['과학기술정보통신부', '과기정통부', '과기부']),
+        ('산업통상자원부', ['산업통상자원부', '산업부', '산자부']),
+        ('환경부', ['환경부']),
+        ('고용노동부', ['고용노동부', '노동부']),
+        ('여성가족부', ['여성가족부', '여가부']),
+        ('해양수산부', ['해양수산부', '해수부']),
+        ('중소벤처기업부', ['중소벤처기업부', '중기부']),
+        ('농림축산식품부', ['농림축산식품부', '농식품부']),
+        ('문화체육관광부', ['문화체육관광부', '문체부']),
+        ('국방부', ['국방부']),
+        ('외교부', ['외교부']),
+        ('통일부', ['통일부']),
+        ('법무부', ['법무부']),
+        ('공정거래위원회', ['공정거래위원회', '공정위']),
+        ('금융위원회', ['금융위원회', '금융위']),
+        ('개인정보보호위원회', ['개인정보보호위원회', '개인정보위']),
+        ('방송통신위원회', ['방송통신위원회', '방통위']),
+        ('국민권익위원회', ['국민권익위원회', '권익위']),
+        ('국무조정실', ['국무총리', '국무조정실', '총리실', '韓총리']),
+        ('식품의약품안전처', ['식품의약품안전처', '식약처']),
+        ('산림청', ['산림청', '국립산림과학원', '국립수목원', '국유림관리소', '산림항공관리소']),
+        ('소방청', ['소방청', '소방서', '소방본부']),
+        ('경찰청', ['경찰청', '경찰서', '지구대']),
+        ('질병관리청', ['질병관리청', '질병청']),
+        ('특허청', ['특허청']),
+        ('관세청', ['관세청']),
+        ('국세청', ['국세청']),
+        ('조달청', ['조달청']),
+        ('기상청', ['기상청']),
+        ('국가유산청', ['국가유산청', '문화재청']),
+        ('해양경찰청', ['해양경찰청', '해경']),
+        ('용인시', ['용인시', '용인특례시']),
+        ('서울특별시', ['서울특별시', '서울시']),
+        ('경기도', ['경기도'])
+    ]
+
     items = []
-    try:
-        res = requests.get(url, headers=headers, timeout=8)
-        if res.status_code == 200:
-            data = res.json().get("items", [])
-            for idx, item in enumerate(data):
-                clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
-                clean_desc = BeautifulSoup(item.get("description", ""), "html.parser").text
-                link = item.get("link", "")
-                blogger = item.get("bloggername") or "네이버 블로그"
-                postdate = item.get("postdate", "")
+    seen_ids = set()
 
-                if sub_terms and not is_clean_relevant_article(clean_title, clean_desc, sub_terms):
-                    continue
-                
-                blog_time = "최신 속보"
-                if len(postdate) == 8:
-                    today_str = datetime.now().strftime("%Y%m%d")
-                    if postdate == today_str:
-                        blog_time = "오늘"
-                    else:
-                        blog_time = f"{postdate[4:6]}/{postdate[6:8]}"
+    for page in range(1, 6):
+        url = f"https://www.korea.kr/briefing/pressReleaseList.do?pageIndex={page}"
+        try:
+            res = requests.get(url, headers=headers, timeout=6)
+            if res.status_code == 200:
+                soup = BeautifulSoup(res.text, "html.parser")
+                links = soup.find_all("a", href=True)
 
-                items.append({
-                    "id": f"naver_blog_{keyword}_{idx}_{int(datetime.now().timestamp())}",
-                    "keyword": keyword,
-                    "type": "sns",
-                    "badge": "📱 네이버블로그",
-                    "publisher": blogger,
-                    "title": clean_title,
-                    "time": blog_time,
-                    "url": link,
-                    "content": clean_desc
-                })
-            print(f"✅ [네이버 블로그] '{keyword}' {len(items)}건 수집 완료!")
-    except Exception as e:
-        print(f"네이버 블로그 API 수집 에러: {e}")
-
-    return items
-
-# ----------------------------------------------------
-# 3. 실시간 구글 뉴스 RSS 수집기 (보완용 15건)
-# ----------------------------------------------------
-def fetch_google_news_rss(keyword, limit=15):
-    items = []
-    sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
-    search_q = f'"{keyword}"' if " " not in keyword else keyword
-    rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(search_q)}&hl=ko&gl=KR&ceid=KR:ko"
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
-
-    try:
-        r = requests.get(rss_url, headers=headers, timeout=3.0)
-        if r.status_code == 200:
-            root = ET.fromstring(r.text)
-            for idx, item in enumerate(root.findall('.//item')[:limit]):
-                title = item.findtext('title') or ""
-                link = item.findtext('link') or ""
-                pub_date = item.findtext('pubDate') or ""
-                
-                if title and link:
-                    clean_t = title.split(' - ')[0]
-                    pub_name = title.split(' - ')[-1] if ' - ' in title else "구글 뉴스"
-                    
-                    if sub_terms and not is_clean_relevant_article(clean_t, "", sub_terms):
+                for a in links:
+                    href = a["href"]
+                    if "pressReleaseView.do" not in href:
                         continue
 
+                    match = re.search(r"newsId=(\d+)", href)
+                    news_id = match.group(1) if match else None
+                    if not news_id or news_id in seen_ids:
+                        continue
+                    seen_ids.add(news_id)
+
+                    full_url = href if href.startswith("http") else "https://www.korea.kr" + href
+                    parent = a.find_parent("li") or a.find_parent("div") or a
+                    raw_text = parent.text.strip() if parent else a.text.strip()
+
+                    title_elem = a.select_one("strong") or a.select_one(".title") or a
+                    title = BeautifulSoup(title_elem.text, "html.parser").text.strip()
+                    title = re.sub(r"^\s*보도자료\s*", "", title).strip()
+                    if not title or len(title) < 5:
+                        continue
+
+                    source_elem = parent.select_one(".source") or parent.select_one(".writer") or parent.select_one(".info")
+                    source_text = source_elem.text.strip() if source_elem else ""
+                    search_target = f"{source_text} {raw_text}"
+
+                    dept = None
+                    for official_name, aliases in DEPT_MAP:
+                        if any(alias in search_target or alias in title for alias in aliases):
+                            dept = official_name
+                            break
+
+                    if not dept:
+                        clean_s = re.sub(r"\d{4}[./-]\d{2}[./-]\d{2}", "", source_text).strip()
+                        if clean_s and len(clean_s) <= 15:
+                            dept = clean_s
+                        else:
+                            dept = "정부부처"
+
+                    date_str = datetime.now().strftime("%Y-%m-%d 09:00:00")
+                    date_match = re.search(r"(\d{4}[./-]\d{2}[./-]\d{2})", raw_text)
+                    if date_match:
+                        date_str = date_match.group(1).replace(".", "-").replace("/", "-") + " 09:00:00"
+
                     items.append({
-                        "id": f"g_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
-                        "keyword": keyword,
+                        "id": f"gov_press_{news_id}",
+                        "keyword": "보도자료",
                         "type": "news",
-                        "badge": f"📰 {pub_name[:12]}",
-                        "publisher": pub_name,
-                        "title": clean_t,
-                        "time": format_pub_date(pub_date),
-                        "url": link,
-                        "content": clean_t
+                        "badge": f"🏛️ {dept}",
+                        "publisher": dept,
+                        "title": title,
+                        "time": date_str,
+                        "url": full_url,
+                        "content": title
                     })
-    except Exception as e:
-        print(f"구글 뉴스 RSS 수집 중 에러: {e}")
+
+                    if len(items) >= limit:
+                        break
+        except Exception as e:
+            print(f"Error fetching gov press releases (page {page}):", e)
+
+        if len(items) >= limit:
+            break
 
     return items
 
 # ----------------------------------------------------
-# 4. 실시간 고품질 유튜브 동영상 수집기
+# 메인 통합 수집 프로세스 (100% 네이버 뉴스 API 및 RSS 전용)
 # ----------------------------------------------------
-def fetch_youtube_videos(keyword, limit=12):
-    yt_items = []
-    yt_api_key = (os.getenv("YOUTUBE_API_KEY") or "").strip('"\'')
-    is_vercel = os.getenv("VERCEL") == "1"
+def collect_all_issues(keywords=None, tab="realtime"):
+    if tab == "press":
+        raw_issues = fetch_korea_kr_rss(limit=60)
+        print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 탭[press] 공식 보도자료 정리 완료 ({len(raw_issues)}건)")
+        return raw_issues
 
-    # 4.1 Official YouTube Data API v3 Integration
-    if yt_api_key:
-        try:
-            dt_7d = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
-            search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults={limit}&q={urllib.parse.quote(keyword)}&order=date&publishedAfter={dt_7d}&type=video&regionCode=KR&relevanceLanguage=ko&key={yt_api_key}"
-            r = requests.get(search_url, timeout=5)
-            if r.status_code == 200:
-                data = r.json()
-                items = data.get("items", [])
-                video_ids = [item.get("id", {}).get("videoId") for item in items if item.get("id", {}).get("videoId")]
+    if not keywords:
+        if tab == "exclusive":
+            keywords = ["[단독]", "단독 보도", "단독 뉴스"]
+        else:
+            keywords = ["용인시", "처인구", "용인특례시"]
 
-                if video_ids:
-                    stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id={','.join(video_ids)}&key={yt_api_key}"
-                    r_stats = requests.get(stats_url, timeout=5)
-                    stats_dict = {}
-                    if r_stats.status_code == 200:
-                        for item in r_stats.json().get("items", []):
-                            v_id = item.get("id")
-                            view_cnt = int(item.get("statistics", {}).get("viewCount", 0))
-                            stats_dict[v_id] = view_cnt
-
-                    import html
-                    for item in items:
-                        v_id = item.get("id", {}).get("videoId")
-                        snippet = item.get("snippet", {})
-                        title = html.unescape(snippet.get("title", ""))
-                        channel = html.unescape(snippet.get("channelTitle", "유튜브"))
-                        pub_at = snippet.get("publishedAt", "")
-                        views = stats_dict.get(v_id, 0)
-                        view_str = f"조회수 {views:,}회" if views > 0 else "최신 영상"
-
-                        if v_id and title:
-                            yt_items.append({
-                                "id": f"yt_{v_id}",
-                                "keyword": keyword,
-                                "type": "youtube",
-                                "badge": f"🎥 유튜브 · {channel}",
-                                "publisher": channel,
-                                "title": title,
-                                "time": format_pub_date(pub_at),
-                                "url": f"https://www.youtube.com/watch?v={v_id}",
-                                "content": f"[{channel}] {view_str} | {title}"
-                            })
-        except Exception as e:
-            print(f"YouTube Official API fetch error for {keyword}: {e}")
-
-    # 4.2 Supplementary Fresh Video Search (site:youtube.com/watch "{keyword}" when:2d -> when:7d)
-    if len(yt_items) < limit:
-        for tf in ["when:2d", "when:7d"]:
-            if len(yt_items) >= limit:
-                break
-            try:
-                q_yt = f'site:youtube.com/watch "{keyword}" {tf}'
-                rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q_yt)}&hl=ko&gl=KR&ceid=KR:ko"
-                r = requests.get(rss_url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}, timeout=2.5)
-                if r.status_code == 200:
-                    root = ET.fromstring(r.text)
-                    seen_urls = {i["url"] for i in yt_items}
-                    for item in root.findall('.//item'):
-                        title = item.findtext('title') or ""
-                        link = item.findtext('link') or ""
-                        pub_date = item.findtext('pubDate') or ""
-                        if title and link and link not in seen_urls:
-                            seen_urls.add(link)
-                            clean_t = title.replace(' - YouTube', '').strip()
-                            if ' - ' in clean_t:
-                                parts = clean_t.rsplit(' - ', 1)
-                                video_title = parts[0].strip()
-                                channel = parts[1].strip()
-                            else:
-                                video_title = clean_t
-                                channel = "유튜브"
-
-                            yt_items.append({
-                                "id": f"yt_rss_{abs(hash(link))}",
-                                "keyword": keyword,
-                                "type": "youtube",
-                                "badge": f"🎥 유튜브 · {channel[:15]}",
-                                "publisher": channel,
-                                "title": video_title,
-                                "time": format_pub_date(pub_date),
-                                "url": link,
-                                "content": f"[{channel}] {video_title}"
-                            })
-                            if len(yt_items) >= limit:
-                                break
-            except Exception as e:
-                print(f"YouTube RSS fetch error for {keyword}: {e}")
-
-    return yt_items[:limit]
-
-# ----------------------------------------------------
-# 5. 실시간 다채널 SNS 수집기 (쓰레드, 페이스북, 인스타그램, X, 네이버 카페)
-# ----------------------------------------------------
-def fetch_multichannel_sns(keyword, limit=25):
-    sns_items = []
-    client_id = (os.getenv("NAVER_CLIENT_ID") or "").strip('"\'')
-    client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "").strip('"\'')
-    headers_nv = {'X-Naver-Client-Id': client_id, 'X-Naver-Client-Secret': client_secret}
-    headers_rss = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
-
-    # 5.1 🧵 쓰레드 (Threads) 주민 소통 주제 (always fast)
-    threads_topics = [
-        (f"🧵 Threads에서 '{keyword}' 실시간 주민 소통 포스트 및 반응 모음", f"https://www.threads.net/search?q={urllib.parse.quote(keyword)}"),
-        (f"🧵 Threads '{keyword}' 지역 주요 이슈 및 주민 의견 공유", f"https://www.threads.net/search?q={urllib.parse.quote(keyword + ' 소식')}"),
-        (f"🧵 Threads '{keyword}' 인근 실시간 핫이슈 및 커뮤니티 정보", f"https://www.threads.net/search?q={urllib.parse.quote(keyword + ' 핫이슈')}"),
-    ]
-    for idx, (t_title, t_url) in enumerate(threads_topics):
-        sns_items.append({
-            "id": f"threads_topic_{keyword}_{idx}",
-            "keyword": keyword,
-            "type": "sns",
-            "badge": "🧵 쓰레드 (Threads)",
-            "publisher": "Threads",
-            "title": t_title,
-            "time": "방금 전" if idx == 0 else f"{idx * 15 + 5}분 전",
-            "url": t_url,
-            "content": f"{keyword} 관련 Threads(쓰레드) 실시간 주민 반응 및 의견 공유"
-        })
-
-    # 5.2 SNS RSS sources (Instagram, X, Facebook, Threads)
-    sns_sources = [
-        ("📱 인스타그램", f'site:instagram.com "{keyword}"', 3),
-        ("🐦 X (트위터)", f'site:x.com "{keyword}"', 3),
-        ("📱 페이스북", f'site:facebook.com "{keyword}"', 3),
-        ("🧵 쓰레드", f'site:threads.net "{keyword}"', 3)
-    ]
-
-    for badge, q, fetch_count in sns_sources:
-        try:
-            rss_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(q)}&hl=ko&gl=KR&ceid=KR:ko"
-            r = requests.get(rss_url, headers=headers_rss, timeout=1.5)
-            if r.status_code == 200:
-                root = ET.fromstring(r.text)
-                for item in root.findall('.//item')[:fetch_count]:
-                    title = item.findtext('title')
-                    link = item.findtext('link')
-                    pub_date = item.findtext('pubDate')
-                    if title and link:
-                        clean_t = title.split(' - ')[0]
-                        pub_name = title.split(' - ')[-1] if ' - ' in title else badge
-                        sns_items.append({
-                            "id": f"sns_{abs(hash(link))}",
-                            "keyword": keyword,
-                            "type": "sns",
-                            "badge": badge,
-                            "publisher": pub_name,
-                            "title": clean_t,
-                            "time": format_pub_date(pub_date),
-                            "url": link,
-                            "content": title
-                        })
-        except Exception as e:
-            print(f"SNS {badge} fetch error: {e}")
-
-    # 5.3 💬 네이버 카페 실시간 게시글
-    if client_id and client_secret:
-        try:
-            url = f"https://openapi.naver.com/v1/search/cafearticle.json?query={urllib.parse.quote(keyword)}&display=4&sort=date"
-            r = requests.get(url, headers=headers_nv, timeout=2.0)
-            if r.status_code == 200:
-                for item in r.json().get('items', []):
-                    t = item['title'].replace('<b>','').replace('</b>','').replace('&quot;', '"').replace('&lt;','<').replace('&gt;','>')
-                    desc = item['description'].replace('<b>','').replace('</b>','').replace('&quot;', '"')
-                    cafename = item.get('cafename', '네이버 카페')
-                    sns_items.append({
-                        "id": f"cafe_{abs(hash(item['link']))}",
-                        "keyword": keyword,
-                        "type": "sns",
-                        "badge": f"💬 카페 · {cafename[:10]}",
-                        "publisher": cafename,
-                        "title": t,
-                        "time": "오늘",
-                        "url": item['link'],
-                        "content": desc
-                    })
-        except Exception as e:
-            print(f"Cafe search error: {e}")
-
-    return sns_items[:limit]
-
-# ----------------------------------------------------
-# 메인 통합 수집 프로세스
-# ----------------------------------------------------
-def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
     raw_issues = []
     is_vercel = os.getenv("VERCEL") == "1"
     max_w = 6 if is_vercel else 12
@@ -701,11 +622,6 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
         futures = []
         for kw in keywords:
             futures.append(executor.submit(fetch_naver_news, kw, 50))
-            futures.append(executor.submit(fetch_google_news_rss, kw, 20))
-            futures.append(executor.submit(fetch_multichannel_sns, kw, 12))
-            futures.append(executor.submit(fetch_youtube_videos, kw, 8))
-            if not is_vercel:
-                futures.append(executor.submit(fetch_naver_blog, kw, 3))
 
         for f in futures:
             try:
@@ -715,47 +631,21 @@ def collect_all_issues(keywords=["용인시", "처인구", "용인특례시"]):
             except Exception as e:
                 print("Parallel task fetch error:", e)
 
+    # Filter tab-specific requirements
+    if tab == "exclusive":
+        exclusive_items = [item for item in raw_issues if "[단독]" in item["title"] or "단독" in item["title"]]
+        if len(exclusive_items) >= 5:
+            raw_issues = exclusive_items
+
     # 중복 이슈 제거 (Deduplication)
     deduped_issues = deduplicate_issues(raw_issues)
 
-    # Rich & Full Selection per keyword (News: max 45, SNS: max 8, YouTube: max 8 -> Total 60)
-    by_kw = {}
-    for item in deduped_issues:
-        kw = item.get("keyword") or "기타"
-        if kw not in by_kw:
-            by_kw[kw] = {"news": [], "sns": [], "youtube": [], "other": []}
-        t = item.get("type", "news")
-        if t in by_kw[kw]:
-            by_kw[kw][t].append(item)
-        else:
-            by_kw[kw]["other"].append(item)
+    # Selection per keyword / tab
+    selected = deduped_issues[:80]
+    selected.sort(key=lambda x: str(x.get("time", "")), reverse=True)
+    deduped_issues = selected
 
-    final_deduped = []
-    for kw, categorized in by_kw.items():
-        kw_news = categorized["news"]
-        kw_sns = categorized["sns"]
-        kw_yt = categorized["youtube"]
-        kw_other = categorized["other"]
-
-        selected_yt = kw_yt[:8]
-        selected_sns = kw_sns[:8]
-        selected_news = kw_news[:45]
-
-        kw_combined = selected_news + selected_sns + selected_yt + kw_other
-        if len(kw_combined) < 60:
-            seen_ids = {i["id"] for i in kw_combined}
-            for extra in (kw_news + kw_sns + kw_yt + kw_other):
-                if extra["id"] not in seen_ids:
-                    kw_combined.append(extra)
-                    seen_ids.add(extra["id"])
-                    if len(kw_combined) >= 60:
-                        break
-
-        kw_combined.sort(key=lambda x: str(x.get("time", "")), reverse=True)
-        final_deduped.extend(kw_combined[:60])
-
-    print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 오늘 풍성한 전체 이슈 보장 후 {len(final_deduped)}건 정리 완료")
-    deduped_issues = final_deduped
+    print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 탭[{tab}] 정리 완료 ({len(deduped_issues)}건)")
 
     # 뉴스 타이틀 원문 긁어오기 (Vercel 서벌리스 환경에서는 타임아웃 방지를 위해 건너뜀)
     def enrich_item_title(item_obj):

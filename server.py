@@ -27,68 +27,35 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
         parsed_path = urllib.parse.urlparse(self.path)
         if parsed_path.path == "/api/collect":
             query_params = urllib.parse.parse_qs(parsed_path.query)
+            tab = query_params.get("tab", ["realtime"])[0]
             force_refresh = query_params.get("force", ["false"])[0].lower() == "true"
-            output_path = os.path.join(os.path.dirname(__file__), "public", "data", "issues.json")
+            output_path = os.path.join(os.path.dirname(__file__), "public", "data", f"issues_{tab}.json")
             
-            # Helper to run background update without blocking client HTTP response
-            def run_background_collection(kws):
-                try:
-                    import importlib
-                    import local_issue_collector
-                    importlib.reload(local_issue_collector)
-                    print(f"🔄 [백그라운드 갱신 시작] 키워드: {kws}")
-                    new_issues = local_issue_collector.collect_all_issues(keywords=kws)
-                    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-                    with open(output_path, "w", encoding="utf-8") as f:
-                        json.dump(new_issues, f, ensure_ascii=False, indent=2)
-                    print(f"✅ [백그라운드 갱신 완료] {len(new_issues)}건 최신화 저장 완료!")
-                except Exception as e:
-                    print("Background collection error:", e)
-
-            kw_param = query_params.get("keywords", ["용인시,처인구,용인특례시"])[0]
-            if kw_param == "용인시":
-                keywords = ["용인시", "처인구", "용인특례시"]
-            else:
+            if "keywords" in query_params:
+                kw_param = query_params.get("keywords")[0]
                 keywords = [k.strip() for k in kw_param.split(",") if k.strip()]
+            else:
+                keywords = None
 
-            # ⚡ Ultra-Fast SWR Pattern: If issues.json exists and no custom missing keywords requested
             if os.path.exists(output_path) and not force_refresh:
                 try:
                     with open(output_path, "r", encoding="utf-8") as f:
                         cached_issues = json.load(f)
-                    if cached_issues:
-                        missing = []
-                        for kw in keywords:
-                            kw_clean = kw.lower().strip()
-                            if not kw_clean:
-                                continue
-                            matching_count = sum(1 for item in cached_issues if kw_clean == (item.get("keyword") or "").lower().strip() or kw_clean in (item.get("title") or "").lower())
-                            if matching_count < 5:
-                                missing.append(kw)
-
-                        if not missing:
-                            mtime = os.path.getmtime(output_path)
-                            import time
-                            if time.time() - mtime > 900:
-                                import threading
-                                threading.Thread(target=run_background_collection, args=(keywords,), daemon=True).start()
-
-                            print(f"⚡ [/api/collect] 캐시된 이슈 초고속 응답 ({len(cached_issues)}건, 0.018초)")
-                            self.send_response(200)
-                            self.send_header('Content-Type', 'application/json; charset=utf-8')
-                            self.end_headers()
-                            self.wfile.write(json.dumps(cached_issues, ensure_ascii=False).encode('utf-8'))
-                            return
+                    if cached_issues and len(cached_issues) > 0:
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/json; charset=utf-8')
+                        self.end_headers()
+                        self.wfile.write(json.dumps(cached_issues, ensure_ascii=False).encode('utf-8'))
+                        return
                 except Exception:
                     pass
 
-            # Synchronous fallback if issues.json does not exist yet or force=true
-            print(f"🔄 [/api/collect] 동기 이슈 갱신 수집 요청: {keywords}")
+            print(f"🔄 [/api/collect] 수집 요청 (탭: {tab}, 키워드: {keywords})")
             try:
                 import importlib
                 import local_issue_collector
                 importlib.reload(local_issue_collector)
-                issues = local_issue_collector.collect_all_issues(keywords=keywords)
+                issues = local_issue_collector.collect_all_issues(keywords=keywords, tab=tab)
             except Exception as e:
                 print("Collector execution error:", e)
                 issues = []
@@ -103,31 +70,20 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(issues, ensure_ascii=False).encode('utf-8'))
             return
 
-        elif parsed_path.path == "/api/etnews":
+        elif parsed_path.path in ["/api/papernews", "/api/etnews", "/api/mknews"]:
             query_params = urllib.parse.parse_qs(parsed_path.query)
+            provider = query_params.get("provider", ["etnews"])[0]
+            if parsed_path.path == "/api/mknews":
+                provider = "mknews"
+            elif parsed_path.path == "/api/etnews":
+                provider = "etnews"
+
             ymd = query_params.get("date", [datetime.now().strftime("%Y%m%d")])[0].replace("-", "")
             try:
-                from api.etnews import fetch_etnews_by_date
-                result = fetch_etnews_by_date(ymd)
+                from api.papernews import fetch_paper_news
+                result = fetch_paper_news(provider=provider, ymd_str=ymd)
             except Exception as e:
-                print("ETNews fetch error:", e)
-                result = {"sections": [], "categorized": {}, "articles": []}
-
-            body = json.dumps(result, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(body)
-            return
-
-        elif parsed_path.path == "/api/mknews":
-            query_params = urllib.parse.parse_qs(parsed_path.query)
-            ymd = query_params.get("date", [datetime.now().strftime("%Y%m%d")])[0].replace("-", "")
-            try:
-                from api.mknews import fetch_mknews_by_date
-                result = fetch_mknews_by_date(ymd)
-            except Exception as e:
-                print("MKNews fetch error:", e)
+                print(f"Paper news fetch error ({provider}):", e)
                 result = {"sections": [], "categorized": {}, "articles": []}
 
             body = json.dumps(result, ensure_ascii=False).encode('utf-8')

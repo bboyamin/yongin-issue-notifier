@@ -3,36 +3,24 @@
  */
 let deferredPrompt = null;
 let currentIssues = [];
-const keywordFeeds = {};
-let currentCategory = 'all';
-let currentNavTab = 'feed'; // 'feed' or 'bookmark'
+const keywordFeeds = {}; // Cache feeds per keyword
+const tabFeeds = {}; // Cache feeds per tab ('exclusive', 'press')
+let currentNavTab = 'feed'; // 'feed', 'paper', 'exclusive', 'press', 'bookmark'
 let currentKeyword = '용인시';
-let currentEtnewsDate = getTodayKstStr();
-let currentEtnewsSection = 'all';
-let etnewsData = null;
+let currentPaperDate = getTodayKstStr();
+let currentPaperSection = 'all';
+let currentPaperProvider = StorageManager.getPaperProvider() || 'mknews';
+let currentPressDept = 'all';
+let paperData = null;
 let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
-let currentPaperProvider = StorageManager.getPaperProvider();
-let pendingNewIssues = null;
-let renderedTitlesSet = new Set();
 
-function applyNewIssuesFromToast() {
-  const toast = document.getElementById('newIssuesToast');
-  if (toast) toast.style.display = 'none';
-
-  if (pendingNewIssues && pendingNewIssues.length) {
-    currentIssues = pendingNewIssues;
-    pendingNewIssues = null;
-  }
-
-  renderIssues();
-
-  const container = document.getElementById('feedContainer');
-  if (container) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    container.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-  showToast('✨ 새로운 핫이슈 피드로 갱신되었습니다!');
-}
+const PAPER_PROVIDERS = [
+  { id: 'mknews', name: '매일경제', badge: '📈' },
+  { id: 'etnews', name: '전자신문', badge: '📰' },
+  { id: 'chosun', name: '조선일보', badge: '🗞️' },
+  { id: 'joongang', name: '중앙일보', badge: '🏢' },
+  { id: 'donga', name: '동아일보', badge: '📰' }
+];
 
 function getTodayKstStr() {
   const d = new Date();
@@ -43,76 +31,77 @@ function getTodayKstStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function isDateWeekend(dateStr) {
-  if (!dateStr) return false;
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return false;
-  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-  const day = d.getDay();
-  return day === 0 || day === 6;
+function formatRelativeTime(timeStr) {
+  if (!timeStr) return '방금 전';
+  if (timeStr.includes('방금') || timeStr.includes('전') || timeStr.includes('어제')) return timeStr;
+  
+  try {
+    const pubDate = new Date(timeStr.replace(/-/g, '/'));
+    if (isNaN(pubDate.getTime())) return timeStr;
+    const diffMin = Math.floor((Date.now() - pubDate.getTime()) / 60000);
+
+    if (diffMin < 1) return '방금 전';
+    if (diffMin < 60) return `${diffMin}분 전`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    return `${Math.floor(diffHours / 24)}일 전`;
+  } catch (e) {
+    return timeStr;
+  }
 }
 
-function mergeIssues(existingList, newList) {
-  if (!newList || !newList.length) return existingList || [];
-
-  const isDummy = item => item && item.title && (
-    item.title.includes('최신 현장 이슈 및 주민 반응') || 
-    item.title.includes('지역 실시간 소통 및 이슈 쓰레드')
-  );
-
-  const cleanNew = newList.filter(i => !isDummy(i));
-  const cleanExisting = (existingList || []).filter(i => !isDummy(i));
-
-  if (!cleanExisting.length) return cleanNew;
-
-  const existingMap = new Map();
-  cleanExisting.forEach(item => {
-    const key = (item.url && item.url !== '#') ? item.url : item.title;
-    if (key) existingMap.set(key, item);
-  });
-
-  const merged = [];
-  const addedKeys = new Set();
-
-  cleanNew.forEach(newItem => {
-    const key = (newItem.url && newItem.url !== '#') ? newItem.url : newItem.title;
-    if (key) {
-      addedKeys.add(key);
-      const existing = existingMap.get(key);
-      if (existing) {
-        if (existing.summary && (!newItem.summary || newItem.summary.length === 0)) {
-          newItem.summary = existing.summary;
-        }
-        if (existing.is_negative !== undefined && newItem.is_negative === undefined) {
-          newItem.is_negative = existing.is_negative;
-        }
-      }
-      merged.push(newItem);
+function updateHeaderScrapBadge() {
+  const badge = document.getElementById('headerScrapBadge');
+  const scraps = StorageManager.getScraps();
+  if (badge) {
+    if (scraps.length > 0) {
+      badge.textContent = scraps.length;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
     }
-  });
-
-  cleanExisting.forEach(existingItem => {
-    const key = (existingItem.url && existingItem.url !== '#') ? existingItem.url : existingItem.title;
-    if (key && !addedKeys.has(key)) {
-      addedKeys.add(key);
-      merged.push(existingItem);
-    }
-  });
-
-  const sortedMerged = merged.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-  const finalMerged = sortedMerged.slice(0, 600);
-  StorageManager.saveFeedCache(finalMerged);
-  return finalMerged;
+  }
 }
 
-// Initialize Keyword Chips UI
+function renderPaperProviderChips() {
+  const chipsContainer = document.getElementById('paperProviderChips');
+  if (!chipsContainer) return;
+
+  let html = '';
+  PAPER_PROVIDERS.forEach(p => {
+    const isActive = currentPaperProvider === p.id;
+    html += `
+      <span class="chip ${isActive ? 'active' : ''}" onclick="selectPaperProvider('${p.id}')" style="cursor:pointer; font-weight:700;">
+        ${p.badge} ${p.name}
+      </span>
+    `;
+  });
+  chipsContainer.innerHTML = html;
+}
+
+function selectPaperProvider(providerId) {
+  currentPaperProvider = providerId;
+  StorageManager.savePaperProvider(providerId);
+
+  const selectElem = document.getElementById('paperProviderSelect');
+  if (selectElem) selectElem.value = providerId;
+
+  renderPaperProviderChips();
+  loadPaperForCurrentDate();
+}
+
+function updatePaperProviderSetting(providerId) {
+  selectPaperProvider(providerId);
+}
+
+// 100% Original Keyword Chips UI for Realtime Feed
 function renderKeywordChips() {
   const userKeywords = StorageManager.getKeywords();
   const mainChips = document.getElementById('keywordChips');
   const settingsChips = document.getElementById('settingsKeywordChips');
 
   if (!userKeywords.includes(currentKeyword)) {
-    currentKeyword = userKeywords.length ? userKeywords[0] : '';
+    currentKeyword = userKeywords.length ? userKeywords[0] : '용인시';
   }
 
   if (mainChips) {
@@ -145,60 +134,14 @@ function renderKeywordChips() {
   }
 }
 
-let isFetchingActive = false;
-
-async function fetchKeywordIssues(keywordsList) {
-  const targetKw = keywordsList[0] || '용인시';
-  isFetchingActive = true;
-  showToast(`🔄 '${targetKw}' 관련 최신 소식 수집 중...`);
-  renderIssues();
-
-  try {
-    const freshIssues = await IssueApi.fetchKeywordIssues([targetKw]);
-    if (Array.isArray(freshIssues) && freshIssues.length > 0) {
-      const targetKwClean = targetKw.trim().toLowerCase();
-      const targetItems = freshIssues.filter(item => {
-        const ik = (item.keyword || '').trim().toLowerCase();
-        const it = (item.title || '').toLowerCase();
-        const ic = (item.content || '').toLowerCase();
-        const kwSub = targetKwClean.replace(/ OR /gi, ',').split(',')[0].trim();
-        const shortTerm = (kwSub.endsWith('학교') && kwSub.length >= 3) ? kwSub.slice(0, -2) : kwSub;
-
-        return (ik === targetKwClean) || (kwSub && (it.includes(kwSub) || ic.includes(kwSub))) || (shortTerm && shortTerm.length >= 2 && (it.includes(shortTerm) || ic.includes(shortTerm)));
-      });
-
-      const cleanTopItems = (targetItems.length > 0 ? targetItems : freshIssues).slice(0, 60);
-      keywordFeeds[targetKw] = cleanTopItems.map(i => ({ ...i, keyword: targetKw }));
-      currentIssues = keywordFeeds[targetKw];
-      showToast(`✅ '${targetKw}' 최신 소식 ${currentIssues.length}건 수집 완료!`);
-    } else {
-      showToast(`ℹ️ '${targetKw}' 최신 소식 연동을 완료했습니다.`);
-    }
-  } catch (err) {
-    console.warn('Keyword collect error:', err);
-    showToast(`ℹ️ '${targetKw}' 소식을 불러오는 중입니다...`);
-  } finally {
-    isFetchingActive = false;
-    renderKeywordChips();
-    renderIssues();
-  }
-}
-
 async function selectKeyword(kw) {
   currentKeyword = kw;
   renderKeywordChips();
-
-  if (keywordFeeds[kw] && keywordFeeds[kw].length > 0) {
-    currentIssues = keywordFeeds[kw];
-    renderIssues();
-  } else {
-    currentIssues = [];
-    await fetchKeywordIssues([kw]);
-  }
+  await fetchKeywordIssues([kw]);
 }
 
 async function addNewKeyword() {
-  const input = prompt('추가할 모니터링 키워드를 입력하세요 (예: AI, 연세대, 서울대, 부동산 등):', '');
+  const input = prompt('추가할 모니터링 키워드를 입력하세요 (예: 용인시, 처인구, 수지구, 기흥구 등):', '');
   if (!input) return;
 
   const kw = input.trim().replace(/^#\s*/, '');
@@ -210,10 +153,7 @@ async function addNewKeyword() {
   }
 
   currentKeyword = kw;
-  currentIssues = [];
   renderKeywordChips();
-  renderIssues();
-
   await fetchKeywordIssues([kw]);
 }
 
@@ -225,118 +165,148 @@ function removeKeyword(kw, event) {
   const updated = StorageManager.removeKeyword(kw);
 
   if (currentKeyword === kw) {
-    currentKeyword = updated.length ? updated[0] : '';
-    if (currentKeyword) selectKeyword(currentKeyword);
+    currentKeyword = updated.length ? updated[0] : '용인시';
+    selectKeyword(currentKeyword);
+  } else {
+    renderKeywordChips();
+    renderIssues();
   }
-
-  renderKeywordChips();
-  renderIssues();
   showToast(`'# ${kw}' 키워드가 삭제되었습니다.`);
 }
 
-function updateScrapBadge() {
-  const badge = document.getElementById('scrapBadge');
-  const scraps = StorageManager.getScraps();
-  if (badge) {
-    if (scraps.length > 0) {
-      badge.textContent = scraps.length;
-      badge.style.display = 'inline-block';
-    } else {
-      badge.style.display = 'none';
-    }
-  }
-}
-
+// Realtime Feed Refresh Function
 async function refreshFeed() {
-  const realtimeBar = document.querySelector('.realtime-bar');
   const feedContainer = document.getElementById('feedContainer');
-
-  showToast('🔄 최신 소식 수집 및 업데이트 중...');
-
-  if (realtimeBar) {
-    realtimeBar.style.opacity = '0.7';
-    const textElem = realtimeBar.querySelector('.realtime-indicator span');
-    if (textElem) textElem.innerHTML = '실시간 이슈 피드 <span class="spin-icon">🔄</span> <strong>수집 중...</strong>';
-  }
-  if (feedContainer) {
-    feedContainer.style.opacity = '0.5';
-  }
-
+  showToast('🔄 실시간 이슈 수집 및 새로고침 중...');
+  if (feedContainer) feedContainer.style.opacity = '0.5';
   try {
-    const kw = currentKeyword || '용인시';
-    delete keywordFeeds[kw];
-    currentIssues = [];
-    await fetchKeywordIssues([kw]);
+    const userKws = StorageManager.getKeywords();
+    await fetchKeywordIssues(userKws);
   } catch (err) {
     console.warn('Refresh error:', err);
   } finally {
-    const now = new Date();
-    lastUpdatedTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-    StorageManager.saveLastUpdatedTime(lastUpdatedTimeStr);
-    renderKeywordChips();
+    if (feedContainer) feedContainer.style.opacity = '1';
+    showToast('✅ 실시간 피드 새로고침 완료!');
+  }
+}
+
+// 100% Original Realtime Feed Fetcher
+async function fetchKeywordIssues(keywordsList) {
+  showToast(`🔄 [${keywordsList.join(', ')}] 소식 수집 중...`);
+  try {
+    const issues = await IssueApi.fetchKeywordIssues(keywordsList);
+    currentIssues = issues || [];
+  } catch (e) {
+    console.warn('Realtime feed fetch error:', e);
+    currentIssues = [];
+  } finally {
     renderIssues();
-    if (feedContainer) {
-      feedContainer.style.opacity = '1';
-    }
-    showToast(`✅ 실시간 피드 업데이트 완료 (${lastUpdatedTimeStr})`);
+  }
+}
+
+async function fetchTabIssues(tabName) {
+  showToast(`🔄 [${tabName}] 수집 중...`);
+  try {
+    const issues = await IssueApi.fetchTabIssues(tabName);
+    tabFeeds[tabName] = issues || [];
+    currentIssues = tabFeeds[tabName];
+  } catch (e) {
+    console.warn(`Tab [${tabName}] fetch error:`, e);
+    tabFeeds[tabName] = [];
+    currentIssues = [];
+  } finally {
+    renderIssues();
   }
 }
 
 async function switchNavTab(tab, btn) {
-  const isAlreadyFeed = (currentNavTab === 'feed' && tab === 'feed');
-  const isAlreadyEtnews = (currentNavTab === 'etnews' && tab === 'etnews');
   currentNavTab = tab;
 
   const navBtns = document.querySelectorAll('.app-bottom-nav .nav-item');
-  navBtns.forEach(b => {
-    if (!b.innerText.includes('설정')) {
-      b.classList.remove('active');
-    }
-  });
+  navBtns.forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
-  const categoryTabs = document.querySelector('.category-tabs');
-  const keywordChips = document.querySelector('.keyword-chips');
+  const keywordChips = document.getElementById('keywordChips');
   const etnewsHeader = document.getElementById('etnewsHeader');
+  const pressHeader = document.getElementById('pressHeader');
 
-  if (tab === 'bookmark') {
-    if (categoryTabs) categoryTabs.style.display = 'none';
-    if (keywordChips) keywordChips.style.display = 'none';
-    if (etnewsHeader) etnewsHeader.style.display = 'none';
-    renderIssues();
-  } else if (tab === 'etnews') {
-    if (categoryTabs) categoryTabs.style.display = 'none';
+  if (pressHeader) pressHeader.style.display = (tab === 'press') ? 'block' : 'none';
+
+  if (tab === 'paper') {
     if (keywordChips) keywordChips.style.display = 'none';
     if (etnewsHeader) etnewsHeader.style.display = 'flex';
-
-    if (isAlreadyEtnews) {
-      await refreshEtnews();
-    } else {
-      await loadEtnewsForCurrentDate();
-    }
+    renderPaperProviderChips();
+    await loadPaperForCurrentDate();
   } else {
-    if (categoryTabs) categoryTabs.style.display = 'flex';
-    if (keywordChips) keywordChips.style.display = 'flex';
     if (etnewsHeader) etnewsHeader.style.display = 'none';
 
-    if (isAlreadyFeed) {
-      await refreshFeed();
+    if (tab === 'feed') {
+      if (keywordChips) keywordChips.style.display = 'flex';
+      const userKeywords = StorageManager.getKeywords();
+      currentKeyword = userKeywords.length ? userKeywords[0] : '용인시';
+      renderKeywordChips();
+      await fetchKeywordIssues(userKeywords);
     } else {
-      renderIssues();
+      if (keywordChips) keywordChips.style.display = 'none';
+      if (tab === 'bookmark') {
+        renderIssues();
+      } else {
+        if (tab === 'press') currentPressDept = 'all';
+        await fetchTabIssues(tab);
+      }
     }
   }
+}
+
+function getRecencyWeight(timeStr) {
+  if (!timeStr) return 0;
+  let s = String(timeStr).trim();
+
+  let match = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    const hour = parseInt(match[4], 10);
+    const min = parseInt(match[5], 10);
+    const sec = match[6] ? parseInt(match[6], 10) : 0;
+    return new Date(year, month, day, hour, min, sec).getTime();
+  }
+
+  match = s.match(/^(\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
+  if (match) {
+    const now = new Date();
+    const month = parseInt(match[1], 10) - 1;
+    const day = parseInt(match[2], 10);
+    const hour = parseInt(match[3], 10);
+    const min = parseInt(match[4], 10);
+    return new Date(now.getFullYear(), month, day, hour, min).getTime();
+  }
+
+  if (s.includes('분 전')) {
+    const m = parseInt(s, 10);
+    return Date.now() - (m * 60 * 1000);
+  }
+  if (s.includes('시간 전')) {
+    const h = parseInt(s, 10);
+    return Date.now() - (h * 60 * 60 * 1000);
+  }
+  if (s.includes('방금')) return Date.now();
+  if (s.includes('어제')) return Date.now() - (24 * 60 * 60 * 1000);
+
+  return 0;
 }
 
 function renderIssues() {
   const container = document.getElementById('feedContainer');
   if (!container) return;
 
-  updateScrapBadge();
+  updateHeaderScrapBadge();
   const scraps = StorageManager.getScraps();
 
-  // --- ETNews View (전자신문 지면) ---
-  if (currentNavTab === 'etnews') {
-    renderEtnewsView();
+  // --- Paper View (지면보기) ---
+  if (currentNavTab === 'paper') {
+    renderPaperView();
     return;
   }
 
@@ -356,492 +326,436 @@ function renderIssues() {
         <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
           <p style="font-size:36px; margin-bottom:12px;">⭐</p>
           <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">보관된 이슈가 없습니다.</p>
-          <p style="font-size:12px; color:#64748B;">실시간 피드에서 관심 있는 이슈 카드의 <strong>[⭐ 스크랩]</strong> 버튼을 눌러 나만의 보관함에 담아보세요!</p>
+          <p style="font-size:12px; color:#64748B;">이슈 카드의 <strong>[⭐ 스크랩]</strong> 버튼을 눌러 보관함에 담아보세요!</p>
         </div>
       `;
     } else {
       scraps.forEach(item => {
-        const badgeClass = item.type === 'news' ? 'source-news' : (item.type === 'youtube' ? 'source-youtube' : 'source-sns');
-        const hasPreSummary = item.summary && item.summary.length > 0;
-        const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
-        const isNegBadge = item.is_negative ? `<span class="is-neg-tag" style="background:#FEF2F2; color:#EF4444; border:1px solid #FECACA; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:6px;">🚨 관심 이슈</span>` : '';
-
-        let linkText = '원문 보기 ↗';
-        if (item.type === 'youtube') linkText = '영상 재생 ↗';
-        else if (item.type === 'sns') linkText = '포스트 보기 ↗';
-
-        const titleAttr = (item.title || '').replace(/"/g, '&quot;');
-        const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
-        const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
-        const publisherAttr = (item.publisher || '소식').replace(/"/g, '&quot;');
-        const badgeAttr = (item.badge || '📰 이슈').replace(/"/g, '&quot;');
-        const timeAttr = (item.time || '보관됨').replace(/"/g, '&quot;');
-
-        html += `
-          <div class="issue-card" data-category="${item.type || 'news'}" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
-            <div class="card-top">
-              <span class="source-tag ${badgeClass}">${item.badge || '📰 이슈'} · ${item.publisher || '소식'} ${isNegBadge}</span>
-              <span class="card-date card-time">${formatRelativeTime(item.time)}</span>
-            </div>
-            <h3 class="card-title">${item.title}</h3>
-            
-            <button class="ai-summary-toggle-btn" onclick="toggleOnDemandAiSummary(this)">
-              ✨ AI 3줄 요약 보기 ▾
-            </button>
-
-            <div class="ai-summary-box" style="display: none;" data-generated="${hasPreSummary ? 'true' : 'false'}">
-              <div class="ai-summary-head">✨ FactChat AI 핵심 3줄 요약</div>
-              <ul class="ai-summary-list">
-                ${summaryItems}
-              </ul>
-            </div>
-
-            <div class="card-footer">
-              <div class="card-btns">
-                <button class="card-action-btn scrapped" onclick="toggleScrap(this)">★ 스크랩됨</button>
-                <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
-              </div>
-              <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">${linkText}</a>
-            </div>
-          </div>
-        `;
+        html += renderIssueCardHtml(item, true);
       });
     }
 
     container.innerHTML = html;
-    updateClock();
     return;
   }
 
-  // --- Realtime Feed View (실시간 피드) ---
-  const userKeywords = StorageManager.getKeywords();
-  if (userKeywords.length === 0) {
-    let emptyHtml = `
-      <div class="realtime-bar">
+  // --- Realtime Feed View (100% Original Screen & Code) ---
+  if (currentNavTab === 'feed') {
+    const SPAM_PROMO_KEYWORDS = [
+      '특별분양', '회사보유분', '모델하우스', '임대수익', '조합원 모집', '조합원',
+      '지식산업센터', '선착순 계약', '선착순 분양', '분양가 상한제', '분양안내', '상가 분양',
+      '수익형 부동산', '급등주', '상한가 종목', '무료 리딩방', '수익률 보장',
+      '소정의 원고료', '협찬 받아', '할인 쿠폰'
+    ];
+
+    let displayItems = currentIssues.filter(item => {
+      const itemTitle = (item.title || '').toLowerCase();
+      return !SPAM_PROMO_KEYWORDS.some(s => itemTitle.includes(s));
+    });
+
+    displayItems.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+
+    let html = `
+      <div class="realtime-bar" onclick="refreshFeed()" style="cursor:pointer;" title="클릭 시 실시간 소식 새로고침">
         <div class="realtime-indicator">
           <div class="live-dot"></div>
-          <span>접속 시점 기준 실시간 이슈 피드</span>
+          <span>접속 시점 기준 실시간 이슈 피드 (${displayItems.length}건)</span>
         </div>
-        <span style="font-size: 11px; opacity: 0.8;" id="updateTimestamp">방금 업데이트</span>
-      </div>
-      <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
-        <p style="font-size:32px; margin-bottom:10px;">📌</p>
-        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">등록된 모니터링 키워드가 없습니다.</p>
-        <p style="font-size:12px; color:#64748B;">상단의 <strong>[+ 추가]</strong> 버튼을 눌러 모니터링할 지역 또는 관심 키워드를 추가해 주세요!</p>
+        <span style="font-size: 11px; opacity: 0.8;" id="updateTimestamp">🔄 새로고침</span>
       </div>
     `;
-    container.innerHTML = emptyHtml;
-    updateClock();
-    return;
-  }
 
-  if (!currentIssues.length) return;
-
-  const SPAM_PROMO_KEYWORDS = [
-    '특별분양', '회사보유분', '모델하우스', '임대수익', '조합원 모집', '조합원',
-    '지식산업센터', '선착순 계약', '선착순 분양', '분양가 상한제', '분양안내', '상가 분양',
-    '수익형 부동산', '급등주', '상한가 종목', '무료 리딩방', '수익률 보장',
-    '소정의 원고료', '협찬 받아', '할인 쿠폰'
-  ];
-
-  const keywordFiltered = currentIssues.filter(item => {
-    const itemTitle = (item.title || '').toLowerCase();
-    if (SPAM_PROMO_KEYWORDS.some(s => itemTitle.includes(s))) {
-      return false;
-    }
-
-    if (currentKeyword === '전체') {
-      return true;
-    }
-
-    const curKwClean = currentKeyword.trim().toLowerCase();
-    const itemKwClean = (item.keyword || '').trim().toLowerCase();
-
-    // Direct keyword tag match
-    if (itemKwClean && (itemKwClean === curKwClean || curKwClean.includes(itemKwClean) || itemKwClean.includes(curKwClean))) {
-      return true;
-    }
-
-    const subKws = curKwClean.replace(/ OR /gi, ',').split(',').map(k => k.trim()).filter(Boolean);
-    const itemContent = (item.content || '').toLowerCase();
-
-    return subKws.some(kw => {
-      if (!kw) return false;
-      const baseTerm = (kw.length >= 3 && (kw.endsWith('시') || kw.endsWith('구') || kw.endsWith('동') || kw.endsWith('군') || kw.endsWith('학교'))) ? kw.slice(0, -1) : kw;
-      const shortTerm = (kw.endsWith('학교') && kw.length >= 3) ? kw.slice(0, -2) : kw;
-
-      if (itemTitle.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemTitle.includes(baseTerm)) || (shortTerm && shortTerm.length >= 2 && itemTitle.includes(shortTerm))) {
-        return true;
-      }
-
-      if (itemContent.includes(kw) || (baseTerm && baseTerm.length >= 2 && itemContent.includes(baseTerm)) || (shortTerm && shortTerm.length >= 2 && itemContent.includes(shortTerm))) {
-        return true;
-      }
-
-      return false;
-    });
-  });
-
-function getRecencyWeight(timeStr) {
-  if (!timeStr) return 0;
-  let s = String(timeStr).trim();
-
-  // 1. Formatted datetime: "YYYY-MM-DD HH:mm:ss" or "YYYY.MM.DD HH:mm"
-  let match = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
-  if (match) {
-    const year = parseInt(match[1], 10);
-    const month = parseInt(match[2], 10) - 1;
-    const day = parseInt(match[3], 10);
-    const hour = parseInt(match[4], 10);
-    const min = parseInt(match[5], 10);
-    const sec = match[6] ? parseInt(match[6], 10) : 0;
-    return new Date(year, month, day, hour, min, sec).getTime();
-  }
-
-  // 2. Formatted date: "MM/DD HH:mm"
-  match = s.match(/^(\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
-  if (match) {
-    const month = parseInt(match[1], 10) - 1;
-    const day = parseInt(match[2], 10);
-    const hour = parseInt(match[3], 10);
-    const min = parseInt(match[4], 10);
-    const currentYear = new Date().getFullYear();
-    return new Date(currentYear, month, day, hour, min).getTime();
-  }
-
-  // 3. 8-digit date string: "20260921"
-  if (/^\d{8}$/.test(s)) {
-    const year = parseInt(s.slice(0, 4), 10);
-    const month = parseInt(s.slice(4, 6), 10) - 1;
-    const day = parseInt(s.slice(6, 8), 10);
-    return new Date(year, month, day).getTime();
-  }
-
-  // 4. Handle RFC date string lacking minutes (e.g. "Mon, 21 Sep 2026 13")
-  if (/^[A-Za-z]{3},\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s+\d{1,2}$/.test(s)) {
-    s += ":00:00";
-  }
-
-  // 5. General JS Date parsing fallback (e.g. RSS / RFC pubDate)
-  const parsed = Date.parse(s);
-  if (!isNaN(parsed)) {
-    return parsed;
-  }
-
-  return 0;
-}
-
-function formatRelativeTime(timeStr) {
-  if (!timeStr) return '방금 전';
-  const weight = getRecencyWeight(timeStr);
-  if (!weight) return timeStr;
-
-  const diffSec = Math.floor((Date.now() - weight) / 1000);
-  if (diffSec < 0 || diffSec < 60) return '방금 전';
-  if (diffSec < 3600) return `${Math.max(1, Math.floor(diffSec / 60))}분 전`;
-  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}시간 전`;
-
-  const d = new Date(weight);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  return `${mm}/${dd} ${hh}:${min}`;
-}
-
-// Calculate category tab counts based strictly on the selected keyword's contents
-  const counts = {
-    all: keywordFiltered.length,
-    news: keywordFiltered.filter(i => i.type === 'news').length,
-    youtube: keywordFiltered.filter(i => i.type === 'youtube').length,
-    sns: keywordFiltered.filter(i => i.type === 'sns').length
-  };
-
-  const tabs = document.querySelectorAll('.tab-btn');
-  if (tabs.length >= 4) {
-    tabs[0].textContent = `전체 (${counts.all})`;
-    tabs[1].textContent = `📰 뉴스 (${counts.news})`;
-    tabs[2].textContent = `🎥 유튜브 (${counts.youtube})`;
-    tabs[3].textContent = `📱 SNS (${counts.sns})`;
-  }
-
-  // Filter & Group list: Sort by recency (Newest first)
-  let filtered = [];
-  if (currentCategory === 'all') {
-    filtered = [...keywordFiltered].sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-  } else if (currentCategory === 'sns') {
-    // Priority ordering inside SNS tab: Threads -> Instagram -> Facebook -> X -> Cafe -> Blog
-    const getSnsPriority = (item) => {
-      const b = (item.badge || '').toLowerCase();
-      if (b.includes('쓰레드') || b.includes('threads')) return 1;
-      if (b.includes('인스타그램') || b.includes('instagram')) return 2;
-      if (b.includes('트위터') || b.includes('x (') || b.startsWith('x ')) return 3;
-      if (b.includes('페이스북') || b.includes('facebook')) return 4;
-      if (b.includes('카페')) return 5;
-      return 6;
-    };
-
-    filtered = keywordFiltered
-      .filter(item => item.type === 'sns')
-      .sort((a, b) => {
-        const pA = getSnsPriority(a);
-        const pB = getSnsPriority(b);
-        if (pA !== pB) return pA - pB;
-        return getRecencyWeight(b.time) - getRecencyWeight(a.time);
-      });
-  } else {
-    filtered = keywordFiltered
-      .filter(item => item.type === currentCategory)
-      .sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-  }
-
-  const displayTimeStr = lastUpdatedTimeStr ? `${lastUpdatedTimeStr} 갱신 완료` : '최신 데이터 표시 중';
-
-  let html = `
-    <div class="realtime-bar" onclick="refreshFeed()" style="cursor: pointer;" title="클릭 시 최신 소식 실시간 새로고침">
-      <div class="realtime-indicator">
-        <div class="live-dot"></div>
-        <span>실시간 이슈 피드 🔄 <strong>새로고침</strong></span>
-      </div>
-      <span style="font-size: 11px; opacity: 0.9;" id="updateTimestamp">${displayTimeStr}</span>
-    </div>
-  `;
-
-  renderedTitlesSet.clear();
-  if (filtered.length === 0) {
-    if (isFetchingActive) {
+    if (displayItems.length === 0) {
       html += `
-        <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
-          <p style="font-size:32px; margin-bottom:10px;" class="spin-icon">🔄</p>
-          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 관련 실시간 최신 소식을 수집 중입니다...</p>
-          <p style="font-size:12px; color:#64748B;">네이버 뉴스, 블로그, 포스트에서 소식을 연동 중입니다. 잠시만 기다려 주세요!</p>
+        <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
+          <p style="font-size:36px; margin-bottom:12px;">📰</p>
+          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 관련 수집 기사를 가져오는 중...</p>
+          <p style="font-size:12px; color:#64748B;">위의 <strong>[🔄 새로고침]</strong> 버튼을 누르시거나 잠시만 기다려 주세요.</p>
         </div>
       `;
     } else {
-      html += `
-        <div style="text-align:center; padding: 50px 20px; color: var(--text-sub);">
-          <p style="font-size:32px; margin-bottom:10px;">🔍</p>
-          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 관련 실시간 이슈를 준비 중입니다.</p>
-          <p style="font-size:12px; color:#64748B; margin-bottom:16px;">아래 버튼을 누르면 실시간으로 최신 뉴스 및 소식을 수집해 연결합니다.</p>
-          <button onclick="refreshFeed()" style="background:var(--primary); color:white; border:none; padding:10px 18px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">🔄 '# ${currentKeyword}' 실시간 소식 수집하기</button>
-        </div>
-      `;
+      displayItems.forEach(item => {
+        const isScrapped = StorageManager.isScrapped(item.title);
+        html += renderIssueCardHtml(item, isScrapped);
+      });
     }
+
+    container.innerHTML = html;
+    return;
+  }
+
+  // --- Other Feed Views ('exclusive', 'press') ---
+  const tabTitles = {
+    exclusive: '🎯 단독 뉴스',
+    press: '📋 공식 보도자료'
+  };
+
+  let displayItems = currentIssues;
+  if (currentNavTab === 'press') {
+    renderPressDeptChips();
+    if (currentPressDept !== 'all') {
+      displayItems = currentIssues.filter(item => (item.publisher || '').includes(currentPressDept) || (item.badge || '').includes(currentPressDept));
+    }
+  }
+
+  let html = `
+    <div class="realtime-bar" onclick="switchNavTab('${currentNavTab}')" style="cursor:pointer;">
+      <div class="realtime-indicator">
+        <div class="live-dot"></div>
+        <span>${tabTitles[currentNavTab] || '실시간 피드'} (${displayItems.length}건)</span>
+      </div>
+      <span style="font-size: 11px; opacity: 0.8;">🔄 새로고침</span>
+    </div>
+  `;
+
+  if (displayItems.length === 0) {
+    html += `
+      <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
+        <p style="font-size:36px; margin-bottom:12px;">📰</p>
+        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">수집된 보도자료가 없습니다.</p>
+        <p style="font-size:12px; color:#64748B;">선택하신 부처의 공식 발표 소식을 준비 중입니다.</p>
+      </div>
+    `;
   } else {
-    filtered.forEach(item => {
-      if (item && item.title) renderedTitlesSet.add(item.title);
-
-      const badgeClass = item.type === 'news' ? 'source-news' : (item.type === 'youtube' ? 'source-youtube' : 'source-sns');
-      const hasPreSummary = item.summary && item.summary.length > 0;
-      const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
-      const isNegBadge = item.is_negative ? `<span class="is-neg-tag" style="background:#FEF2F2; color:#EF4444; border:1px solid #FECACA; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:6px;">🚨 관심 이슈</span>` : '';
-
-      let linkText = '원문 보기 ↗';
-      if (item.type === 'youtube') linkText = '영상 재생 ↗';
-      else if (item.type === 'sns') linkText = '포스트 보기 ↗';
-
-      const titleAttr = (item.title || '').replace(/"/g, '&quot;');
-      const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
-      const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
-      const publisherAttr = (item.publisher || '소식').replace(/"/g, '&quot;');
-      const badgeAttr = (item.badge || '📰 이슈').replace(/"/g, '&quot;');
-      const timeAttr = (item.time || '방금 전').replace(/"/g, '&quot;');
+    displayItems.forEach(item => {
       const isScrapped = StorageManager.isScrapped(item.title);
-      const scrapBtnHtml = isScrapped
-        ? `<button class="card-action-btn scrapped" onclick="toggleScrap(this)">★ 스크랩됨</button>`
-        : `<button class="card-action-btn" onclick="toggleScrap(this)">⭐ 스크랩</button>`;
-
-      const badgeLabel = (item.badge && item.publisher && item.badge.includes(item.publisher)) 
-        ? item.badge 
-        : `${item.badge || '📰 이슈'} · ${item.publisher || '소식'}`;
-
-      html += `
-        <div class="issue-card" data-category="${item.type || 'news'}" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '용인시'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
-          <div class="card-top">
-            <span class="source-tag ${badgeClass}">${badgeLabel} ${isNegBadge}</span>
-            <span class="card-time">${formatRelativeTime(item.time)}</span>
-          </div>
-          <h3 class="card-title">${item.title}</h3>
-          
-          <button class="ai-summary-toggle-btn" onclick="toggleOnDemandAiSummary(this)">
-            ✨ AI 3줄 요약 보기 ▾
-          </button>
-
-          <div class="ai-summary-box" style="display: none;" data-generated="${hasPreSummary ? 'true' : 'false'}">
-            <div class="ai-summary-head">✨ FactChat AI 핵심 3줄 요약</div>
-            <ul class="ai-summary-list">
-              ${summaryItems}
-            </ul>
-          </div>
-
-          <div class="card-footer">
-            <div class="card-btns">
-              ${scrapBtnHtml}
-              <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
-            </div>
-            <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">${linkText}</a>
-          </div>
-        </div>
-      `;
+      html += renderIssueCardHtml(item, isScrapped);
     });
   }
 
   container.innerHTML = html;
-  updateClock();
 }
 
-function switchCategory(cat, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentCategory = cat;
+function renderPressDeptChips() {
+  const chipContainer = document.getElementById('pressDeptChips');
+  if (!chipContainer || currentNavTab !== 'press') return;
+
+  const deptCounts = {};
+  currentIssues.forEach(item => {
+    const dept = item.publisher || '정부 부처';
+    deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+  });
+
+  let html = `
+    <span class="chip ${currentPressDept === 'all' ? 'active' : ''}" onclick="selectPressDept('all')">
+      전체 부처 (${currentIssues.length})
+    </span>
+  `;
+
+  Object.keys(deptCounts).forEach(dept => {
+    const count = deptCounts[dept];
+    const isActive = (currentPressDept === dept);
+    html += `
+      <span class="chip ${isActive ? 'active' : ''}" onclick="selectPressDept('${dept}')">
+        🏛️ ${dept} (${count})
+      </span>
+    `;
+  });
+
+  chipContainer.innerHTML = html;
+}
+
+function selectPressDept(dept) {
+  currentPressDept = dept;
   renderIssues();
 }
 
-async function requestNotificationPermission() {
-  if (!('Notification' in window)) {
-    showToast('⚠️ 이 브라우저는 푸시 알림을 지원하지 않습니다.');
-    return false;
-  }
+function renderIssueCardHtml(item, isScrapped) {
+  const hasPreSummary = item.summary && item.summary.length > 0;
+  const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
+  const isNegBadge = item.is_negative ? `<span class="is-neg-tag" style="background:#FEF2F2; color:#EF4444; border:1px solid #FECACA; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:6px;">🚨 주요 이슈</span>` : '';
 
-  if (Notification.permission === 'granted') {
-    return true;
-  }
+  const titleAttr = (item.title || '').replace(/"/g, '&quot;');
+  const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
+  const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
+  const publisherAttr = (item.publisher || '뉴스').replace(/"/g, '&quot;');
+  const badgeAttr = (item.badge || '📰 이슈').replace(/"/g, '&quot;');
+  const timeAttr = (item.time || '').replace(/"/g, '&quot;');
 
-  if (Notification.permission !== 'denied') {
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        showToast('✅ 알림 권한이 허용되었습니다!');
-        return true;
-      }
-    } catch (e) {
-      console.error('Notification permission request error:', e);
-    }
-  }
+  return `
+    <div class="issue-card" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '뉴스'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
+      <div class="card-top">
+        <span class="source-tag source-news">${item.badge || '📰 이슈'} ${isNegBadge}</span>
+        <span class="card-date card-time">${formatRelativeTime(item.time)}</span>
+      </div>
+      <h3 class="card-title">${item.title}</h3>
+      
+      <button class="ai-summary-toggle-btn" onclick="toggleOnDemandAiSummary(this)">
+        ✨ AI 핵심 요약 보기 ▾
+      </button>
 
-  showToast('⚠️ 아이폰/브라우저 [설정 > 알림]에서 알림을 허용해주세요.');
-  return false;
+      <div class="ai-summary-box" style="display: none;" data-generated="${hasPreSummary ? 'true' : 'false'}">
+        <div class="ai-summary-head">✨ FactChat AI 핵심 요약</div>
+        <ul class="ai-summary-list">
+          ${summaryItems}
+        </ul>
+      </div>
+
+      <div class="card-footer">
+        <div class="card-btns">
+          <button class="card-action-btn ${isScrapped ? 'scrapped' : ''}" onclick="toggleScrap(this)">
+            ${isScrapped ? '★ 스크랩됨' : '☆ 스크랩'}
+          </button>
+          <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
+        </div>
+        <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">원문 보기 ↗</a>
+      </div>
+    </div>
+  `;
 }
 
-async function triggerRealPushNotification(title, body, targetUrl) {
-  const push = document.getElementById('pushBanner');
-  if (push) {
-    const titleElem = push.querySelector('.push-title span:first-child');
-    const descElem = push.querySelector('.push-desc');
-    if (titleElem) titleElem.textContent = title;
-    if (descElem) descElem.textContent = body;
+async function toggleOnDemandAiSummary(btn) {
+  const card = btn.closest('.issue-card');
+  if (!card) return;
 
-    if (targetUrl && targetUrl.startsWith('http')) {
-      push.style.cursor = 'pointer';
-      push.onclick = () => window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      push.style.cursor = 'default';
-      push.onclick = null;
-    }
+  const box = card.querySelector('.ai-summary-box');
+  if (!box) return;
 
-    push.classList.add('show');
-    setTimeout(() => push.classList.remove('show'), 6000);
-  }
+  const isHidden = (box.style.display === 'none' || !box.style.display);
 
-  showToast(`🔔 ${title}`);
+  if (isHidden) {
+    box.style.display = 'block';
+    btn.innerHTML = '✨ AI 핵심 요약 접기 ▴';
 
-  if ('Notification' in window) {
-    let perm = Notification.permission;
-    if (perm === 'default') {
+    const isGenerated = box.getAttribute('data-generated') === 'true';
+    if (!isGenerated) {
+      const title = card.getAttribute('data-title') || '';
+      const content = card.getAttribute('data-content') || title;
+      const keyword = card.getAttribute('data-keyword') || '이슈';
+      const apiKey = StorageManager.getFactChatKey();
+
+      const listElem = box.querySelector('.ai-summary-list');
+      if (listElem) {
+        listElem.innerHTML = `<li style="color:#64748B;"><span class="spin-icon">🔄</span> FactChat AI 핵심 요약 분석 중...</li>`;
+      }
+
+      if (!apiKey) {
+        if (listElem) {
+          listElem.innerHTML = `
+            <li style="color:#D97706; font-weight:700;">🔑 FactChat API 키 설정 필요</li>
+            <li style="font-size:11px; color:#64748B;">우측 상단 ⚙️ 설정 버튼을 눌러 사내/개인 FactChat API 키를 등록하시면 실시간 AI 요약이 생성됩니다.</li>
+          `;
+        }
+        return;
+      }
+
       try {
-        perm = await Notification.requestPermission();
-      } catch (e) { }
-    }
-
-    if (perm === 'granted') {
-      const finalUrl = (targetUrl && targetUrl.startsWith('http')) ? targetUrl : window.location.href;
-      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification(title, {
-            body: body,
-            icon: './apple-touch-icon.png',
-            badge: './apple-touch-icon.png',
-            vibrate: [200, 100, 200],
-            data: { url: finalUrl }
-          });
-        });
-      } else {
-        try {
-          const n = new Notification(title, {
-            body: body,
-            icon: './apple-touch-icon.png',
-            data: { url: finalUrl }
-          });
-          n.onclick = (e) => {
-            e.preventDefault();
-            window.open(finalUrl, '_blank', 'noopener,noreferrer');
-            window.focus();
-          };
-        } catch (e) {
-          console.log('Fallback Notification error:', e);
+        const res = await IssueApi.generateSummary({ title, keyword, content, apiKey });
+        if (res && res.summary && res.summary.length > 0) {
+          box.setAttribute('data-generated', 'true');
+          listElem.innerHTML = res.summary.map(s => `<li>${s}</li>`).join('');
+        } else {
+          listElem.innerHTML = `<li>본 기사의 주요 팩트 및 핵심 소식입니다.</li>`;
+        }
+      } catch (err) {
+        console.warn('AI summary error:', err);
+        if (listElem) {
+          listElem.innerHTML = `<li style="color:#EF4444;">AI 요약 생성 중 오류가 발생했습니다 (${err.message}).</li>`;
         }
       }
     }
+  } else {
+    box.style.display = 'none';
+    btn.innerHTML = '✨ AI 핵심 요약 보기 ▾';
   }
 }
 
-async function triggerNotificationTest() {
-  await requestNotificationPermission();
-  const topItem = currentIssues.length ? currentIssues[0] : null;
-  const testTitle = topItem ? topItem.title : `[${currentKeyword || '용인시'}] 실시간 주요 속보`;
-  const testUrl = topItem ? topItem.url : 'https://news.naver.com';
+function toggleScrap(btn) {
+  const card = btn.closest('.issue-card');
+  if (!card) return;
 
-  triggerRealPushNotification(
-    `🔔 [속보 알림] #${topItem ? topItem.keyword : (currentKeyword || '용인시')}`,
-    testTitle,
-    testUrl
-  );
-}
+  const title = card.getAttribute('data-title');
+  const url = card.getAttribute('data-url');
+  const content = card.getAttribute('data-content');
+  const keyword = card.getAttribute('data-keyword');
+  const publisher = card.getAttribute('data-publisher');
+  const badge = card.getAttribute('data-badge');
+  const time = card.getAttribute('data-time');
 
-function toggleSettingsModal() {
-  const modal = document.getElementById('settingsModal');
-  if (modal) modal.classList.toggle('show');
-}
+  const { isScrapped } = StorageManager.toggleScrap({ title, url, content, keyword, publisher, badge, time });
 
-function toggleScrap(btn, legacyTitle) {
-  const card = (btn && btn.closest) ? btn.closest('.issue-card') : null;
-  let title = card ? (card.dataset.title || '') : (legacyTitle || '');
-  if (!title) return;
-
-  let targetItem = currentIssues.find(item => item.title === title);
-  if (!targetItem && card) {
-    targetItem = {
-      title: card.dataset.title || title,
-      url: card.dataset.url || (card.querySelector('.link-btn') ? card.querySelector('.link-btn').href : '#'),
-      publisher: card.dataset.publisher || '용인 소식',
-      time: card.dataset.time || '보관됨',
-      type: card.dataset.category || 'news',
-      badge: card.dataset.badge || '📰 보관',
-      keyword: card.dataset.keyword || '용인시'
-    };
-  } else if (!targetItem) {
-    targetItem = { title: title };
+  if (isScrapped) {
+    btn.classList.add('scrapped');
+    btn.innerHTML = '★ 스크랩됨';
+    showToast('⭐ 보관함에 추가되었습니다.');
+  } else {
+    btn.classList.remove('scrapped');
+    btn.innerHTML = '☆ 스크랩';
+    showToast('보관함에서 삭제되었습니다.');
   }
 
-  const { isScrapped } = StorageManager.toggleScrap(targetItem);
-
-  if (btn && btn.classList) {
-    if (isScrapped) {
-      btn.classList.add('scrapped');
-      btn.innerHTML = '★ 스크랩됨';
-      showToast('⭐ 보관함에 스크랩되었습니다.');
-    } else {
-      btn.classList.remove('scrapped');
-      btn.innerHTML = '⭐ 스크랩';
-      showToast('보관함에서 취소되었습니다.');
-    }
-  }
-
-  updateScrapBadge();
+  updateHeaderScrapBadge();
 
   if (currentNavTab === 'bookmark') {
     renderIssues();
   }
+}
+
+function shareArticle(btn) {
+  const card = btn.closest('.issue-card');
+  if (!card) return;
+  const title = card.getAttribute('data-title');
+  const url = card.getAttribute('data-url');
+
+  if (navigator.share) {
+    navigator.share({ title: title, url: url }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(`${title}\n${url}`);
+    showToast('📋 기사 링크가 클립보드에 복사되었습니다!');
+  } else {
+    showToast('🔗 ' + url);
+  }
+}
+
+// --- Paper View logic ---
+async function loadPaperForCurrentDate() {
+  const container = document.getElementById('feedContainer');
+  if (container) {
+    container.innerHTML = `
+      <div style="text-align:center; padding: 60px 20px; color:#64748B;">
+        <span class="spin-icon" style="font-size:24px; display:inline-block; margin-bottom:8px;">🔄</span>
+        <p style="font-weight:700;">지면 신문 데이터 수집 중...</p>
+      </div>
+    `;
+  }
+
+  const picker = document.getElementById('etnewsDatePicker');
+  if (picker) picker.value = currentPaperDate;
+
+  try {
+    paperData = await IssueApi.fetchPaperNews(currentPaperProvider, currentPaperDate);
+    currentPaperSection = 'all';
+    renderPaperSections();
+    renderPaperView();
+  } catch (err) {
+    console.warn('Paper fetch error:', err);
+    if (container) {
+      container.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:#EF4444;">지면 데이터를 불러오는 중 오류가 발생했습니다.</div>`;
+    }
+  }
+}
+
+function renderPaperSections() {
+  const sectionContainer = document.getElementById('etnewsSectionChips');
+  if (!sectionContainer || !paperData || !paperData.sections) return;
+
+  let html = `
+    <span class="chip ${currentPaperSection === 'all' ? 'active' : ''}" onclick="selectPaperSection('all')">
+      전체 면 (${paperData.articles ? paperData.articles.length : 0})
+    </span>
+  `;
+  paperData.sections.forEach(sec => {
+    const count = paperData.categorized[sec] ? paperData.categorized[sec].length : 0;
+    const isActive = currentPaperSection === sec;
+    html += `
+      <span class="chip ${isActive ? 'active' : ''}" onclick="selectPaperSection('${sec}')">
+        ${sec} (${count})
+      </span>
+    `;
+  });
+
+  sectionContainer.innerHTML = html;
+}
+
+function selectPaperSection(sec) {
+  currentPaperSection = sec;
+  renderPaperSections();
+  renderPaperView();
+}
+
+function onPaperDateChange(val) {
+  if (val) {
+    currentPaperDate = val;
+    loadPaperForCurrentDate();
+  }
+}
+
+function setPaperToday() {
+  currentPaperDate = getTodayKstStr();
+  const picker = document.getElementById('etnewsDatePicker');
+  if (picker) picker.value = currentPaperDate;
+  loadPaperForCurrentDate();
+}
+
+function renderPaperView() {
+  const container = document.getElementById('feedContainer');
+  if (!container) return;
+
+  if (!paperData || !paperData.articles || paperData.articles.length === 0) {
+    const providerObj = PAPER_PROVIDERS.find(p => p.id === currentPaperProvider) || PAPER_PROVIDERS[0];
+    container.innerHTML = `
+      <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
+        <p style="font-size:36px; margin-bottom:12px;">📰</p>
+        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">${providerObj.name} 지면 기사 수집 중</p>
+        <p style="font-size:12px; color:#64748B;">선택하신 날짜(${currentPaperDate})의 지면 기사를 준비하고 있습니다.</p>
+      </div>
+    `;
+    return;
+  }
+
+  let articlesToRender = paperData.articles;
+  if (currentPaperSection !== 'all' && paperData.categorized[currentPaperSection]) {
+    articlesToRender = paperData.categorized[currentPaperSection];
+  }
+
+  const providerObj = PAPER_PROVIDERS.find(p => p.id === currentPaperProvider) || PAPER_PROVIDERS[0];
+
+  let html = `
+    <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155;">
+      <div class="realtime-indicator">
+        <span>${providerObj.badge} ${providerObj.name} 지면 (${articlesToRender.length}건)</span>
+      </div>
+      <span style="font-size: 11px; opacity: 0.8;">${currentPaperDate}</span>
+    </div>
+  `;
+
+  articlesToRender.forEach(item => {
+    const isScrapped = StorageManager.isScrapped(item.title);
+    html += renderIssueCardHtml(item, isScrapped);
+  });
+
+  container.innerHTML = html;
+}
+
+// --- Settings Modal ---
+function toggleSettingsModal() {
+  const modal = document.getElementById('settingsModal');
+  if (!modal) return;
+  const isShow = modal.classList.contains('show');
+  if (isShow) {
+    modal.classList.remove('show');
+  } else {
+    modal.classList.add('show');
+    renderKeywordChips();
+    const apiKey = StorageManager.getFactChatKey();
+    const input = document.getElementById('factchatApiKeyInput');
+    const badge = document.getElementById('factchatKeyBadge');
+    if (input) input.value = apiKey;
+    if (badge) {
+      if (apiKey) {
+        badge.className = 'api-key-badge active';
+        badge.textContent = '✅ Key 등록됨';
+      } else {
+        badge.className = 'api-key-badge warning';
+        badge.textContent = '⚠️ 키 입력 필요';
+      }
+    }
+  }
+}
+
+function saveFactchatKey() {
+  const input = document.getElementById('factchatApiKeyInput');
+  if (!input) return;
+  const val = input.value.trim();
+  StorageManager.saveFactChatKey(val);
+  showToast(val ? '✅ FactChat API 키가 저장되었습니다!' : 'API 키가 삭제되었습니다.');
+  toggleSettingsModal();
+}
+
+function togglePasswordVisibility() {
+  const input = document.getElementById('factchatApiKeyInput');
+  if (!input) return;
+  input.type = (input.type === 'password') ? 'text' : 'password';
 }
 
 function showToast(msg) {
@@ -849,584 +763,24 @@ function showToast(msg) {
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'appToast';
-    toast.className = 'app-toast';
-    const appScreen = document.querySelector('.app-screen');
-    if (appScreen) appScreen.appendChild(toast);
+    toast.style.cssText = `
+      position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.92); color: #FFF; padding: 10px 18px;
+      border-radius: 20px; font-size: 12px; font-weight: 700; z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: opacity 0.3s ease; opacity: 0; pointer-events: none;
+    `;
+    document.body.appendChild(toast);
   }
   toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 2500);
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 2200);
 }
 
-async function shareArticle(btnOrTitle, legacyUrl) {
-  let title = '';
-  let articleUrl = '';
-
-  if (btnOrTitle && typeof btnOrTitle === 'object' && btnOrTitle.nodeType) {
-    const card = btnOrTitle.closest('.issue-card');
-    if (card) {
-      title = card.dataset.title || '';
-      articleUrl = card.dataset.url || card.querySelector('.link-btn')?.href || window.location.href;
-    }
-  } else if (typeof btnOrTitle === 'string') {
-    title = btnOrTitle;
-    articleUrl = legacyUrl || window.location.href;
-  }
-
-  if (!articleUrl || articleUrl === '#') {
-    articleUrl = window.location.href;
-  }
-
-  const cleanTitle = title ? title.replace(/&quot;/g, '"') : '용인 핫이슈';
-  const shareData = {
-    title: cleanTitle,
-    text: `[용인 핫이슈 모니터] ${cleanTitle}`,
-    url: articleUrl
-  };
-
-  if (navigator.share) {
-    try {
-      await navigator.share(shareData);
-      showToast('🔗 원문 링크 공유가 완료되었습니다.');
-      return;
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.warn('Web Share API error:', err);
-      } else {
-        return;
-      }
-    }
-  }
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    try {
-      await navigator.clipboard.writeText(articleUrl);
-      showToast('🔗 콘텐츠 원문 링크가 클립보드에 복사되었습니다!');
-      return;
-    } catch (err) {
-      console.warn('Clipboard write error:', err);
-    }
-  }
-
-  prompt('아래 콘텐츠 원문 링크를 복사하여 공유하세요:', articleUrl);
-}
-
-function updateNotifySetting(key, inputElem) {
-  const settings = StorageManager.getNotifySettings();
-  settings[key] = inputElem.checked;
-  StorageManager.saveNotifySettings(settings);
-  const labelStr = key === 'realtime' ? '실시간 속보' : (key === 'negative' ? '관심/위험 이슈' : '정기 브리핑');
-  showToast(`${labelStr} 알림이 ${inputElem.checked ? 'ON 설정' : 'OFF 해제'}되었습니다.`);
-}
-
-function updateNotifyInterval(selectElem) {
-  const val = parseInt(selectElem.value, 10) || 15;
-  const settings = StorageManager.getNotifySettings();
-  settings.intervalMinutes = val;
-  StorageManager.saveNotifySettings(settings);
-
-  startAutoPolling();
-  showToast(`⏱️ 푸시 알림 주기가 ${val}분 마다로 설정되었습니다.`);
-}
-
-let autoPollingTimer = null;
-
-function startAutoPolling() {
-  if (autoPollingTimer) clearInterval(autoPollingTimer);
-
-  const settings = StorageManager.getNotifySettings();
-  const intervalMin = settings.intervalMinutes || 15;
-  const intervalMs = intervalMin * 60 * 1000;
-
-  autoPollingTimer = setInterval(async () => {
-    const notifySettings = StorageManager.getNotifySettings();
-    if (!notifySettings || !notifySettings.realtime) return;
-
-    const userKeywords = StorageManager.getKeywords();
-    if (!userKeywords || userKeywords.length === 0) return;
-
-    try {
-      const latestIssues = await IssueApi.fetchKeywordIssues(userKeywords);
-      if (latestIssues && latestIssues.length > 0) {
-        const previousTitles = new Set(currentIssues.map(i => i.title));
-        const newItems = latestIssues.filter(i => !previousTitles.has(i.title));
-
-        currentIssues = mergeIssues(currentIssues, latestIssues);
-        const now = new Date();
-        lastUpdatedTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-        StorageManager.saveLastUpdatedTime(lastUpdatedTimeStr);
-
-        renderKeywordChips();
-        renderIssues();
-
-        if (newItems.length > 0) {
-          newItems.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
-          const topItem = newItems[0];
-          triggerRealPushNotification(
-            `🔔 [신규 속보] #${topItem.keyword || '용인시'} 새 이슈`,
-            topItem.title,
-            topItem.url
-          );
-        }
-      }
-    } catch (err) {
-      console.warn('Auto polling check error:', err);
-    }
-  }, intervalMs);
-}
-
-function togglePasswordVisibility() {
-  const input = document.getElementById('factchatApiKeyInput');
-  if (input) input.type = input.type === 'password' ? 'text' : 'password';
-}
-
-function initFactChatKeyUI() {
-  const input = document.getElementById('factchatApiKeyInput');
-  const badge = document.getElementById('factchatKeyBadge');
-  const savedKey = StorageManager.getFactChatKey();
-
-  if (input && savedKey) {
-    input.value = savedKey;
-  }
-  if (badge) {
-    if (savedKey) {
-      badge.className = 'api-key-badge active';
-      badge.textContent = '✅ 연동됨';
-    } else {
-      badge.className = 'api-key-badge warning';
-      badge.textContent = '⚠️ 키 입력 필요';
-    }
-  }
-}
-
-function saveFactchatKey() {
-  const input = document.getElementById('factchatApiKeyInput');
-  const badge = document.getElementById('factchatKeyBadge');
-  const keyVal = input ? input.value.trim() : '';
-
-  StorageManager.saveFactChatKey(keyVal);
-  if (keyVal) {
-    if (badge) {
-      badge.className = 'api-key-badge active';
-      badge.textContent = '✅ 연동됨';
-    }
-    showToast('🔑 FactChat API 키가 안전하게 저장되었습니다!');
-  } else {
-    if (badge) {
-      badge.className = 'api-key-badge warning';
-      badge.textContent = '⚠️ 키 입력 필요';
-    }
-    showToast('⚠️ API 키를 입력하지 않으면 AI 3줄 요약 기능이 제한됩니다.');
-  }
-}
-
-function showKeyIssuanceGuide() {
-  alert(`[사내 FactChat API 개인 키 발급 안내]\n\n1. 사내 FactChat 개발자 포털(https://factchat-cloud.mindlogic.ai/v1/gateway) 접속\n2. 사내 계정 로그인 후 [마이페이지 -> API 키 관리] 메뉴 이동\n3. [신규 개인 발급키 생성] 클릭 후 생성된 키 복사 (fc_key_...)\n4. 본 앱의 설정창 [사내 FactChat API 개인 키 설정] 입력란에 붙여넣고 [저장]을 누르시면 AI 3줄 요약 기능이 즉시 연동됩니다.`);
-}
-
-async function toggleOnDemandAiSummary(btn) {
-  const card = btn.closest('.issue-card');
-  const summaryBox = card.querySelector('.ai-summary-box');
-  if (!summaryBox) return;
-
-  const isVisible = summaryBox.style.display !== 'none';
-  if (isVisible) {
-    summaryBox.style.display = 'none';
-    btn.innerHTML = '✨ AI 3줄 요약 보기 ▾';
-    return;
-  }
-
-  const isGenerated = summaryBox.dataset.generated === 'true';
-  if (isGenerated) {
-    summaryBox.style.display = 'block';
-    btn.innerHTML = '✨ AI 3줄 요약 접기 ▴';
-    return;
-  }
-
-  const title = card.dataset.title || '';
-  const content = card.dataset.content || title;
-  const keyword = card.dataset.keyword || '용인시';
-  const apiKey = StorageManager.getFactChatKey();
-
-  btn.innerHTML = '✨ FactChat AI 3줄 요약 생성 중...';
-  btn.disabled = true;
-
-  try {
-    const { summary, is_negative } = await IssueApi.generateSummary({ title, keyword, content, apiKey });
-    const listHtml = summary.map(s => `<li>${s}</li>`).join('');
-    summaryBox.querySelector('.ai-summary-list').innerHTML = listHtml;
-    summaryBox.style.display = 'block';
-    summaryBox.dataset.generated = 'true';
-    btn.innerHTML = '✨ AI 3줄 요약 접기 ▴';
-    btn.disabled = false;
-
-    if (is_negative) {
-      const sourceTag = card.querySelector('.source-tag');
-      if (sourceTag && !sourceTag.querySelector('.is-neg-tag')) {
-        sourceTag.innerHTML += `<span class="is-neg-tag" style="background:#FEF2F2; color:#EF4444; border:1px solid #FECACA; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:6px;">🚨 관심 이슈</span>`;
-      }
-    }
-  } catch (err) {
-    console.error('On-Demand AI Summary Error:', err);
-    btn.innerHTML = '✨ AI 3줄 요약 보기 ▾';
-    btn.disabled = false;
-    alert('FactChat API 요약 생성 중 오류가 발생했습니다. 설정에서 API 키를 확인해 주세요.');
-  }
-}
-
-function updatePaperProviderUI() {
-  const selectElem = document.getElementById('paperProviderSelect');
-  if (selectElem) selectElem.value = currentPaperProvider;
-
-  const labelElem = document.getElementById('navPaperLabel');
-  if (labelElem) labelElem.textContent = currentPaperProvider === 'mknews' ? '매일경제' : '전자신문';
-}
-
-function updatePaperProviderSetting(provider) {
-  if (!['etnews', 'mknews'].includes(provider)) return;
-  currentPaperProvider = provider;
-  StorageManager.savePaperProvider(provider);
-  currentEtnewsSection = 'all';
-
-  updatePaperProviderUI();
-  const providerName = provider === 'mknews' ? '매일경제' : '전자신문';
-  showToast(`📰 지면 신문사가 '${providerName}'(으)로 설정되었습니다.`);
-
-  if (currentNavTab === 'etnews') {
-    loadEtnewsForCurrentDate();
-  }
-}
-
-async function loadEtnewsForCurrentDate() {
-  const datePicker = document.getElementById('etnewsDatePicker');
-  if (datePicker && !datePicker.value) {
-    datePicker.value = currentEtnewsDate;
-  }
-  const ymd = (datePicker && datePicker.value ? datePicker.value : currentEtnewsDate).replace(/-/g, '');
-  const providerName = currentPaperProvider === 'mknews' ? '매일경제' : '전자신문';
-  const apiEndpoint = currentPaperProvider === 'mknews' ? '/api/mknews' : '/api/etnews';
-
-  showToast(`🔄 ${providerName} 지면(${ymd}) 수집 중...`);
-  etnewsData = { sections: [], categorized: {}, articles: [] };
-  
-  try {
-    const res = await fetch(`${apiEndpoint}?provider=${currentPaperProvider}&date=${ymd}&v=` + Date.now());
-    if (res.ok) {
-      etnewsData = await res.json();
-    } else {
-      etnewsData = { sections: [], categorized: {}, articles: [] };
-    }
-  } catch (e) {
-    console.warn('Paper fetch error:', e);
-    etnewsData = { sections: [], categorized: {}, articles: [] };
-  }
-  
-  updatePaperProviderUI();
-  renderEtnewsSectionChips();
-  renderEtnewsView();
-}
-
-function renderEtnewsSectionChips() {
-  const container = document.getElementById('etnewsSectionChips');
-  if (!container || !etnewsData) return;
-
-  const sections = etnewsData.sections || [];
-  const totalCount = etnewsData.articles ? etnewsData.articles.length : 0;
-  let html = `<span class="etnews-section-chip ${currentEtnewsSection === 'all' ? 'active' : ''}" onclick="selectEtnewsSection('all')">전체 지면 (${totalCount})</span>`;
-
-  sections.forEach(sec => {
-    const count = etnewsData.categorized[sec] ? etnewsData.categorized[sec].length : 0;
-    const isActive = currentEtnewsSection === sec;
-    const safeSec = sec.replace(/'/g, "\\'");
-    html += `<span class="etnews-section-chip ${isActive ? 'active' : ''}" onclick="selectEtnewsSection('${safeSec}')">${sec} (${count})</span>`;
-  });
-
-  container.innerHTML = html;
-}
-
-function selectEtnewsSection(sec) {
-  currentEtnewsSection = sec;
-  renderEtnewsSectionChips();
-  renderEtnewsView();
-}
-
-function onEtnewsDateChange(val) {
-  if (!val) return;
-  currentEtnewsDate = val;
-  currentEtnewsSection = 'all';
-  loadEtnewsForCurrentDate();
-}
-
-function setEtnewsToday() {
-  currentEtnewsDate = getTodayKstStr();
-  const datePicker = document.getElementById('etnewsDatePicker');
-  if (datePicker) datePicker.value = currentEtnewsDate;
-  currentEtnewsSection = 'all';
-  loadEtnewsForCurrentDate();
-}
-
-async function refreshEtnews() {
-  await loadEtnewsForCurrentDate();
-}
-
-function renderEtnewsView() {
-  const container = document.getElementById('feedContainer');
-  if (!container) return;
-
-  updateScrapBadge();
-  const providerName = currentPaperProvider === 'mknews' ? '매일경제' : '전자신문';
-  const providerIcon = currentPaperProvider === 'mknews' ? '📈' : '📰';
-
-  if (!etnewsData || !etnewsData.articles || etnewsData.articles.length === 0) {
-    const isWeekend = isDateWeekend(currentEtnewsDate);
-    let msg = isWeekend
-      ? `📅 ${currentEtnewsDate} 은 주말(휴간일)로 지면 신문이 발행되지 않는 날입니다. 평일을 선택해 주세요.`
-      : `📅 ${currentEtnewsDate} 지면 정보를 불러오는 중입니다. 신문사 발행 직후(아침 06~07시)이거나 수집 지연이 발생할 수 있습니다.`;
-    container.innerHTML = `
-      <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
-        <p style="font-size:36px; margin-bottom:12px;">${providerIcon}</p>
-        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">${providerName} 지면 기사 없음</p>
-        <p style="font-size:12px; color:#64748B; line-height:1.5;">${msg}</p>
-        <button onclick="refreshEtnews()" style="margin-top:16px; background:#EEF2FF; color:#4F46E5; border:1px solid #C7D2FE; padding:8px 16px; border-radius:12px; font-weight:700; cursor:pointer;">🔄 지면 다시 불러오기</button>
-      </div>
-    `;
-    updateClock();
-    return;
-  }
-
-  let displayArticles = etnewsData.articles;
-  if (currentEtnewsSection !== 'all') {
-    displayArticles = etnewsData.categorized[currentEtnewsSection] || [];
-  }
-
-  const formattedYmd = currentEtnewsDate.replace(/-/g, '.');
-  let html = `
-    <div class="realtime-bar" onclick="refreshEtnews()" style="cursor: pointer; background: #F8FAFC; border-color: #E2E8F0;" title="클릭 시 지면 다시 불러오기">
-      <div class="realtime-indicator">
-        <div class="live-dot" style="background:#0F172A;"></div>
-        <span>${providerIcon} ${providerName} 지면 브리핑 <strong>(${formattedYmd})</strong></span>
-      </div>
-      <span style="font-size: 11px; opacity: 0.8;">총 ${displayArticles.length}건</span>
-    </div>
-  `;
-
-  displayArticles.forEach(item => {
-    const hasPreSummary = item.summary && item.summary.length > 0;
-    const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
-
-    const titleAttr = (item.title || '').replace(/"/g, '&quot;');
-    const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
-    const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
-    const publisherAttr = (item.publisher || providerName).replace(/"/g, '&quot;');
-    const badgeAttr = (item.badge || `${providerIcon} ${providerName}`).replace(/"/g, '&quot;');
-    const timeAttr = (item.time || currentEtnewsDate).replace(/"/g, '&quot;');
-    const isScrapped = StorageManager.isScrapped(item.title);
-    const scrapBtnHtml = isScrapped
-      ? `<button class="card-action-btn scrapped" onclick="toggleScrap(this)">★ 스크랩됨</button>`
-      : `<button class="card-action-btn" onclick="toggleScrap(this)">⭐ 스크랩</button>`;
-
-    html += `
-      <div class="issue-card" data-category="news" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${providerName}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
-        <div class="card-top">
-          <span class="source-tag source-news">${item.badge || badgeAttr}</span>
-          <span class="card-time">${item.time}</span>
-        </div>
-        <h3 class="card-title">${item.title}</h3>
-        
-        <button class="ai-summary-toggle-btn" onclick="toggleEtnewsAiSummary(this)">
-          ✨ AI 스마트 브리핑 보기 ▾
-        </button>
-
-        <div class="ai-summary-box" style="display: none;" data-generated="${hasPreSummary ? 'true' : 'false'}">
-          <div class="ai-summary-head">✨ FactChat AI ${providerName} 스마트 브리핑</div>
-          <ul class="ai-summary-list">
-            ${summaryItems}
-          </ul>
-        </div>
-
-        <div class="card-footer">
-          <div class="card-btns">
-            ${scrapBtnHtml}
-            <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
-          </div>
-          <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">지면 원문 보기 ↗</a>
-        </div>
-      </div>
-    `;
-  });
-
-  container.innerHTML = html;
-  updateClock();
-}
-
-async function toggleEtnewsAiSummary(btn) {
-  const card = btn.closest('.issue-card');
-  if (!card) return;
-  const summaryBox = card.querySelector('.ai-summary-box');
-  if (!summaryBox) return;
-
-  if (summaryBox.style.display === 'block') {
-    summaryBox.style.display = 'none';
-    btn.innerHTML = '✨ AI 스마트 브리핑 보기 ▾';
-    return;
-  }
-
-  if (summaryBox.dataset.generated === 'true') {
-    summaryBox.style.display = 'block';
-    btn.innerHTML = '✨ AI 스마트 브리핑 접기 ▴';
-    return;
-  }
-
-  const apiKey = StorageManager.getFactChatKey();
-  if (!apiKey) {
-    alert('FactChat API 키가 설정되지 않았습니다.\n상단 ⚙️ 설정 메뉴에서 API 키를 입력해 주세요.');
-    toggleSettingsModal();
-    return;
-  }
-
-  const title = card.dataset.title;
-  const url = card.dataset.url;
-  btn.disabled = true;
-  btn.innerHTML = '✨ AI 요약 작성 중... ⏳';
-
-  try {
-    let articleContent = card.dataset.content || '';
-    if (!articleContent || articleContent === title) {
-      const bodyRes = await fetch(`/api/etnews?mode=etnews&url=${encodeURIComponent(url)}&v=` + Date.now());
-      if (bodyRes.ok) {
-        const bodyData = await bodyRes.json();
-        if (bodyData.content) {
-          articleContent = bodyData.content;
-          card.dataset.content = articleContent;
-        }
-      }
-    }
-
-    const { summary } = await IssueApi.generateSummary({
-      title,
-      keyword: '전자신문',
-      content: articleContent,
-      apiKey
-    });
-
-    const listHtml = summary.map(s => `<li>${s}</li>`).join('');
-    summaryBox.querySelector('.ai-summary-list').innerHTML = listHtml;
-    summaryBox.style.display = 'block';
-    summaryBox.dataset.generated = 'true';
-    btn.innerHTML = '✨ AI 스마트 브리핑 접기 ▴';
-    btn.disabled = false;
-  } catch (err) {
-    console.error('ETNews AI Summary Error:', err);
-    btn.innerHTML = '✨ AI 스마트 브리핑 보기 ▾';
-    btn.disabled = false;
-    alert('FactChat API 요약 작성 중 오류가 발생했습니다.');
-  }
-}
-
-function openContentUrl(url, event) {
-  if (!url || url === '#') {
-    if (event) event.preventDefault();
-    return false;
-  }
-  return true;
-}
-
-function updateClock() {
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const timeElem = document.getElementById('liveTime');
-  if (timeElem) timeElem.textContent = `${hours}:${minutes}`;
-}
-
-function installPWA() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        alert('용인 핫이슈 모니터 앱 설치가 시작되었습니다!');
-      }
-      deferredPrompt = null;
-    });
-  } else {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-      alert('📱 [아이폰 PWA 앱 설치 안내]\n\n하단 사파리 브라우저의 [공유] 버튼(↑)을 누르신 후 목록에서 [홈 화면에 추가 (+)]를 클릭하시면 스마트폰 바탕화면에 앱으로 등록됩니다.');
-    } else {
-      alert('📱 [앱 설치 안내]\n\n모바일 크롬/웨일 브라우저 상단 우측 메뉴(⋮) ➔ [앱 설치] 또는 [홈 화면에 추가]를 누르시면 스마트폰 바탕화면에 앱이 설치됩니다.');
-    }
-  }
-}
-
-// Lifecycle Init
+// Initializer
 document.addEventListener('DOMContentLoaded', () => {
-  renderKeywordChips();
-  updateScrapBadge();
-  initFactChatKeyUI();
-
-  // Register Service Worker & Force Version Check
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((reg) => {
-          console.log('PWA Service Worker registered:', reg.scope);
-          reg.update();
-        })
-        .catch((err) => console.log('SW Registration failed:', err));
-    });
-  }
-
-  // PWA Prompt Listener
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-  });
-
-  // Initialize notification interval UI & paper provider UI
-  const notifySettings = StorageManager.getNotifySettings();
-  const selectElem = document.getElementById('notifyIntervalSelect');
-  if (selectElem && notifySettings.intervalMinutes) {
-    selectElem.value = String(notifySettings.intervalMinutes);
-  }
-
-  updatePaperProviderUI();
-
-  // Clock Timer
-  setInterval(updateClock, 1000);
-  updateClock();
-
-  // Start auto-polling with user preferred interval (default 15 min)
-  startAutoPolling();
-
-  // Mobile App Resume / Foreground listener: check if interval has passed when user reopens screen
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      const settings = StorageManager.getNotifySettings();
-      const intervalMin = settings.intervalMinutes || 15;
-      const lastTimeStr = StorageManager.getLastUpdatedTime();
-
-      if (lastTimeStr && lastTimeStr.includes(':')) {
-        const parts = lastTimeStr.split(':');
-        const lastDate = new Date();
-        lastDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || 0, 10));
-        const diffMins = (new Date() - lastDate) / (1000 * 60);
-        if (diffMins >= intervalMin) {
-          refreshFeed();
-        }
-      }
-    }
-  });
-
-  // Clean initialization: reset any old tangled cache, load active keyword cleanly
-  try {
-    localStorage.removeItem('feed_cache');
-    localStorage.removeItem('feed_cache_ver');
-  } catch(e) {}
-
   const userKws = StorageManager.getKeywords();
   currentKeyword = userKws.length ? userKws[0] : '용인시';
   renderKeywordChips();
-  fetchKeywordIssues([currentKeyword]);
+  updateHeaderScrapBadge();
+  fetchKeywordIssues(userKws);
 });
