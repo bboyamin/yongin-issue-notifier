@@ -76,17 +76,24 @@ const IssueApi = (() => {
      * @param {string} dateStr 
      */
     async fetchPaperNews(provider = 'etnews', dateStr = '') {
-      try {
-        const url = `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&t=${Date.now()}`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && (data.articles || data.sections)) {
-            return data;
+      const cleanProvider = (provider || 'etnews').toLowerCase().strip ? provider.toLowerCase().strip() : String(provider).toLowerCase();
+      const endpoints = [
+        `/api/${cleanProvider}?date=${encodeURIComponent(dateStr)}&t=${Date.now()}`,
+        `/api/papernews?provider=${encodeURIComponent(cleanProvider)}&date=${encodeURIComponent(dateStr)}&t=${Date.now()}`
+      ];
+
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && (data.articles || data.sections) && Array.isArray(data.articles) && data.articles.length > 0) {
+              return data;
+            }
           }
+        } catch (err) {
+          console.warn(`Fetch paper news error for ${url}:`, err);
         }
-      } catch (err) {
-        console.warn(`Fetch paper news error for ${provider}:`, err);
       }
       return { sections: [], categorized: {}, articles: [] };
     },

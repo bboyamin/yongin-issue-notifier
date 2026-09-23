@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yongin-issue-cache-v1600';
+const CACHE_NAME = 'yongin-issue-cache-v1700';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

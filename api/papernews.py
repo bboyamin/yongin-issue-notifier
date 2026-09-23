@@ -9,6 +9,32 @@ from datetime import datetime, timezone, timedelta
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Top-level imports for Vercel Python bundler
+try:
+    from api.etnews import fetch_etnews_by_date
+except ImportError:
+    try:
+        from etnews import fetch_etnews_by_date
+    except ImportError:
+        fetch_etnews_by_date = None
+
+try:
+    from api.mknews import fetch_mknews_by_date
+except ImportError:
+    try:
+        from mknews import fetch_mknews_by_date
+    except ImportError:
+        fetch_mknews_by_date = None
+
+try:
+    from api.khan import fetch_khan_by_date
+except ImportError:
+    try:
+        from khan import fetch_khan_by_date
+    except ImportError:
+        fetch_khan_by_date = None
+
+
 def fetch_paper_news(provider="etnews", ymd_str=None):
     if not ymd_str:
         kst = timezone(timedelta(hours=9))
@@ -18,34 +44,22 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
     provider = (provider or "etnews").lower().strip()
 
     # 1. ETNews
-    if provider == "etnews":
+    if provider == "etnews" and fetch_etnews_by_date:
         try:
-            try:
-                from etnews import fetch_etnews_by_date
-            except ImportError:
-                from api.etnews import fetch_etnews_by_date
             return fetch_etnews_by_date(clean_ymd)
         except Exception as e:
             print("etnews dispatch error:", e)
 
     # 2. MKNews
-    elif provider == "mknews":
+    elif provider == "mknews" and fetch_mknews_by_date:
         try:
-            try:
-                from mknews import fetch_mknews_by_date
-            except ImportError:
-                from api.mknews import fetch_mknews_by_date
             return fetch_mknews_by_date(clean_ymd)
         except Exception as e:
             print("mknews dispatch error:", e)
 
     # 3. Khan (경향신문)
-    elif provider in ["khan", "kyunghyang"]:
+    elif provider in ["khan", "kyunghyang"] and fetch_khan_by_date:
         try:
-            try:
-                from khan import fetch_khan_by_date
-            except ImportError:
-                from api.khan import fetch_khan_by_date
             return fetch_khan_by_date(clean_ymd)
         except Exception as e:
             print("khan dispatch error:", e)
