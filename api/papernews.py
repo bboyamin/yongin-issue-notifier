@@ -13,6 +13,70 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+def fetch_google_news_rss(domain, press_name, press_badge):
+    url = f"https://news.google.com/rss/search?q=site:{domain}&hl=ko&gl=KR&ceid=KR:ko"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    }
+    try:
+        r = requests.get(url, headers=headers, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'xml')
+            items = soup.find_all('item')
+            articles = []
+            categorized = {}
+            cur_date_str = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
+            
+            for idx, item in enumerate(items):
+                title = item.title.text.strip() if item.title else ''
+                if ' - ' in title:
+                    title = title.rsplit(' - ', 1)[0].strip()
+                if not title or len(title) < 5:
+                    continue
+                    
+                link = item.link.text.strip() if item.link else ''
+                pub_date = item.pubDate.text.strip() if item.pubDate else cur_date_str
+                
+                # Dynamic Section categorization
+                section = "주요뉴스"
+                if any(w in title for w in ['정치', '대통령', '국회', '정당', '여당', '야당', '총리']):
+                    section = "정치면"
+                elif any(w in title for w in ['경제', '금융', '증시', '주식', '금리', '부동산', '기업', '산업']):
+                    section = "경제면"
+                elif any(w in title for w in ['사회', '검찰', '경찰', '법원', '사건', '사고', '교육']):
+                    section = "사회면"
+                elif any(w in title for w in ['IT', 'AI', '과학', '반도체', '기술', '모바일', '통신']):
+                    section = "IT·과학면"
+                elif any(w in title for w in ['문화', '연예', '스포츠', '축구', '야구', '방송', '영화']):
+                    section = "문화·스포츠면"
+
+                art = {
+                    "id": f"{domain}_{idx}",
+                    "keyword": press_name,
+                    "type": "news",
+                    "badge": f"{press_badge} · {section}",
+                    "publisher": press_name,
+                    "title": title,
+                    "time": cur_date_str,
+                    "url": link,
+                    "content": title,
+                    "section": section
+                }
+                articles.append(art)
+                if section not in categorized:
+                    categorized[section] = []
+                categorized[section].append(art)
+
+            if articles:
+                return {
+                    "sections": list(categorized.keys()),
+                    "categorized": categorized,
+                    "articles": articles
+                }
+    except Exception as e:
+        print(f"Google RSS fetch error for {domain}:", e)
+    return None
+
 def fetch_paper_news(provider="etnews", ymd_str=None):
     if not ymd_str:
         kst = timezone(timedelta(hours=9))
@@ -49,15 +113,15 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
 
     # 3. Chosun (조선일보), Joongang (중앙일보), Donga (동아일보)
     press_map = {
-        "chosun": ("023", "조선일보", "🗞️ 조선일보"),
-        "joongang": ("025", "중앙일보", "🏢 중앙일보"),
-        "donga": ("020", "동아일보", "📰 동아일보")
+        "chosun": ("023", "조선일보", "🗞️ 조선일보", "chosun.com"),
+        "joongang": ("025", "중앙일보", "🏢 중앙일보", "joongang.co.kr"),
+        "donga": ("020", "동아일보", "📰 동아일보", "donga.com")
     }
 
     if provider not in press_map:
         provider = "chosun"
 
-    press_code, press_name, press_badge = press_map[provider]
+    press_code, press_name, press_badge, press_domain = press_map[provider]
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -75,7 +139,6 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
     except Exception:
         pass
 
-    # Also add current KST date if clean_ymd is different
     kst_now = datetime.now(timezone(timedelta(hours=9))).strftime("%Y%m%d")
     if kst_now not in try_dates:
         try_dates.append(kst_now)
@@ -83,10 +146,11 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
     categorized = {}
     all_articles = []
 
+    # Layer 1: Attempt Naver Paper Print Scraper
     for current_ymd in try_dates:
         url = f"https://media.naver.com/press/{press_code}/newspaper?date={current_ymd}"
         try:
-            res = requests.get(url, headers=headers, verify=False, timeout=6)
+            res = requests.get(url, headers=headers, verify=False, timeout=5)
             if res.status_code == 200:
                 soup = BeautifulSoup(res.text, "html.parser")
                 pages = soup.select(".newspaper_inner")
@@ -140,49 +204,15 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         except Exception as e:
             print(f"Paper print fetch error for {provider} ({current_ymd}):", e)
 
-    # Fallback to Press Main page if newspaper edition is not found or empty
-    if not all_articles:
-        try:
-            main_url = f"https://media.naver.com/press/{press_code}"
-            res_main = requests.get(main_url, headers=headers, verify=False, timeout=6)
-            if res_main.status_code == 200:
-                soup_main = BeautifulSoup(res_main.text, "html.parser")
-                main_items = soup_main.select("a.press_edit_news_link, a.cjs_news_a, li.cjs_news_item a")
-                cur_fmt_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
-                article_idx = 0
-                for item in main_items:
-                    clean_title = item.text.strip()
-                    href = item.get("href", "")
-                    if not clean_title or not href or len(clean_title) < 5:
-                        continue
-                    if href.startswith("//"):
-                        href = "https:" + href
-
-                    section = "주요뉴스"
-                    article_obj = {
-                        "id": f"{provider}_main_{article_idx}",
-                        "keyword": press_name,
-                        "type": "news",
-                        "badge": f"{press_badge} · {section}",
-                        "publisher": press_name,
-                        "title": clean_title,
-                        "time": cur_fmt_date,
-                        "url": href,
-                        "content": clean_title,
-                        "section": section
-                    }
-                    all_articles.append(article_obj)
-                    if section not in categorized:
-                        categorized[section] = []
-                    categorized[section].append(article_obj)
-                    article_idx += 1
-        except Exception as e:
-            print(f"Fallback press main fetch error for {provider}:", e)
+    # Layer 2: Multi-layer RSS Fallback (Unblockable on Cloud AWS/Vercel)
+    rss_fallback = fetch_google_news_rss(press_domain, press_name, press_badge)
+    if rss_fallback and rss_fallback.get("articles"):
+        return rss_fallback
 
     return {
-        "sections": list(categorized.keys()),
-        "categorized": categorized,
-        "articles": all_articles
+        "sections": [],
+        "categorized": {},
+        "articles": []
     }
 
 from http.server import BaseHTTPRequestHandler
@@ -211,7 +241,3 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
-
-
-
-
