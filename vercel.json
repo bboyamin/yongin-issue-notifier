@@ -9,7 +9,8 @@
     { "source": "/api/collect", "destination": "/api/collect.py" },
     { "source": "/api/papernews", "destination": "/api/papernews.py" },
     { "source": "/api/etnews", "destination": "/api/etnews.py" },
-    { "source": "/api/mknews", "destination": "/api/mknews.py" }
+    { "source": "/api/mknews", "destination": "/api/mknews.py" },
+    { "source": "/api/khan", "destination": "/api/khan.py" }
   ],
   "headers": [
     {

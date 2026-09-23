@@ -11,7 +11,8 @@ let currentPaperDate = getTodayKstStr();
 let currentPaperSection = 'all';
 const PAPER_PROVIDERS = [
   { id: 'mknews', name: '매일경제', badge: '📈' },
-  { id: 'etnews', name: '전자신문', badge: '📰' }
+  { id: 'etnews', name: '전자신문', badge: '📰' },
+  { id: 'khan', name: '경향신문', badge: '🗞️' }
 ];
 
 let currentPaperProvider = StorageManager.getPaperProvider() || 'mknews';

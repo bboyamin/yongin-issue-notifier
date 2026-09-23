@@ -39,6 +39,17 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         except Exception as e:
             print("mknews dispatch error:", e)
 
+    # 3. Khan (경향신문)
+    elif provider in ["khan", "kyunghyang"]:
+        try:
+            try:
+                from khan import fetch_khan_by_date
+            except ImportError:
+                from api.khan import fetch_khan_by_date
+            return fetch_khan_by_date(clean_ymd)
+        except Exception as e:
+            print("khan dispatch error:", e)
+
     return {"sections": [], "categorized": {}, "articles": []}
 
 class handler(BaseHTTPRequestHandler):
