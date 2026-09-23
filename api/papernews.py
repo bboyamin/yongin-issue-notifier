@@ -39,39 +39,6 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         except Exception as e:
             print("mknews dispatch error:", e)
 
-    # 3. Chosun
-    elif provider == "chosun":
-        try:
-            try:
-                from chosun import fetch_chosun_by_date
-            except ImportError:
-                from api.chosun import fetch_chosun_by_date
-            return fetch_chosun_by_date(clean_ymd)
-        except Exception as e:
-            print("chosun dispatch error:", e)
-
-    # 4. Donga
-    elif provider == "donga":
-        try:
-            try:
-                from donga import fetch_donga_by_date
-            except ImportError:
-                from api.donga import fetch_donga_by_date
-            return fetch_donga_by_date(clean_ymd)
-        except Exception as e:
-            print("donga dispatch error:", e)
-
-    # 5. Joongang
-    elif provider == "joongang":
-        try:
-            try:
-                from joongang import fetch_joongang_by_date
-            except ImportError:
-                from api.joongang import fetch_joongang_by_date
-            return fetch_joongang_by_date(clean_ymd)
-        except Exception as e:
-            print("joongang dispatch error:", e)
-
     return {"sections": [], "categorized": {}, "articles": []}
 
 class handler(BaseHTTPRequestHandler):
@@ -79,7 +46,7 @@ class handler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(parsed.query)
 
-        provider = params.get('provider', ['chosun'])[0]
+        provider = params.get('provider', ['etnews'])[0]
         date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
 
         if not date_param:

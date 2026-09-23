@@ -10,16 +10,17 @@ let currentKeyword = '용인시';
 let currentPaperDate = getTodayKstStr();
 let currentPaperSection = 'all';
 let currentPaperProvider = StorageManager.getPaperProvider() || 'mknews';
+if (!['mknews', 'etnews'].includes(currentPaperProvider)) {
+  currentPaperProvider = 'mknews';
+  StorageManager.savePaperProvider('mknews');
+}
 let currentPressDept = 'all';
 let paperData = null;
 let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
 
 const PAPER_PROVIDERS = [
   { id: 'mknews', name: '매일경제', badge: '📈' },
-  { id: 'etnews', name: '전자신문', badge: '📰' },
-  { id: 'chosun', name: '조선일보', badge: '🗞️' },
-  { id: 'joongang', name: '중앙일보', badge: '🏢' },
-  { id: 'donga', name: '동아일보', badge: '📰' }
+  { id: 'etnews', name: '전자신문', badge: '📰' }
 ];
 
 function getTodayKstStr() {
@@ -205,7 +206,11 @@ async function fetchKeywordIssues(keywordsList) {
 }
 
 async function fetchTabIssues(tabName) {
-  showToast(`🔄 [${tabName}] 수집 중...`);
+  const tabTitles = {
+    press: '📋 공식 보도자료',
+    exclusive: '🎯 단독 뉴스'
+  };
+  showToast(`🔄 [${tabTitles[tabName] || tabName}] 수집 중...`);
   try {
     const issues = await IssueApi.fetchTabIssues(tabName);
     tabFeeds[tabName] = issues || [];
@@ -221,6 +226,7 @@ async function fetchTabIssues(tabName) {
 
 async function switchNavTab(tab, btn) {
   currentNavTab = tab;
+  currentIssues = [];
 
   const navBtns = document.querySelectorAll('.app-bottom-nav .nav-item');
   navBtns.forEach(b => b.classList.remove('active'));
@@ -229,6 +235,7 @@ async function switchNavTab(tab, btn) {
   const keywordChips = document.getElementById('keywordChips');
   const etnewsHeader = document.getElementById('etnewsHeader');
   const pressHeader = document.getElementById('pressHeader');
+  const container = document.getElementById('feedContainer');
 
   if (pressHeader) pressHeader.style.display = (tab === 'press') ? 'block' : 'none';
 
@@ -239,6 +246,21 @@ async function switchNavTab(tab, btn) {
     await loadPaperForCurrentDate();
   } else {
     if (etnewsHeader) etnewsHeader.style.display = 'none';
+
+    if (container && tab !== 'bookmark') {
+      const titleMap = {
+        press: '📋 정부/지자체 공식 보도자료 수집 중...',
+        exclusive: '🎯 단독 뉴스 수집 중...',
+        feed: '🔄 실시간 이슈 수집 중...'
+      };
+      container.innerHTML = `
+        <div style="text-align:center; padding: 60px 20px; color:#64748B;">
+          <span class="spin-icon" style="font-size:28px; display:inline-block; margin-bottom:10px;">🔄</span>
+          <p style="font-size:15px; font-weight:700; color:var(--text-main);">${titleMap[tab] || '데이터 수집 중...'}</p>
+          <p style="font-size:12px; color:#64748B; margin-top:4px;">최신 소식을 가져오고 있습니다.</p>
+        </div>
+      `;
+    }
 
     if (tab === 'feed') {
       if (keywordChips) keywordChips.style.display = 'flex';

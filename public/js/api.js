@@ -98,9 +98,8 @@ const IssueApi = (() => {
       // Multi-Proxy Client Fallback if Server API returns 0 articles or fails
       try {
         const domainMap = {
-          chosun: { domain: 'chosun.com', name: '조선일보', badge: '🗞️ 조선일보' },
-          joongang: { domain: 'joongang.co.kr', name: '중앙일보', badge: '🏢 중앙일보' },
-          donga: { domain: 'donga.com', name: '동아일보', badge: '📰 동아일보' }
+          etnews: { domain: 'etnews.com', name: '전자신문', badge: '📰 전자신문' },
+          mknews: { domain: 'mk.co.kr', name: '매일경제', badge: '📈 매일경제' }
         };
         const info = domainMap[provider];
         if (info) {
