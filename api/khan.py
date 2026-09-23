@@ -8,6 +8,7 @@ import urllib3
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
+from concurrent.futures import ThreadPoolExecutor
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -32,80 +33,69 @@ def clean_html(text):
         return ""
     return re.sub(r'<[^>]+>', '', text).strip()
 
-def fetch_khan_by_date(ymd_str=None):
+def fetch_single_feed(item_tuple):
+    section_name, rss_url = item_tuple
+    articles = []
+    try:
+        res = requests.get(rss_url, headers=headers, timeout=5, verify=False)
+        if res.status_code == 200 and len(res.content) > 100:
+            soup = ET.fromstring(res.content)
+            items = soup.findall('.//item')
+            for idx, item in enumerate(items):
+                t_el = item.find('title')
+                l_el = item.find('link')
+                d_el = item.find('description')
+                date_el = item.find('{http://purl.org/dc/elements/1.1/}date')
+                creator_el = item.find('{http://purl.org/dc/elements/1.1/}creator')
+
+                title = clean_html(t_el.text) if t_el is not None and t_el.text else ""
+                if not title or len(title) < 4:
+                    continue
+
+                link = l_el.text.strip() if l_el is not None and l_el.text else "#"
+                desc = clean_html(d_el.text) if d_el is not None and d_el.text else title
+
+                kst = timezone(timedelta(hours=9))
+                pub_time = datetime.now(kst).strftime("%Y/%m/%d")
+                item_ymd = ""
+                if date_el is not None and date_el.text:
+                    raw_date = date_el.text.strip()
+                    if len(raw_date) >= 10 and raw_date[:4].isdigit():
+                        pub_time = raw_date[:10].replace('-', '/')
+                        item_ymd = raw_date[:10].replace('-', '')
+
+                creator = clean_html(creator_el.text) if creator_el is not None and creator_el.text else "경향신문"
+
+                article_obj = {
+                    "id": f"khan_rss_{section_name}_{idx}",
+                    "keyword": "경향신문",
+                    "type": "news",
+                    "badge": f"🗞️ 경향신문 · {section_name}",
+                    "publisher": f"경향신문 ({creator})" if creator and creator != "경향신문" else "경향신문",
+                    "title": title,
+                    "time": pub_time,
+                    "url": link,
+                    "content": desc or title,
+                    "section": section_name,
+                    "item_ymd": item_ymd
+                }
+                articles.append(article_obj)
+    except Exception as e:
+        print(f"Kyunghyang RSS feed fetch error ({section_name}):", e)
+    return section_name, articles
+
+def fetch_past_khan(clean_ymd):
     categorized = {}
     all_articles = []
-    kst = timezone(timedelta(hours=9))
-    default_date_str = datetime.now(kst).strftime("%Y/%m/%d")
-
-    target_ymd = ""
-    if ymd_str:
-        target_ymd = ymd_str.replace("-", "").strip()
-
-    # 1-Tier: Kyunghyang Official RSS Feeds
-    for section_name, rss_url in KHAN_RSS_FEEDS.items():
-        try:
-            res = requests.get(rss_url, headers=headers, timeout=5, verify=False)
-            if res.status_code == 200 and len(res.content) > 100:
-                soup = ET.fromstring(res.content)
-                items = soup.findall('.//item')
-                for idx, item in enumerate(items):
-                    t_el = item.find('title')
-                    l_el = item.find('link')
-                    d_el = item.find('description')
-                    date_el = item.find('{http://purl.org/dc/elements/1.1/}date')
-                    creator_el = item.find('{http://purl.org/dc/elements/1.1/}creator')
-
-                    title = clean_html(t_el.text) if t_el is not None and t_el.text else ""
-                    if not title or len(title) < 4:
-                        continue
-
-                    link = l_el.text.strip() if l_el is not None and l_el.text else "#"
-                    desc = clean_html(d_el.text) if d_el is not None and d_el.text else title
-
-                    # Parse pubDate / dc:date (ISO 8601 string)
-                    pub_time = default_date_str
-                    item_ymd = ""
-                    if date_el is not None and date_el.text:
-                        raw_date = date_el.text.strip()
-                        if len(raw_date) >= 10 and raw_date[:4].isdigit():
-                            pub_time = raw_date[:10].replace('-', '/')
-                            item_ymd = raw_date[:10].replace('-', '')
-
-                    creator = clean_html(creator_el.text) if creator_el is not None and creator_el.text else "경향신문"
-
-                    article_obj = {
-                        "id": f"khan_rss_{section_name}_{idx}",
-                        "keyword": "경향신문",
-                        "type": "news",
-                        "badge": f"🗞️ 경향신문 · {section_name}",
-                        "publisher": f"경향신문 ({creator})" if creator and creator != "경향신문" else "경향신문",
-                        "title": title,
-                        "time": pub_time,
-                        "url": link,
-                        "content": desc or title,
-                        "section": section_name
-                    }
-
-                    # Filter by target_ymd if supplied and valid match, else include all recent RSS items
-                    all_articles.append(article_obj)
-                    if section_name not in categorized:
-                        categorized[section_name] = []
-                    categorized[section_name].append(article_obj)
-        except Exception as e:
-            print(f"Kyunghyang RSS error ({section_name}): {e}")
-
-    if all_articles:
-        return {
-            "sections": list(categorized.keys()),
-            "categorized": categorized,
-            "articles": all_articles
-        }
-
-    # 2-Tier Fallback: Google RSS site:khan.co.kr
     try:
-        g_rss = "https://news.google.com/rss/search?q=site:khan.co.kr&hl=ko&gl=KR&ceid=KR:ko"
-        res = requests.get(g_rss, headers=headers, timeout=5, verify=False)
+        dt = datetime.strptime(clean_ymd, "%Y%m%d")
+        dt_next = dt + timedelta(days=1)
+        after_str = dt.strftime("%Y-%m-%d")
+        before_str = dt_next.strftime("%Y-%m-%d")
+        formatted_date = dt.strftime("%Y/%m/%d")
+
+        url = f"https://news.google.com/rss/search?q=site:khan.co.kr+after:{after_str}+before:{before_str}&hl=ko&gl=KR&ceid=KR:ko"
+        res = requests.get(url, headers=headers, timeout=6, verify=False)
         if res.status_code == 200 and len(res.content) > 100:
             soup = ET.fromstring(res.content)
             items = soup.findall('.//item')
@@ -119,20 +109,22 @@ def fetch_khan_by_date(ymd_str=None):
                     continue
                 link = l_el.text.strip() if l_el is not None and l_el.text else "#"
 
-                section = "일반"
-                if any(w in title for w in ['정치', '대통령', '국회', '정당']): section = "정치"
-                elif any(w in title for w in ['경제', '금융', '증시', '부동산']): section = "경제"
-                elif any(w in title for w in ['사회', '검찰', '경찰', '법원']): section = "사회"
-                elif any(w in title for w in ['문화', '연예', '스포츠', '방송']): section = "문화"
+                section = "종합"
+                if any(w in title for w in ['정치', '대통령', '국회', '정당', '청와대', '외교']): section = "정치"
+                elif any(w in title for w in ['경제', '금융', '증시', '부동산', '기업', '주식', '은행', '배당']): section = "경제"
+                elif any(w in title for w in ['사회', '검찰', '경찰', '법원', '사건', '수사', '노동']): section = "사회"
+                elif any(w in title for w in ['문화', '연예', '스포츠', '방송', '영화', '공연']): section = "문화"
+                elif any(w in title for w in ['IT', '과학', 'AI', '반도체', '통신', '스마트폰']): section = "IT·과학"
+                elif any(w in title for w in ['사설', '칼럼', '오피니언', '시선', '기고', '그림마당']): section = "오피니언"
 
                 article_obj = {
-                    "id": f"khan_g_rss_{idx}",
+                    "id": f"khan_past_{clean_ymd}_{idx}",
                     "keyword": "경향신문",
                     "type": "news",
                     "badge": f"🗞️ 경향신문 · {section}",
                     "publisher": "경향신문",
                     "title": title,
-                    "time": default_date_str,
+                    "time": formatted_date,
                     "url": link,
                     "content": title,
                     "section": section
@@ -149,10 +141,46 @@ def fetch_khan_by_date(ymd_str=None):
                     "articles": all_articles
                 }
     except Exception as e:
-        print("Kyunghyang Google RSS fallback error:", e)
+        print(f"Kyunghyang past date fetch error ({clean_ymd}):", e)
 
-    # 3-Tier Fallback: Naver OpenAPI
-    return fetch_khan_from_naver(target_ymd)
+    return fetch_khan_from_naver(clean_ymd)
+
+def fetch_khan_by_date(ymd_str=None):
+    kst = timezone(timedelta(hours=9))
+    today_ymd = datetime.now(kst).strftime("%Y%m%d")
+
+    clean_ymd = ""
+    if ymd_str:
+        clean_ymd = ymd_str.replace("-", "").strip()
+
+    is_past_date = bool(clean_ymd and clean_ymd != today_ymd)
+
+    # 1. Today or default -> Concurrent fetch of official RSS Feeds
+    if not is_past_date:
+        categorized = {}
+        all_articles = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            results = executor.map(fetch_single_feed, KHAN_RSS_FEEDS.items())
+            for section_name, articles in results:
+                if articles:
+                    categorized[section_name] = articles
+                    all_articles.extend(articles)
+
+        if all_articles:
+            return {
+                "sections": list(categorized.keys()),
+                "categorized": categorized,
+                "articles": all_articles
+            }
+
+    # 2. Past Date requested -> Fetch specific past date news
+    if is_past_date:
+        past_res = fetch_past_khan(clean_ymd)
+        if past_res and past_res.get("articles"):
+            return past_res
+
+    # Fallback: Naver OpenAPI
+    return fetch_khan_from_naver(clean_ymd or today_ymd)
 
 def fetch_khan_from_naver(clean_ymd=None):
     client_id = (os.getenv("NAVER_CLIENT_ID") or "MKJiyEIjWKeda674OX9l").strip('"\'')
@@ -171,7 +199,13 @@ def fetch_khan_from_naver(clean_ymd=None):
             items = res.json().get("items", [])
             categorized = {}
             all_articles = []
+
             formatted_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
+            if clean_ymd and len(clean_ymd) == 8:
+                try:
+                    formatted_date = datetime.strptime(clean_ymd, "%Y%m%d").strftime("%Y/%m/%d")
+                except Exception:
+                    pass
 
             for idx, item in enumerate(items):
                 title = clean_html(item.get("title", ""))
@@ -182,11 +216,12 @@ def fetch_khan_from_naver(clean_ymd=None):
                 link = item.get("originallink") or item.get("link") or "#"
                 desc = clean_html(item.get("description", "")) or title
 
-                section = "일반"
+                section = "종합"
                 if any(w in title for w in ['정치', '대통령', '국회', '정당']): section = "정치"
                 elif any(w in title for w in ['경제', '금융', '증시', '부동산']): section = "경제"
                 elif any(w in title for w in ['사회', '검찰', '경찰', '법원']): section = "사회"
                 elif any(w in title for w in ['문화', '연예', '스포츠', '방송']): section = "문화"
+                elif any(w in title for w in ['IT', '과학', 'AI', '반도체']): section = "IT·과학"
 
                 article_obj = {
                     "id": f"khan_naver_{idx}",
