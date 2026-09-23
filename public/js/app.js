@@ -187,7 +187,11 @@ async function refreshFeed() {
   if (feedContainer) feedContainer.style.opacity = '0.5';
   try {
     const userKws = StorageManager.getKeywords();
-    await fetchKeywordIssues(userKws);
+    if (!userKws.includes(currentKeyword)) {
+      currentKeyword = userKws.length ? userKws[0] : '용인시';
+    }
+    renderKeywordChips();
+    await fetchKeywordIssues([currentKeyword]);
   } catch (err) {
     console.warn('Refresh error:', err);
   } finally {
@@ -249,9 +253,11 @@ async function switchNavTab(tab, btn) {
     if (tab === 'feed') {
       if (keywordChips) keywordChips.style.display = 'flex';
       const userKeywords = StorageManager.getKeywords();
-      currentKeyword = userKeywords.length ? userKeywords[0] : '용인시';
+      if (!userKeywords.includes(currentKeyword)) {
+        currentKeyword = userKeywords.length ? userKeywords[0] : '용인시';
+      }
       renderKeywordChips();
-      await fetchKeywordIssues(userKeywords);
+      await fetchKeywordIssues([currentKeyword]);
     } else {
       if (keywordChips) keywordChips.style.display = 'none';
       if (tab === 'bookmark') {
@@ -788,5 +794,5 @@ document.addEventListener('DOMContentLoaded', () => {
   currentKeyword = userKws.length ? userKws[0] : '용인시';
   renderKeywordChips();
   updateHeaderScrapBadge();
-  fetchKeywordIssues(userKws);
+  fetchKeywordIssues([currentKeyword]);
 });

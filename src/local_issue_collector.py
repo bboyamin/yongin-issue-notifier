@@ -290,7 +290,66 @@ SPAM_PROMO_KEYWORDS = [
     "소정의 원고료", "협찬 받아", "할인 쿠폰"
 ]
 
+NAVER_PRESS_ID_MAP = {
+    "437": "JTBC",
+    "055": "SBS",
+    "056": "KBS",
+    "214": "MBC",
+    "052": "YTN",
+    "057": "MBN",
+    "448": "TV조선",
+    "449": "채널A",
+    "422": "연합뉴스TV",
+    "001": "연합뉴스",
+    "008": "머니투데이",
+    "009": "매일경제",
+    "015": "한국경제",
+    "023": "조선일보",
+    "020": "동아일보",
+    "025": "중앙일보",
+    "028": "한겨레",
+    "032": "경향신문",
+    "018": "이데일리",
+    "011": "서울경제",
+    "014": "파이낸셜뉴스",
+    "003": "뉴시스",
+    "421": "뉴스1",
+    "079": "노컷뉴스",
+    "277": "아시아경제",
+    "030": "전자신문",
+    "293": "블로터",
+    "366": "조선비즈",
+    "119": "데일리안",
+    "047": "오마이뉴스",
+    "005": "국민일보",
+    "022": "세계일보",
+    "081": "서울신문",
+    "021": "문화일보",
+    "031": "아이뉴스24",
+    "215": "한국경제TV",
+    "374": "SBS Biz",
+    "123": "조세일보",
+    "016": "헤럴드경제"
+}
+
 DOMAIN_PRESS_MAP = {
+    "jtbc.co.kr": "JTBC",
+    "jtbc.joins.com": "JTBC",
+    "mbn.co.kr": "MBN",
+    "ichannela.com": "채널A",
+    "tvchosun.com": "TV조선",
+    "yonhapnewstv.co.kr": "연합뉴스TV",
+    "wikitree.co.kr": "위키트리",
+    "ohmynews.com": "오마이뉴스",
+    "dailian.co.kr": "데일리안",
+    "bloter.net": "블로터",
+    "zdnet.co.kr": "지디넷코리아",
+    "digitaltoday.co.kr": "디지털투데이",
+    "newstapa.org": "뉴스타파",
+    "pressian.com": "프레시안",
+    "mediatoday.co.kr": "미디어오늘",
+    "kihoilbo.co.kr": "기호일보",
+    "kyeongho.com": "기호일보",
     "siminilbo.co.kr": "시민일보",
     "cfnews.kr": "CF뉴스",
     "nspna.com": "NSP통신",
@@ -322,7 +381,6 @@ DOMAIN_PRESS_MAP = {
     "kyeongin.com": "경인일보",
     "joongboo.com": "중부일보",
     "incheonilbo.com": "인천일보",
-    "kyeongho.com": "기호일보",
     "news1.kr": "뉴스1",
     "newsis.com": "뉴시스",
     "etnews.com": "전자신문",
@@ -347,30 +405,49 @@ DOMAIN_PRESS_MAP = {
 }
 
 TRUSTED_PRESS = [
-    "연합뉴스", "KBS", "MBC", "SBS", "YTN", "매일경제", "한국경제", "조선일보", 
-    "중앙일보", "동아일보", "경향신문", "한겨레", "경기일보", "경인일보", "중부일보", 
-    "인천일보", "기호일보", "뉴스1", "뉴시스", "전자신문", "머니투데이", "이데일리",
-    "시민일보", "NSP통신", "스포츠서울", "경북매일", "포인트데일리", "아주뉴스"
+    "JTBC", "MBN", "TV조선", "채널A", "연합뉴스TV", "연합뉴스", "KBS", "MBC", "SBS", "YTN", 
+    "매일경제", "한국경제", "조선일보", "중앙일보", "동아일보", "경향신문", "한겨레", "경기일보", 
+    "경인일보", "중부일보", "인천일보", "기호일보", "뉴스1", "뉴시스", "전자신문", "머니투데이", 
+    "이데일리", "시민일보", "NSP통신", "스포츠서울", "경북매일", "포인트데일리", "아주뉴스", 
+    "위키트리", "오마이뉴스", "데일리안", "블로터", "서울경제", "조선비즈", "디지털타임스", 
+    "헤럴드경제", "파이낸셜뉴스", "세계일보", "서울신문", "국민일보", "문화일보", "노컷뉴스", "아시아경제"
 ]
 
-def extract_press_name(url, title_text, desc_text):
-    if url:
-        netloc = urllib.parse.urlparse(url).netloc.lower().replace("www.", "")
+def extract_press_name(url, title_text, desc_text, secondary_url=None):
+    urls_to_check = [u for u in [url, secondary_url] if u]
+    
+    # 1. Check Naver News article URL press ID (e.g. n.news.naver.com/mnews/article/437/0000411234)
+    for u in urls_to_check:
+        m = re.search(r"article/(\d{3})/", u)
+        if m:
+            press_code = m.group(1)
+            if press_code in NAVER_PRESS_ID_MAP:
+                return NAVER_PRESS_ID_MAP[press_code]
+
+    # 2. Check DOMAIN_PRESS_MAP
+    for u in urls_to_check:
+        netloc = urllib.parse.urlparse(u).netloc.lower().replace("www.", "")
         for domain, press in DOMAIN_PRESS_MAP.items():
             if domain in netloc:
                 return press
-        # Clean host fallback if not in dictionary
+
+    # 3. Check clean host fallback
+    for u in urls_to_check:
+        netloc = urllib.parse.urlparse(u).netloc.lower().replace("www.", "")
         host_part = netloc.split(".")[0]
-        if host_part and len(host_part) >= 3 and host_part not in ["news", "article", "m", "blog"]:
+        if host_part and len(host_part) >= 3 and host_part not in ["news", "article", "m", "blog", "n", "view"]:
             return host_part.upper()
 
+    # 4. Check TRUSTED_PRESS in title or desc
     for tp in TRUSTED_PRESS:
-        if tp in title_text or tp in desc_text:
+        if tp in (title_text or "") or tp in (desc_text or ""):
             return tp
-    if " - " in title_text:
+
+    if title_text and " - " in title_text:
         parts = title_text.rsplit(" - ", 1)
-        if len(parts[1].strip()) <= 12:
+        if len(parts[1].strip()) <= 12 and parts[1].strip() not in ["뉴스", "속보"]:
             return parts[1].strip()
+
     return "뉴스"
 
 def is_clean_relevant_article(title_text, desc_text, terms):
@@ -379,7 +456,6 @@ def is_clean_relevant_article(title_text, desc_text, terms):
     t_lower = (title_text or "").lower()
     d_lower = (desc_text or "").lower()
 
-    # Reject promo ad spam if title or description contains promo keywords
     if any(s in t_lower for s in SPAM_PROMO_KEYWORDS):
         return False
 
@@ -387,14 +463,9 @@ def is_clean_relevant_article(title_text, desc_text, terms):
         t_term = term.lower().strip()
         if not t_term:
             continue
-        
         base_term = t_term[:-1] if (len(t_term) >= 3 and t_term[-1] in ["시", "구", "동", "군"]) else t_term
-
-        # Rule 1: Title contains exact term or base term
         if t_term in t_lower or (base_term and len(base_term) >= 2 and base_term in t_lower):
             return True
-
-        # Rule 2: Full description snippet match
         if t_term in d_lower or (base_term and len(base_term) >= 2 and base_term in d_lower):
             return True
 
@@ -404,8 +475,8 @@ def is_clean_relevant_article(title_text, desc_text, terms):
 # 1. 네이버 뉴스 API 수집기 (하이브리드 sim+date 및 고품질 정밀 수집)
 # ----------------------------------------------------
 def fetch_naver_news(keyword, limit=50):
-    client_id = (os.getenv("NAVER_CLIENT_ID") or "").strip('"\'')
-    client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "").strip('"\'')
+    client_id = (os.getenv("NAVER_CLIENT_ID") or "MKJiyEIjWKeda674OX9l").strip('"\'')
+    client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "Q313QS0JpL").strip('"\'')
     
     if not client_id or not client_secret:
         print("⚠️ NAVER API 키가 누락되어 구글 RSS 수집으로 대체합니다.")
@@ -419,7 +490,6 @@ def fetch_naver_news(keyword, limit=50):
     }
     
     raw_results = []
-    # Freshness Priority: 50 items sorted by date (newest first) + 10 items sorted by sim (relevance)
     for sort_mode in ["date", "sim"]:
         display_num = 50 if sort_mode == "date" else 10
         url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote(query_str)}&display={display_num}&sort={sort_mode}"
@@ -448,7 +518,7 @@ def fetch_naver_news(keyword, limit=50):
             continue
 
         # Extract publisher or estimate press name
-        publisher = extract_press_name(link, clean_title, clean_desc)
+        publisher = extract_press_name(link, clean_title, clean_desc, item.get("link"))
 
         items.append({
             "id": f"naver_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
