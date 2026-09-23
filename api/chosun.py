@@ -12,7 +12,7 @@ from datetime import datetime, timezone, timedelta
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     'Accept': 'application/xml,text/xml,text/html;q=0.9,*/*;q=0.8'
 }
 
@@ -21,7 +21,66 @@ def clean_html(text):
         return ""
     return re.sub(r'<[^>]+>', '', text).strip()
 
-def fetch_chosun_sections():
+def fetch_chosun_today():
+    # Primary: Google News Press RSS (Hosted on Google CDN, 0 Cloudflare blocks on Vercel)
+    url = "https://news.google.com/rss/search?q=site:chosun.com&hl=ko&gl=KR&ceid=KR:ko"
+    try:
+        res = requests.get(url, headers=headers, timeout=5, verify=False)
+        if res.status_code == 200 and len(res.content) > 200:
+            root = ET.fromstring(res.content)
+            items = root.findall('.//item')
+            categorized = {}
+            all_articles = []
+            formatted_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
+
+            for idx, item in enumerate(items):
+                t_el = item.find('title')
+                l_el = item.find('link')
+                d_el = item.find('description')
+
+                title = clean_html(t_el.text) if t_el is not None and t_el.text else ""
+                if " - " in title:
+                    title = title.rsplit(" - ", 1)[0].strip()
+                if not title or len(title) < 4:
+                    continue
+
+                link = l_el.text.strip() if l_el is not None and l_el.text else "#"
+                desc = clean_html(d_el.text) if d_el is not None and d_el.text else title
+
+                section = "종합"
+                if any(w in title for w in ['정치', '대통령', '국회', '정당', '여당', '야당']): section = "정치"
+                elif any(w in title for w in ['경제', '금융', '증시', '주식', '금리', '부동산', '기업']): section = "경제"
+                elif any(w in title for w in ['사회', '검찰', '경찰', '법원', '사건', '사고']): section = "사회"
+                elif any(w in title for w in ['IT', 'AI', '과학', '반도체', '기술']): section = "IT·과학"
+                elif any(w in title for w in ['문화', '연예', '스포츠', '축구', '야구', '방송']): section = "문화·스포츠"
+
+                article_obj = {
+                    "id": f"chosun_{idx}",
+                    "keyword": "조선일보",
+                    "type": "news",
+                    "badge": f"🗞️ 조선일보 · {section}",
+                    "publisher": "조선일보",
+                    "title": title,
+                    "time": formatted_date,
+                    "url": link,
+                    "content": desc or title,
+                    "section": section
+                }
+                all_articles.append(article_obj)
+                if section not in categorized:
+                    categorized[section] = []
+                categorized[section].append(article_obj)
+
+            if all_articles:
+                return {
+                    "sections": list(categorized.keys()),
+                    "categorized": categorized,
+                    "articles": all_articles
+                }
+    except Exception as e:
+        print("Chosun Google RSS fetch error:", e)
+
+    # Secondary: Direct Chosun RSS Feeds
     sections_list = [
         ("종합", "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml"),
         ("정치", "https://www.chosun.com/arc/outboundfeeds/rss/category/politics/?outputType=xml"),
@@ -56,7 +115,7 @@ def fetch_chosun_sections():
                     desc = clean_html(d_el.text) if d_el is not None and d_el.text else title
 
                     article_obj = {
-                        "id": f"chosun_{section_title}_{idx}",
+                        "id": f"chosun_direct_{section_title}_{idx}",
                         "keyword": "조선일보",
                         "type": "news",
                         "badge": f"🗞️ 조선일보 · {section_title}",
@@ -160,7 +219,7 @@ def fetch_chosun_by_date(ymd_str):
         if past_res and past_res.get("articles"):
             return past_res
 
-    res = fetch_chosun_sections()
+    res = fetch_chosun_today()
     if res and res.get("articles"):
         return res
 
