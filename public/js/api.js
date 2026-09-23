@@ -77,7 +77,7 @@ const IssueApi = (() => {
      */
     async fetchPaperNews(provider = 'etnews', dateStr = '') {
       try {
-        const url = `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&t=${Date.now()}`;
+        const url = `/api/papernews?provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(dateStr)}&v=102&t=${Date.now()}`;
         const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
