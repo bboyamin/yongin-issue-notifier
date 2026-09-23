@@ -10,7 +10,7 @@
     { "source": "/api/papernews", "destination": "/api/papernews.py" },
     { "source": "/api/etnews", "destination": "/api/etnews.py" },
     { "source": "/api/mknews", "destination": "/api/mknews.py" },
-    { "source": "/api/joongang", "destination": "/api/joongang.py" }
+    { "source": "/api/jtbc", "destination": "/api/jtbc.py" }
   ],
   "headers": [
     {

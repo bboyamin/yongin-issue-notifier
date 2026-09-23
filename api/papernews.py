@@ -39,16 +39,16 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
         except Exception as e:
             print("mknews dispatch error:", e)
 
-    # 3. Joongang
-    elif provider == "joongang":
+    # 3. JTBC
+    elif provider == "jtbc":
         try:
             try:
-                from joongang import fetch_joongang_by_date
+                from jtbc import fetch_jtbc_by_date
             except ImportError:
-                from api.joongang import fetch_joongang_by_date
-            return fetch_joongang_by_date(clean_ymd)
+                from api.jtbc import fetch_jtbc_by_date
+            return fetch_jtbc_by_date(clean_ymd)
         except Exception as e:
-            print("joongang dispatch error:", e)
+            print("jtbc dispatch error:", e)
 
     return {"sections": [], "categorized": {}, "articles": []}
 

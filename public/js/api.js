@@ -71,7 +71,7 @@ const IssueApi = (() => {
     },
 
     /**
-     * Fetch paper news for 5 newspapers (etnews, mknews, chosun, joongang, donga)
+     * Fetch paper news for 3 news providers (etnews, mknews, jtbc)
      * @param {string} provider 
      * @param {string} dateStr 
      */

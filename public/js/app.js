@@ -17,9 +17,7 @@ let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
 const PAPER_PROVIDERS = [
   { id: 'mknews', name: '매일경제', badge: '📈' },
   { id: 'etnews', name: '전자신문', badge: '📰' },
-  { id: 'chosun', name: '조선일보', badge: '🗞️' },
-  { id: 'joongang', name: '중앙일보', badge: '🏢' },
-  { id: 'donga', name: '동아일보', badge: '📰' }
+  { id: 'jtbc', name: 'JTBC', badge: '📺' }
 ];
 
 function getTodayKstStr() {
