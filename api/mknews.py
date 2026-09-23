@@ -7,64 +7,80 @@ import requests
 import urllib3
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone, timedelta
+from concurrent.futures import ThreadPoolExecutor
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+}
+
 MK_RSS_SECTIONS = [
     ("종합", "https://www.mk.co.kr/rss/30000001/"),
-    ("경제·증권", "https://www.mk.co.kr/rss/30100041/"),
-    ("기업·부동산", "https://www.mk.co.kr/rss/30200030/"),
-    ("IT·과학", "https://www.mk.co.kr/rss/50300009/"),
-    ("정치·사회", "https://www.mk.co.kr/rss/30000023/")
+    ("정치", "https://www.mk.co.kr/rss/30200030/"),
+    ("경제", "https://www.mk.co.kr/rss/30100041/"),
+    ("증권", "https://www.mk.co.kr/rss/50200011/"),
+    ("부동산", "https://www.mk.co.kr/rss/50300009/"),
+    ("문화·연예", "https://www.mk.co.kr/rss/30000023/")
 ]
 
+def fetch_single_mk_rss(section_tuple):
+    section_title, rss_url = section_tuple
+    sec_articles = []
+    formatted_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
+    try:
+        res = requests.get(rss_url, headers=headers, verify=False, timeout=6)
+        if res.status_code == 200 and len(res.text) > 300:
+            soup = BeautifulSoup(res.text, "xml")
+            items = soup.find_all("item")
+            for idx, item in enumerate(items):
+                title = item.title.text.strip() if item.title else ""
+                link = item.link.text.strip() if item.link else ""
+                if not title or not link:
+                    continue
+                
+                clean_title = BeautifulSoup(title, "html.parser").text.strip()
+                desc = item.description.text.strip() if item.description else clean_title
+                clean_desc = BeautifulSoup(desc, "html.parser").text.strip()
+
+                pub_date = item.pubDate.text.strip() if item.pubDate else ""
+                if pub_date:
+                    try:
+                        # e.g. Mon, 24 Sep 2026 08:00:00 +0900
+                        pub_time = datetime.strptime(pub_date[:16], "%a, %d %b %Y").strftime("%Y/%m/%d")
+                    except Exception:
+                        pub_time = formatted_date
+                else:
+                    pub_time = formatted_date
+
+                article_obj = {
+                    "id": f"mknews_{section_title}_{idx}_{int(datetime.now().timestamp())}",
+                    "keyword": "매일경제",
+                    "type": "news",
+                    "badge": f"📈 매일경제 · {section_title}",
+                    "publisher": "매일경제",
+                    "title": clean_title,
+                    "time": pub_time,
+                    "url": link,
+                    "content": clean_desc,
+                    "section": section_title
+                }
+                sec_articles.append(article_obj)
+    except Exception as e:
+        print(f"MK RSS section ({section_title}) fetch error: {e}")
+    return section_title, sec_articles
+
 def fetch_mknews_from_rss():
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-    }
-    
     categorized = {}
     all_articles = []
-    formatted_date = datetime.now().strftime("%Y/%m/%d")
 
-    for section_title, rss_url in MK_RSS_SECTIONS:
-        try:
-            res = requests.get(rss_url, headers=headers, verify=False, timeout=6)
-            if res.status_code == 200 and len(res.text) > 300:
-                soup = BeautifulSoup(res.text, "xml")
-                items = soup.find_all("item")[:20]
-                sec_articles = []
-
-                for idx, item in enumerate(items):
-                    title = item.title.text.strip() if item.title else ""
-                    link = item.link.text.strip() if item.link else ""
-                    if not title or not link:
-                        continue
-                    
-                    clean_title = BeautifulSoup(title, "html.parser").text.strip()
-                    desc = item.description.text.strip() if item.description else clean_title
-                    clean_desc = BeautifulSoup(desc, "html.parser").text.strip()
-
-                    article_obj = {
-                        "id": f"mknews_{section_title}_{idx}_{int(datetime.now().timestamp())}",
-                        "keyword": "매일경제",
-                        "type": "news",
-                        "badge": f"📈 매일경제 · {section_title}",
-                        "publisher": "매일경제",
-                        "title": clean_title,
-                        "time": formatted_date,
-                        "url": link,
-                        "content": clean_desc,
-                        "section": section_title
-                    }
-                    sec_articles.append(article_obj)
-                    all_articles.append(article_obj)
-
-                if sec_articles:
-                    categorized[section_title] = sec_articles
-        except Exception as e:
-            print(f"MK RSS section ({section_title}) fetch error: {e}")
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        results = executor.map(fetch_single_mk_rss, MK_RSS_SECTIONS)
+        for section_title, sec_articles in results:
+            if sec_articles:
+                categorized[section_title] = sec_articles
+                all_articles.extend(sec_articles)
 
     if all_articles:
         sections = list(categorized.keys())
@@ -76,40 +92,45 @@ def fetch_mknews_from_rss():
 
     return None
 
+def categorize_mk_title(clean_title):
+    if any(k in clean_title for k in ["증권", "주식", "코스피", "코스닥", "서학개미", "상장", "공모"]):
+        return "증권"
+    elif any(k in clean_title for k in ["부동산", "아파트", "분양", "건설", "전세", "월세", "청약", "재개발", "한강뷰"]):
+        return "부동산"
+    elif any(k in clean_title for k in ["금리", "금융", "환율", "적금", "은행", "물가", "소비자"]):
+        return "경제"
+    elif any(k in clean_title for k in ["정부", "대통령", "국회", "정치", "검찰", "군", "육군", "사단", "DMZ", "북한", "외교"]):
+        return "정치"
+    elif any(k in clean_title for k in ["연예", "가수", "배우", "드라마", "영화", "스포츠", "금메달", "예능", "방송"]):
+        return "문화·연예"
+    return "종합"
+
 def fetch_mknews_from_naver():
-    client_id = (os.getenv("NAVER_CLIENT_ID") or "").strip('"\'')
-    client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "").strip('"\'')
+    client_id = (os.getenv("NAVER_CLIENT_ID") or "MKJiyEIjWKeda674OX9l").strip('"\'')
+    client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "Q313QS0JpL").strip('"\'')
     if not client_id or not client_secret:
         return None
 
-    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote('매일경제')}&display=40&sort=date"
-    headers = {
+    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote('매일경제')}&display=50&sort=date"
+    headers_naver = {
         "X-Naver-Client-Id": client_id,
         "X-Naver-Client-Secret": client_secret
     }
 
     try:
-        res = requests.get(url, headers=headers, timeout=6)
+        res = requests.get(url, headers=headers_naver, timeout=6)
         if res.status_code == 200:
             items = res.json().get("items", [])
             categorized = {}
             all_articles = []
-            today_str = datetime.now().strftime("%Y/%m/%d")
+            today_str = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
 
             for idx, item in enumerate(items):
                 clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
                 clean_desc = BeautifulSoup(item.get("description", ""), "html.parser").text.strip()
                 link = item.get("originallink") or item.get("link")
 
-                section = "종합"
-                if any(k in clean_title for k in ["증권", "주식", "금리", "금융", "코스피", "코스닥", "환율"]):
-                    section = "경제·증권"
-                elif any(k in clean_title for k in ["부동산", "아파트", "분양", "건설", "기업", "경영", "재계"]):
-                    section = "기업·부동산"
-                elif any(k in clean_title for k in ["AI", "반도체", "IT", "기술", "스마트폰", "플랫폼", "통신"]):
-                    section = "IT·과학"
-                elif any(k in clean_title for k in ["정부", "대통령", "국회", "정치", "검찰", "사회"]):
-                    section = "정치·사회"
+                section = categorize_mk_title(clean_title)
 
                 article_obj = {
                     "id": f"mknews_naver_{idx}_{int(datetime.now().timestamp())}",
@@ -139,61 +160,6 @@ def fetch_mknews_from_naver():
 
     return None
 
-def fetch_mknews_from_google_rss():
-    rss_url = "https://news.google.com/rss/search?q=site:mk.co.kr+when:3d&hl=ko&gl=KR&ceid=KR:ko"
-    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
-    try:
-        res = requests.get(rss_url, headers=headers, verify=False, timeout=8)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, "xml")
-            items = soup.find_all("item")
-            categorized = {}
-            all_articles = []
-            today_str = datetime.now().strftime("%Y/%m/%d")
-
-            for idx, item in enumerate(items):
-                raw_title = item.title.text.strip() if item.title else ""
-                clean_title = raw_title.replace(" - 매일경제", "").strip()
-                link = item.link.text.strip() if item.link else ""
-
-                section = "종합"
-                if any(k in clean_title for k in ["증권", "주식", "금융", "코스피"]):
-                    section = "경제·증권"
-                elif any(k in clean_title for k in ["부동산", "아파트", "기업"]):
-                    section = "기업·부동산"
-                elif any(k in clean_title for k in ["AI", "반도체", "IT", "기술"]):
-                    section = "IT·과학"
-                elif any(k in clean_title for k in ["정부", "국회", "정치", "사회"]):
-                    section = "정치·사회"
-
-                article_obj = {
-                    "id": f"mknews_gnews_{idx}_{int(datetime.now().timestamp())}",
-                    "keyword": "매일경제",
-                    "type": "news",
-                    "badge": f"📈 매일경제 · {section}",
-                    "publisher": "매일경제",
-                    "title": clean_title,
-                    "time": today_str,
-                    "url": link,
-                    "content": clean_title,
-                    "section": section
-                }
-                all_articles.append(article_obj)
-                if section not in categorized:
-                    categorized[section] = []
-                categorized[section].append(article_obj)
-
-            if all_articles:
-                return {
-                    "sections": list(categorized.keys()),
-                    "categorized": categorized,
-                    "articles": all_articles
-                }
-    except Exception as e:
-        print("MKNews Google RSS fallback error:", e)
-
-    return None
-
 def fetch_mknews_for_past_date(ymd_str):
     try:
         dt = datetime.strptime(ymd_str, "%Y%m%d")
@@ -203,7 +169,6 @@ def fetch_mknews_for_past_date(ymd_str):
         formatted_date = dt.strftime("%Y/%m/%d")
 
         rss_url = f"https://news.google.com/rss/search?q=site:mk.co.kr+after:{after_str}+before:{before_str}&hl=ko&gl=KR&ceid=KR:ko"
-        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
         res = requests.get(rss_url, headers=headers, verify=False, timeout=8)
         if res.status_code == 200:
             soup = BeautifulSoup(res.text, "xml")
@@ -218,15 +183,7 @@ def fetch_mknews_for_past_date(ymd_str):
                 if not clean_title or not link:
                     continue
 
-                section = "종합"
-                if any(k in clean_title for k in ["증권", "주식", "금리", "금융", "코스피", "코스닥"]):
-                    section = "경제·증권"
-                elif any(k in clean_title for k in ["부동산", "아파트", "분양", "건설", "기업", "경영"]):
-                    section = "기업·부동산"
-                elif any(k in clean_title for k in ["AI", "반도체", "IT", "기술", "스마트폰", "플랫폼"]):
-                    section = "IT·과학"
-                elif any(k in clean_title for k in ["정부", "대통령", "국회", "정치", "검찰", "사회"]):
-                    section = "정치·사회"
+                section = categorize_mk_title(clean_title)
 
                 article_obj = {
                     "id": f"mknews_past_{ymd_str}_{idx}",
@@ -256,33 +213,28 @@ def fetch_mknews_for_past_date(ymd_str):
 
     return None
 
-def fetch_mknews_by_date(ymd_str):
-    today_ymd = datetime.now().strftime("%Y%m%d")
+def fetch_mknews_by_date(ymd_str=None):
+    kst = timezone(timedelta(hours=9))
+    today_ymd = datetime.now(kst).strftime("%Y%m%d")
     
+    clean_ymd = (ymd_str or "").replace("-", "").strip()
+
     # If a past date is requested from date picker
-    if ymd_str and len(ymd_str) == 8 and ymd_str != today_ymd:
-        past_res = fetch_mknews_for_past_date(ymd_str)
+    if clean_ymd and len(clean_ymd) == 8 and clean_ymd != today_ymd:
+        past_res = fetch_mknews_for_past_date(clean_ymd)
         if past_res and past_res.get("articles"):
             return past_res
 
-    # 1st tier: Official MK RSS
+    # 1st tier: Official MK RSS (Parallel)
     result = fetch_mknews_from_rss()
 
     # 2nd tier: Naver News API search for MK
     if not result or not result.get("articles"):
         result = fetch_mknews_from_naver()
 
-    # 3rd tier: Google News RSS for MK
-    if not result or not result.get("articles"):
-        result = fetch_mknews_from_google_rss()
-
     return result or {"sections": [], "categorized": {}, "articles": []}
 
 def get_mknews_article_body(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Referer": "https://www.mk.co.kr/"
-    }
     try:
         res = requests.get(url, headers=headers, verify=False, timeout=8)
         if res.status_code != 200:
@@ -331,5 +283,5 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 if __name__ == "__main__":
-    res = fetch_mknews_by_date(datetime.now().strftime("%Y%m%d"))
+    res = fetch_mknews_by_date()
     print("MK Articles:", len(res.get("articles", [])))
