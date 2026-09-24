@@ -5,6 +5,7 @@ let deferredPrompt = null;
 let currentIssues = [];
 const keywordFeeds = {}; // Cache feeds per keyword
 const tabFeeds = {}; // Cache feeds per tab ('exclusive', 'press')
+const paperFeedsCache = {}; // Memory & Session cache for Paper View
 let currentNavTab = 'feed'; // 'feed', 'paper', 'exclusive', 'press', 'bookmark'
 let currentKeyword = '용인시';
 let currentPaperDate = getTodayKstStr();
@@ -628,7 +629,33 @@ function shareArticle(btn) {
 }
 
 // --- Paper View logic ---
-async function loadPaperForCurrentDate() {
+async function loadPaperForCurrentDate(forceRefresh = false) {
+  const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
+
+  const picker = document.getElementById('etnewsDatePicker');
+  if (picker) picker.value = currentPaperDate;
+
+  // 1. Instant rendering from Memory / Session Cache (0ms delay, no loading spinner)
+  if (!forceRefresh) {
+    let cachedData = paperFeedsCache[cacheKey];
+    if (!cachedData) {
+      try {
+        const stored = sessionStorage.getItem(`paper_cache_${cacheKey}`);
+        if (stored) cachedData = JSON.parse(stored);
+      } catch (e) {}
+    }
+
+    if (cachedData && cachedData.articles && cachedData.articles.length > 0) {
+      paperData = cachedData;
+      paperFeedsCache[cacheKey] = cachedData;
+      currentPaperSection = 'all';
+      renderPaperSections();
+      renderPaperView();
+      return;
+    }
+  }
+
+  // 2. Only show loading spinner if NO cached data exists
   const container = document.getElementById('feedContainer');
   if (container) {
     container.innerHTML = `
@@ -639,11 +666,14 @@ async function loadPaperForCurrentDate() {
     `;
   }
 
-  const picker = document.getElementById('etnewsDatePicker');
-  if (picker) picker.value = currentPaperDate;
-
   try {
     paperData = await IssueApi.fetchPaperNews(currentPaperProvider, currentPaperDate);
+    if (paperData && paperData.articles && paperData.articles.length > 0) {
+      paperFeedsCache[cacheKey] = paperData;
+      try {
+        sessionStorage.setItem(`paper_cache_${cacheKey}`, JSON.stringify(paperData));
+      } catch (e) {}
+    }
     currentPaperSection = 'all';
     renderPaperSections();
     renderPaperView();
@@ -720,11 +750,11 @@ function renderPaperView() {
   }
 
   let html = `
-    <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155;">
+    <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155; cursor:pointer;" onclick="loadPaperForCurrentDate(true)" title="클릭 시 지면 신문 새로고침">
       <div class="realtime-indicator">
         <span>${providerObj.badge} ${providerObj.name} 지면 (${articlesToRender.length}건)</span>
       </div>
-      <span style="font-size: 11px; opacity: 0.8;">${currentPaperDate}</span>
+      <span style="font-size: 11px; opacity: 0.8;">🔄 ${currentPaperDate} (새로고침)</span>
     </div>
   `;
 
@@ -734,7 +764,20 @@ function renderPaperView() {
   });
 
   container.innerHTML = html;
+
+  try {
+    const savedScroll = sessionStorage.getItem('paper_scroll_y');
+    if (savedScroll) {
+      setTimeout(() => { window.scrollTo(0, parseInt(savedScroll, 10)); }, 20);
+    }
+  } catch (e) {}
 }
+
+window.addEventListener('scroll', () => {
+  if (currentNavTab === 'paper') {
+    try { sessionStorage.setItem('paper_scroll_y', window.scrollY); } catch (e) {}
+  }
+});
 
 // --- Settings Modal ---
 function toggleSettingsModal() {
