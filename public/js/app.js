@@ -318,6 +318,104 @@ function getRecencyWeight(timeStr) {
   return 0;
 }
 
+function normalizeTitleForDedupe(rawTitle) {
+  if (!rawTitle) return '';
+  let title = String(rawTitle).trim();
+
+  // Remove bracketed press metadata e.g. [속보], [단독], [포토], (종합), [특징주]
+  title = title.replace(/\[[^\]]+\]|\([^\)]+\)/g, '');
+  // Remove suffix publisher attribution e.g. " - 연합뉴스", " - 경향신문"
+  title = title.replace(/\s*-\s*[가-힣A-Za-z0-9]+$/g, '');
+
+  // Split title by common delimiters (..., …, :, -, |, 등) to get primary headline
+  let prefix = title.split(/[\.\.\.…:\-–—|]/)[0].trim();
+  if (prefix.length < 5) prefix = title;
+
+  // Remove non-alphanumeric / non-Korean characters and spaces for matching
+  return prefix.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase();
+}
+
+function isTitleDuplicate(normA, normB) {
+  if (!normA || !normB) return false;
+  if (normA === normB) return true;
+
+  const minLen = Math.min(normA.length, normB.length);
+  if (minLen >= 6) {
+    if (normA.substring(0, minLen) === normB.substring(0, minLen)) return true;
+  }
+
+  if (normA.length >= 8 && normB.length >= 8) {
+    if (normA.includes(normB) || normB.includes(normA)) return true;
+  }
+
+  if (normA.length >= 6 && normB.length >= 6) {
+    let matches = 0;
+    const totalBigrams = normA.length - 1;
+    for (let i = 0; i < totalBigrams; i++) {
+      const bigram = normA.substring(i, i + 2);
+      if (normB.includes(bigram)) matches++;
+    }
+    const similarity = matches / totalBigrams;
+    if (similarity >= 0.70) return true;
+  }
+
+  return false;
+}
+
+function getPublisherScore(publisherName) {
+  const pub = (publisherName || '').toLowerCase();
+  const MAJORS = [
+    '연합뉴스', '연합뉴스tv', '조선일보', '중앙일보', '동아일보', '한겨레', '경향신문', 
+    '매일경제', '한국경제', 'kbs', 'sbs', 'mbc', 'ytn', '오마이뉴스', '국민일보', 
+    '세계일보', '서울신문', '전자신문', '이데일리', '머니투데이', '파이낸셜뉴스'
+  ];
+  if (MAJORS.some(m => pub.includes(m))) return 15;
+  return 0;
+}
+
+function deduplicateIssues(items) {
+  if (!Array.isArray(items) || items.length === 0) return [];
+
+  const uniqueItems = [];
+  const seenNorms = [];
+
+  for (const item of items) {
+    const rawTitle = item.title || '';
+    const norm = normalizeTitleForDedupe(rawTitle);
+    if (!norm) {
+      uniqueItems.push(item);
+      continue;
+    }
+
+    let duplicateIndex = -1;
+    for (let i = 0; i < seenNorms.length; i++) {
+      if (isTitleDuplicate(norm, seenNorms[i])) {
+        duplicateIndex = i;
+        break;
+      }
+    }
+
+    if (duplicateIndex === -1) {
+      uniqueItems.push(item);
+      seenNorms.push(norm);
+    } else {
+      const existing = uniqueItems[duplicateIndex];
+      const recencyWeightExisting = getRecencyWeight(existing.time);
+      const recencyWeightCurrent = getRecencyWeight(item.time);
+
+      const existingScore = recencyWeightExisting + (getPublisherScore(existing.publisher) * 60000) + (existing.summary && existing.summary.length ? 300000 : 0);
+      const currentScore = recencyWeightCurrent + (getPublisherScore(item.publisher) * 60000) + (item.summary && item.summary.length ? 300000 : 0);
+
+      if (currentScore > existingScore) {
+        uniqueItems[duplicateIndex] = item;
+        seenNorms[duplicateIndex] = norm;
+      }
+    }
+  }
+
+  return uniqueItems;
+}
+
 function renderIssues() {
   const container = document.getElementById('feedContainer');
   if (!container) return;
@@ -375,6 +473,7 @@ function renderIssues() {
     });
 
     displayItems.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+    displayItems = deduplicateIssues(displayItems);
 
     let html = `
       <div class="realtime-bar" onclick="refreshFeed()" style="cursor:pointer;" title="클릭 시 실시간 소식 새로고침">
