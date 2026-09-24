@@ -195,6 +195,23 @@ const StorageManager = (() => {
           localStorage.setItem('active_nav_tab', tab);
         }
       } catch (e) {}
+    },
+
+    getPaperCache(key) {
+      try {
+        const stored = sessionStorage.getItem(`paper_cache_${key}`) || localStorage.getItem(`paper_cache_${key}`);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+      return null;
+    },
+
+    savePaperCache(key, data) {
+      if (!key || !data) return;
+      try {
+        const str = JSON.stringify(data);
+        sessionStorage.setItem(`paper_cache_${key}`, str);
+        localStorage.setItem(`paper_cache_${key}`, str);
+      } catch (e) {}
     }
   };
 })();

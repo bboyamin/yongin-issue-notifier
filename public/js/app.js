@@ -519,7 +519,7 @@ function renderIssueCardHtml(item, isScrapped) {
           </button>
           <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
         </div>
-        <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">원문 보기 ↗</a>
+        <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn" onclick="saveCurrentPaperScroll()">원문 보기 ↗</a>
       </div>
     </div>
   `;
@@ -629,26 +629,34 @@ function shareArticle(btn) {
 }
 
 // --- Paper View logic ---
+function saveCurrentPaperScroll() {
+  if (currentNavTab === 'paper' && window.scrollY > 0) {
+    try {
+      sessionStorage.setItem('paper_scroll_y', window.scrollY);
+      localStorage.setItem('paper_scroll_y', window.scrollY);
+    } catch (e) {}
+  }
+}
+
 async function loadPaperForCurrentDate(forceRefresh = false) {
   const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
 
   const picker = document.getElementById('etnewsDatePicker');
   if (picker) picker.value = currentPaperDate;
 
-  // 1. Instant rendering from Memory / Session Cache (0ms delay, no loading spinner)
+  const savedSection = sessionStorage.getItem(`paper_sec_${cacheKey}`) || localStorage.getItem(`paper_sec_${cacheKey}`);
+
+  // 1. Instant rendering from Memory / Session / Local Storage Cache (0ms delay, no loading spinner)
   if (!forceRefresh) {
     let cachedData = paperFeedsCache[cacheKey];
     if (!cachedData) {
-      try {
-        const stored = sessionStorage.getItem(`paper_cache_${cacheKey}`);
-        if (stored) cachedData = JSON.parse(stored);
-      } catch (e) {}
+      cachedData = StorageManager.getPaperCache(cacheKey);
     }
 
     if (cachedData && cachedData.articles && cachedData.articles.length > 0) {
       paperData = cachedData;
       paperFeedsCache[cacheKey] = cachedData;
-      currentPaperSection = 'all';
+      currentPaperSection = (savedSection && (savedSection === 'all' || (cachedData.sections && cachedData.sections.includes(savedSection)))) ? savedSection : 'all';
       renderPaperSections();
       renderPaperView();
       return;
@@ -670,11 +678,9 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
     paperData = await IssueApi.fetchPaperNews(currentPaperProvider, currentPaperDate);
     if (paperData && paperData.articles && paperData.articles.length > 0) {
       paperFeedsCache[cacheKey] = paperData;
-      try {
-        sessionStorage.setItem(`paper_cache_${cacheKey}`, JSON.stringify(paperData));
-      } catch (e) {}
+      StorageManager.savePaperCache(cacheKey, paperData);
     }
-    currentPaperSection = 'all';
+    currentPaperSection = (savedSection && (savedSection === 'all' || (paperData.sections && paperData.sections.includes(savedSection)))) ? savedSection : 'all';
     renderPaperSections();
     renderPaperView();
   } catch (err) {
@@ -709,6 +715,11 @@ function renderPaperSections() {
 
 function selectPaperSection(sec) {
   currentPaperSection = sec;
+  const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
+  try {
+    sessionStorage.setItem(`paper_sec_${cacheKey}`, sec);
+    localStorage.setItem(`paper_sec_${cacheKey}`, sec);
+  } catch (e) {}
   renderPaperSections();
   renderPaperView();
 }
@@ -766,16 +777,28 @@ function renderPaperView() {
   container.innerHTML = html;
 
   try {
-    const savedScroll = sessionStorage.getItem('paper_scroll_y');
-    if (savedScroll) {
+    const savedScroll = sessionStorage.getItem('paper_scroll_y') || localStorage.getItem('paper_scroll_y');
+    if (savedScroll && parseInt(savedScroll, 10) > 0) {
       setTimeout(() => { window.scrollTo(0, parseInt(savedScroll, 10)); }, 20);
     }
   } catch (e) {}
 }
 
 window.addEventListener('scroll', () => {
+  if (currentNavTab === 'paper' && window.scrollY > 0) {
+    try {
+      sessionStorage.setItem('paper_scroll_y', window.scrollY);
+      localStorage.setItem('paper_scroll_y', window.scrollY);
+    } catch (e) {}
+  }
+});
+
+window.addEventListener('pageshow', (event) => {
   if (currentNavTab === 'paper') {
-    try { sessionStorage.setItem('paper_scroll_y', window.scrollY); } catch (e) {}
+    const savedScroll = sessionStorage.getItem('paper_scroll_y') || localStorage.getItem('paper_scroll_y');
+    if (savedScroll && parseInt(savedScroll, 10) > 0) {
+      setTimeout(() => { window.scrollTo(0, parseInt(savedScroll, 10)); }, 30);
+    }
   }
 });
 
