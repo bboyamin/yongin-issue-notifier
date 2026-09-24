@@ -322,16 +322,22 @@ function normalizeTitleForDedupe(rawTitle) {
   if (!rawTitle) return '';
   let title = String(rawTitle).trim();
 
-  // Remove bracketed press metadata e.g. [속보], [단독], [포토], (종합), [특징주]
+  // 1) Remove HTML entities & bracketed press metadata e.g. [속보], [단독], [포토], (종합), [특징주]
+  title = title.replace(/&quot;|&amp;|&lt;|&gt;/g, '');
   title = title.replace(/\[[^\]]+\]|\([^\)]+\)/g, '');
-  // Remove suffix publisher attribution e.g. " - 연합뉴스", " - 경향신문"
+
+  // 2) Remove suffix publisher attribution e.g. " - 연합뉴스", " - 경향신문"
   title = title.replace(/\s*-\s*[가-힣A-Za-z0-9]+$/g, '');
 
-  // Split title by common delimiters (..., …, :, -, |, 등) to get primary headline
-  let prefix = title.split(/[\.\.\.…:\-–—|]/)[0].trim();
+  // 3) Split by common separator delimiters (..., …, :, -, |, ·, 등)
+  let parts = title.split(/[\.\.\.…:\-–—|·]/);
+  let prefix = parts[0].trim();
+  if (prefix.length < 6 && parts.length > 1) {
+    prefix = (parts[0] + ' ' + parts[1]).trim();
+  }
   if (prefix.length < 5) prefix = title;
 
-  // Remove non-alphanumeric / non-Korean characters and spaces for matching
+  // 4) Clean non-alphanumeric/Korean chars & spaces
   return prefix.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase();
 }
 
@@ -340,15 +346,20 @@ function isTitleDuplicate(normA, normB) {
   if (normA === normB) return true;
 
   const minLen = Math.min(normA.length, normB.length);
+  // Match prefix if 5+ characters are identical
+  if (minLen >= 5) {
+    const pA = normA.substring(0, Math.min(minLen, 12));
+    const pB = normB.substring(0, Math.min(minLen, 12));
+    if (pA === pB) return true;
+  }
+
+  // Substring inclusion for normalized titles >= 6 chars
   if (minLen >= 6) {
-    if (normA.substring(0, minLen) === normB.substring(0, minLen)) return true;
+    if (normA.includes(normB.substring(0, 8)) || normB.includes(normA.substring(0, 8))) return true;
   }
 
-  if (normA.length >= 8 && normB.length >= 8) {
-    if (normA.includes(normB) || normB.includes(normA)) return true;
-  }
-
-  if (normA.length >= 6 && normB.length >= 6) {
+  // Character Bigram Jaccard similarity for titles >= 5 chars
+  if (normA.length >= 5 && normB.length >= 5) {
     let matches = 0;
     const totalBigrams = normA.length - 1;
     for (let i = 0; i < totalBigrams; i++) {
@@ -356,7 +367,7 @@ function isTitleDuplicate(normA, normB) {
       if (normB.includes(bigram)) matches++;
     }
     const similarity = matches / totalBigrams;
-    if (similarity >= 0.70) return true;
+    if (similarity >= 0.58) return true;
   }
 
   return false;
