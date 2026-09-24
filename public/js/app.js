@@ -494,7 +494,7 @@ function renderIssueCardHtml(item, isScrapped) {
   const timeAttr = (item.time || '').replace(/"/g, '&quot;');
 
   return `
-    <div class="issue-card" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '뉴스'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
+    <div class="issue-card" onclick="saveCurrentPaperScroll()" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '뉴스'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
       <div class="card-top">
         <span class="source-tag source-news">${item.badge || '📰 이슈'} ${isNegBadge}</span>
         <span class="card-date card-time">${formatRelativeTime(item.time)}</span>
@@ -629,13 +629,52 @@ function shareArticle(btn) {
 }
 
 // --- Paper View logic ---
+function getPaperScrollY() {
+  const container = document.getElementById('feedContainer');
+  const containerScroll = container ? container.scrollTop : 0;
+  const winScroll = window.scrollY || document.documentElement.scrollTop || 0;
+  return Math.max(containerScroll, winScroll);
+}
+
 function saveCurrentPaperScroll() {
-  if (currentNavTab === 'paper' && window.scrollY > 0) {
-    try {
-      sessionStorage.setItem('paper_scroll_y', window.scrollY);
-      localStorage.setItem('paper_scroll_y', window.scrollY);
-    } catch (e) {}
+  if (currentNavTab === 'paper') {
+    const y = getPaperScrollY();
+    if (y > 0) {
+      const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
+      try {
+        sessionStorage.setItem(`paper_scroll_${cacheKey}`, y);
+        localStorage.setItem(`paper_scroll_${cacheKey}`, y);
+        sessionStorage.setItem('paper_scroll_y', y);
+        localStorage.setItem('paper_scroll_y', y);
+      } catch (e) {}
+    }
   }
+}
+
+function restorePaperScrollY() {
+  if (currentNavTab !== 'paper') return;
+  const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
+  try {
+    const savedScroll = sessionStorage.getItem(`paper_scroll_${cacheKey}`) || 
+                        localStorage.getItem(`paper_scroll_${cacheKey}`) || 
+                        sessionStorage.getItem('paper_scroll_y') || 
+                        localStorage.getItem('paper_scroll_y');
+                        
+    if (savedScroll && parseInt(savedScroll, 10) > 0) {
+      const y = parseInt(savedScroll, 10);
+      const applyScroll = () => {
+        const container = document.getElementById('feedContainer');
+        if (container) container.scrollTop = y;
+        window.scrollTo(0, y);
+      };
+      applyScroll();
+      requestAnimationFrame(applyScroll);
+      setTimeout(applyScroll, 20);
+      setTimeout(applyScroll, 80);
+      setTimeout(applyScroll, 200);
+      setTimeout(applyScroll, 450);
+    }
+  } catch (e) {}
 }
 
 async function loadPaperForCurrentDate(forceRefresh = false) {
@@ -775,30 +814,18 @@ function renderPaperView() {
   });
 
   container.innerHTML = html;
-
-  try {
-    const savedScroll = sessionStorage.getItem('paper_scroll_y') || localStorage.getItem('paper_scroll_y');
-    if (savedScroll && parseInt(savedScroll, 10) > 0) {
-      setTimeout(() => { window.scrollTo(0, parseInt(savedScroll, 10)); }, 20);
-    }
-  } catch (e) {}
+  restorePaperScrollY();
 }
 
-window.addEventListener('scroll', () => {
-  if (currentNavTab === 'paper' && window.scrollY > 0) {
-    try {
-      sessionStorage.setItem('paper_scroll_y', window.scrollY);
-      localStorage.setItem('paper_scroll_y', window.scrollY);
-    } catch (e) {}
+document.addEventListener('scroll', () => {
+  if (currentNavTab === 'paper') {
+    saveCurrentPaperScroll();
   }
-});
+}, { capture: true, passive: true });
 
 window.addEventListener('pageshow', (event) => {
   if (currentNavTab === 'paper') {
-    const savedScroll = sessionStorage.getItem('paper_scroll_y') || localStorage.getItem('paper_scroll_y');
-    if (savedScroll && parseInt(savedScroll, 10) > 0) {
-      setTimeout(() => { window.scrollTo(0, parseInt(savedScroll, 10)); }, 30);
-    }
+    restorePaperScrollY();
   }
 });
 
