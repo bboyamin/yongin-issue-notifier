@@ -346,19 +346,16 @@ function isTitleDuplicate(normA, normB) {
   if (normA === normB) return true;
 
   const minLen = Math.min(normA.length, normB.length);
-  // Match prefix if 5+ characters are identical
   if (minLen >= 5) {
     const pA = normA.substring(0, Math.min(minLen, 12));
     const pB = normB.substring(0, Math.min(minLen, 12));
     if (pA === pB) return true;
   }
 
-  // Substring inclusion for normalized titles >= 6 chars
   if (minLen >= 6) {
     if (normA.includes(normB.substring(0, 8)) || normB.includes(normA.substring(0, 8))) return true;
   }
 
-  // Character Bigram Jaccard similarity for titles >= 5 chars
   if (normA.length >= 5 && normB.length >= 5) {
     let matches = 0;
     const totalBigrams = normA.length - 1;
@@ -367,7 +364,57 @@ function isTitleDuplicate(normA, normB) {
       if (normB.includes(bigram)) matches++;
     }
     const similarity = matches / totalBigrams;
-    if (similarity >= 0.58) return true;
+    if (similarity >= 0.55) return true;
+  }
+
+  return false;
+}
+
+function isSameTopicStory(titleA, titleB) {
+  if (!titleA || !titleB) return false;
+
+  // 1) Direct title similarity
+  const normA = normalizeTitleForDedupe(titleA);
+  const normB = normalizeTitleForDedupe(titleB);
+  if (isTitleDuplicate(normA, normB)) return true;
+
+  // 2) Keyword & metric match (e.g. "85주", "1.09%", "25사단" + "서울", "아파트", "매매가")
+  const cleanA = String(titleA).replace(/[^가-힣a-zA-Z0-9\s]/g, ' ');
+  const cleanB = String(titleB).replace(/[^가-힣a-zA-Z0-9\s]/g, ' ');
+
+  const numsA = cleanA.match(/\d+(?:주|개|월|년|억|조|%|건|차|위|번|동|구)?/g) || [];
+  const numsB = cleanB.match(/\d+(?:주|개|월|년|억|조|%|건|차|위|번|동|구)?/g) || [];
+
+  const commonNums = numsA.filter(n => {
+    const numOnly = n.replace(/\D/g, '');
+    return numOnly && numsB.some(nb => nb.includes(numOnly));
+  });
+
+  if (commonNums.length > 0) {
+    const wordsA = cleanA.split(/\s+/).filter(w => w.length >= 2);
+    const wordsB = cleanB.split(/\s+/).filter(w => w.length >= 2);
+
+    let sharedNounCount = 0;
+    for (const wA of wordsA) {
+      if (wordsB.some(wB => wB.includes(wA) || wA.includes(wB))) {
+        sharedNounCount++;
+      }
+    }
+    if (sharedNounCount >= 2) return true;
+  }
+
+  // 3) Keyword Jaccard Overlap check (3+ shared nouns without numbers)
+  const wordsA = Array.from(new Set(cleanA.split(/\s+/).filter(w => w.length >= 2)));
+  const wordsB = Array.from(new Set(cleanB.split(/\s+/).filter(w => w.length >= 2)));
+  let overlapCount = 0;
+  for (const wA of wordsA) {
+    if (wordsB.some(wB => wB === wA || (wA.length >= 3 && wB.includes(wA)))) {
+      overlapCount++;
+    }
+  }
+  const minWords = Math.min(wordsA.length, wordsB.length);
+  if (minWords >= 3 && (overlapCount / minWords) >= 0.60) {
+    return true;
   }
 
   return false;
@@ -388,19 +435,14 @@ function deduplicateIssues(items) {
   if (!Array.isArray(items) || items.length === 0) return [];
 
   const uniqueItems = [];
-  const seenNorms = [];
 
   for (const item of items) {
     const rawTitle = item.title || '';
-    const norm = normalizeTitleForDedupe(rawTitle);
-    if (!norm) {
-      uniqueItems.push(item);
-      continue;
-    }
+    if (!rawTitle) continue;
 
     let duplicateIndex = -1;
-    for (let i = 0; i < seenNorms.length; i++) {
-      if (isTitleDuplicate(norm, seenNorms[i])) {
+    for (let i = 0; i < uniqueItems.length; i++) {
+      if (isSameTopicStory(rawTitle, uniqueItems[i].title)) {
         duplicateIndex = i;
         break;
       }
@@ -408,7 +450,6 @@ function deduplicateIssues(items) {
 
     if (duplicateIndex === -1) {
       uniqueItems.push(item);
-      seenNorms.push(norm);
     } else {
       const existing = uniqueItems[duplicateIndex];
       const recencyWeightExisting = getRecencyWeight(existing.time);
@@ -419,7 +460,6 @@ function deduplicateIssues(items) {
 
       if (currentScore > existingScore) {
         uniqueItems[duplicateIndex] = item;
-        seenNorms[duplicateIndex] = norm;
       }
     }
   }
