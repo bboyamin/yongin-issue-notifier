@@ -450,14 +450,48 @@ def extract_press_name(url, title_text, desc_text, secondary_url=None):
 
     return "뉴스"
 
-def is_clean_relevant_article(title_text, desc_text, terms):
+NUMERIC_GRAMMAR_NOISE_RE = re.compile(
+    r"(\d+[\d,]*\s*(조|억|만|천)?\s*(원|달러|%|퍼센트|년|개월|주|일|점|배|건|개|회|명|위)?)\s*이상일",
+    re.IGNORECASE
+)
+
+KEYWORD_EXPANSION_MAP = {
+    "용인시": ["용인시", "용인특례시"],
+    "용인특례시": ["용인특례시", "용인시"],
+    "처인구": ["처인구", "용인 처인구", "용인시 처인구"],
+    "수지구": ["수지구", "용인 수지구", "용인시 수지구"],
+    "기흥구": ["기흥구", "용인 기흥구", "용인시 기흥구"],
+    "이상일": ["이상일", "이상일 시장", "이상일 용인시장"]
+}
+
+def expand_keyword_terms(keyword):
+    kw_clean = keyword.strip()
+    if kw_clean in KEYWORD_EXPANSION_MAP:
+        return KEYWORD_EXPANSION_MAP[kw_clean]
+    if kw_clean.endswith("시") and not kw_clean.endswith("특례시"):
+        special_city = kw_clean[:-1] + "특례시"
+        return [kw_clean, special_city]
+    elif kw_clean.endswith("특례시"):
+        normal_city = kw_clean[:-3] + "시"
+        return [kw_clean, normal_city]
+    return [t.strip() for t in kw_clean.replace(" OR ", ",").split(",") if t.strip()]
+
+def is_clean_relevant_article(title_text, desc_text, terms, orig_keyword=""):
     if not terms:
         return True
     t_lower = (title_text or "").lower()
     d_lower = (desc_text or "").lower()
+    full_text = f"{t_lower} {d_lower}"
 
     if any(s in t_lower for s in SPAM_PROMO_KEYWORDS):
         return False
+
+    # Check numerical grammar noise for '이상일'
+    if "이상일" in orig_keyword or "이상일" in full_text:
+        if NUMERIC_GRAMMAR_NOISE_RE.search(full_text):
+            context_keywords = ["용인", "시장", "특례시", "도지사", "의원", "국회의원", "작가", "감독", "시장님"]
+            if not any(ck in full_text for ck in context_keywords):
+                return False
 
     for term in terms:
         t_term = term.lower().strip()
@@ -482,7 +516,7 @@ def fetch_naver_news(keyword, limit=50):
         print("⚠️ NAVER API 키가 누락되어 구글 RSS 수집으로 대체합니다.")
         return []
         
-    sub_terms = [t.strip() for t in keyword.replace(" OR ", ",").split(",") if t.strip()]
+    sub_terms = expand_keyword_terms(keyword)
     query_str = " | ".join(sub_terms) if len(sub_terms) > 1 else keyword
     headers = {
         "X-Naver-Client-Id": client_id,
@@ -514,7 +548,7 @@ def fetch_naver_news(keyword, limit=50):
             continue
         seen_urls.add(dedup_key)
 
-        if sub_terms and not is_clean_relevant_article(clean_title, clean_desc, sub_terms):
+        if sub_terms and not is_clean_relevant_article(clean_title, clean_desc, sub_terms, orig_keyword=keyword):
             continue
 
         # Extract publisher or estimate press name
