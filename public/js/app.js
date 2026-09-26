@@ -21,7 +21,7 @@ if (!PAPER_PROVIDERS.some(p => p.id === currentPaperProvider)) {
   currentPaperProvider = 'mknews';
   StorageManager.savePaperProvider('mknews');
 }
-let currentPressDept = 'all';
+let currentPressDept = '용인시';
 let paperData = null;
 let lastUpdatedTimeStr = StorageManager.getLastUpdatedTime();
 
@@ -37,7 +37,7 @@ function getTodayKstStr() {
 function formatRelativeTime(timeStr) {
   if (!timeStr) return '방금 전';
   if (timeStr.includes('방금') || timeStr.includes('전') || timeStr.includes('어제')) return timeStr;
-  
+
   try {
     let cleanStr = String(timeStr).trim().replace(/\//g, '-');
     if (cleanStr.length === 10) cleanStr += ' 00:00:00';
@@ -272,7 +272,7 @@ async function switchNavTab(tab, btn) {
       if (tab === 'bookmark') {
         renderIssues();
       } else {
-        if (tab === 'press') currentPressDept = 'all';
+        if (tab === 'press') currentPressDept = '용인시';
         await fetchTabIssues(tab);
       }
     }
@@ -423,8 +423,8 @@ function isSameTopicStory(titleA, titleB) {
 function getPublisherScore(publisherName) {
   const pub = (publisherName || '').toLowerCase();
   const MAJORS = [
-    '연합뉴스', '연합뉴스tv', '조선일보', '중앙일보', '동아일보', '한겨레', '경향신문', 
-    '매일경제', '한국경제', 'kbs', 'sbs', 'mbc', 'ytn', '오마이뉴스', '국민일보', 
+    '연합뉴스', '연합뉴스tv', '조선일보', '중앙일보', '동아일보', '한겨레', '경향신문',
+    '매일경제', '한국경제', 'kbs', 'sbs', 'mbc', 'ytn', '오마이뉴스', '국민일보',
     '세계일보', '서울신문', '전자신문', '이데일리', '머니투데이', '파이낸셜뉴스'
   ];
   if (MAJORS.some(m => pub.includes(m))) return 15;
@@ -564,7 +564,11 @@ function renderIssues() {
   let displayItems = currentIssues;
   if (currentNavTab === 'press') {
     renderPressDeptChips();
-    if (currentPressDept !== 'all') {
+    if (currentPressDept === '용인시') {
+      displayItems = currentIssues.filter(item => (item.publisher || '').includes('용인시') || (item.badge || '').includes('용인시'));
+    } else if (currentPressDept === 'central') {
+      displayItems = currentIssues.filter(item => !(item.publisher || '').includes('용인시') && !(item.badge || '').includes('용인시'));
+    } else if (currentPressDept && currentPressDept !== 'all') {
       displayItems = currentIssues.filter(item => (item.publisher || '').includes(currentPressDept) || (item.badge || '').includes(currentPressDept));
     }
   }
@@ -607,13 +611,20 @@ function renderPressDeptChips() {
     deptCounts[dept] = (deptCounts[dept] || 0) + 1;
   });
 
+  const yonginCount = deptCounts['용인시'] || 0;
+  const centralCount = currentIssues.length - yonginCount;
+
   let html = `
-    <span class="chip ${currentPressDept === 'all' ? 'active' : ''}" onclick="selectPressDept('all')">
-      전체 부처 (${currentIssues.length})
+    <span class="chip ${currentPressDept === '용인시' ? 'active' : ''}" onclick="selectPressDept('용인시')">
+      🏛️ 용인시 (${yonginCount})
+    </span>
+    <span class="chip ${currentPressDept === 'central' ? 'active' : ''}" onclick="selectPressDept('central')">
+      중앙부처 전체 (${centralCount})
     </span>
   `;
 
   Object.keys(deptCounts).forEach(dept => {
+    if (dept === '용인시') return;
     const count = deptCounts[dept];
     const isActive = (currentPressDept === dept);
     html += `
@@ -769,7 +780,7 @@ function shareArticle(btn) {
   const url = card.getAttribute('data-url');
 
   if (navigator.share) {
-    navigator.share({ title: title, url: url }).catch(() => {});
+    navigator.share({ title: title, url: url }).catch(() => { });
   } else if (navigator.clipboard) {
     navigator.clipboard.writeText(`${title}\n${url}`);
     showToast('📋 기사 링크가 클립보드에 복사되었습니다!');
@@ -796,7 +807,7 @@ function saveCurrentPaperScroll() {
         localStorage.setItem(`paper_scroll_${cacheKey}`, y);
         sessionStorage.setItem('paper_scroll_y', y);
         localStorage.setItem('paper_scroll_y', y);
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -805,11 +816,11 @@ function restorePaperScrollY() {
   if (currentNavTab !== 'paper') return;
   const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
   try {
-    const savedScroll = sessionStorage.getItem(`paper_scroll_${cacheKey}`) || 
-                        localStorage.getItem(`paper_scroll_${cacheKey}`) || 
-                        sessionStorage.getItem('paper_scroll_y') || 
-                        localStorage.getItem('paper_scroll_y');
-                        
+    const savedScroll = sessionStorage.getItem(`paper_scroll_${cacheKey}`) ||
+      localStorage.getItem(`paper_scroll_${cacheKey}`) ||
+      sessionStorage.getItem('paper_scroll_y') ||
+      localStorage.getItem('paper_scroll_y');
+
     if (savedScroll && parseInt(savedScroll, 10) > 0) {
       const y = parseInt(savedScroll, 10);
       const applyScroll = () => {
@@ -824,7 +835,7 @@ function restorePaperScrollY() {
       setTimeout(applyScroll, 200);
       setTimeout(applyScroll, 450);
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 async function loadPaperForCurrentDate(forceRefresh = false) {
@@ -908,7 +919,7 @@ function selectPaperSection(sec) {
   try {
     sessionStorage.setItem(`paper_sec_${cacheKey}`, sec);
     localStorage.setItem(`paper_sec_${cacheKey}`, sec);
-  } catch (e) {}
+  } catch (e) { }
   renderPaperSections();
   renderPaperView();
 }

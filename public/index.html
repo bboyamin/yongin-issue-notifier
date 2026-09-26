@@ -64,7 +64,8 @@
             <div class="app-logo-text">이슈 알리미</div>
           </div>
           <div class="header-actions">
-            <button class="icon-btn" onclick="switchNavTab('bookmark', this)" title="보관함 모아보기" style="position: relative;">
+            <button class="icon-btn" onclick="switchNavTab('bookmark', this)" title="보관함 모아보기"
+              style="position: relative;">
               ⭐
               <span id="headerScrapBadge"
                 style="position: absolute; top: -4px; right: -4px; background: #EF4444; color: #FFF; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 10px; display: none;">0</span>
@@ -83,7 +84,8 @@
 
       <!-- Paper View Header (Shown only on paper tab) -->
       <div class="etnews-header" id="etnewsHeader" style="display: none;">
-        <div class="paper-provider-bar" id="paperProviderChips" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px;">
+        <div class="paper-provider-bar" id="paperProviderChips"
+          style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px;">
           <!-- Paper selection chips rendered by app.js -->
         </div>
 
@@ -101,7 +103,6 @@
 
       <!-- Press View Header (Shown only on press tab for ministry chips) -->
       <div class="etnews-header" id="pressHeader" style="display: none; padding-top: 10px; padding-bottom: 10px;">
-        <div style="font-size: 11px; font-weight: 700; color: #64748B; margin-bottom: 6px;">🏛️ 정부 부처별 필터:</div>
         <div class="etnews-section-chips" id="pressDeptChips">
           <!-- Rendered dynamically by app.js -->
         </div>
@@ -145,7 +146,8 @@
               <h4>📰 지면 신문사 선택</h4>
               <p>지면 탭에 기본 노출할 주요 신문사를 선택합니다.</p>
             </div>
-            <select id="paperProviderSelect" onchange="updatePaperProviderSetting(this.value)" style="padding: 6px 10px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 12px; font-weight: 700; background: #F8FAFC; color: #1E293B; cursor: pointer;">
+            <select id="paperProviderSelect" onchange="updatePaperProviderSetting(this.value)"
+              style="padding: 6px 10px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 12px; font-weight: 700; background: #F8FAFC; color: #1E293B; cursor: pointer;">
               <option value="mknews">📈 매일경제</option>
               <option value="etnews">📰 전자신문</option>
               <option value="khan">🗞️ 경향신문</option>
@@ -153,7 +155,8 @@
           </div>
 
           <div style="margin-top: 16px;">
-            <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">📌 모니터링 키워드 관리</h4>
+            <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">📌 모니터링 키워드 관리
+            </h4>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="settingsKeywordChips">
               <!-- Dynamically rendered -->
             </div>

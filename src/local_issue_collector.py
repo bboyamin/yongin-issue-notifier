@@ -689,13 +689,92 @@ def fetch_korea_kr_rss(limit=100):
 
     return items
 
+def fetch_yongin_city_press_releases(limit=40):
+    base_url = "https://www.yongin.go.kr/user/bbs/BD_selectBbsList.do?q_bbsCode=1020"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    }
+    items = []
+    try:
+        import ssl
+        class LegacySSLAdapter(requests.adapters.HTTPAdapter):
+            def init_poolmanager(self, *args, **kwargs):
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                try:
+                    ctx.set_ciphers('DEFAULT@SECLEVEL=1')
+                except Exception:
+                    pass
+                kwargs['ssl_context'] = ctx
+                return super().init_poolmanager(*args, **kwargs)
+
+        session = requests.Session()
+        session.mount('https://', LegacySSLAdapter())
+
+        max_pages = 4
+        for page in range(1, max_pages + 1):
+            url = f"{base_url}&q_currPage={page}"
+            res = session.get(url, headers=headers, timeout=10)
+            if res.status_code == 200:
+                soup = BeautifulSoup(res.text, "html.parser")
+                for idx, li in enumerate(soup.select("ul.bbs_list > li, ol.bbs_list > li, .heading")):
+                    a_tag = li.select_one("dt.btitle a")
+                    if not a_tag:
+                        continue
+                    title = a_tag.get_text(strip=True)
+                    if not title or len(title) < 4:
+                        continue
+                    
+                    href = a_tag.get("href", "")
+                    if href.startswith("BD_selectBbs"):
+                        detail_url = f"https://www.yongin.go.kr/user/bbs/{href}"
+                    elif href.startswith("/"):
+                        detail_url = f"https://www.yongin.go.kr{href}"
+                    else:
+                        detail_url = href
+                    
+                    info_lis = li.select("dd.binfo li")
+                    dept = info_lis[0].get_text(strip=True) if len(info_lis) > 0 else "공보관"
+                    raw_date = info_lis[1].get_text(strip=True) if len(info_lis) > 1 else ""
+                    
+                    date_str = datetime.now().strftime("%Y-%m-%d 09:00:00")
+                    if raw_date and len(raw_date) >= 10:
+                        date_str = raw_date[:10].replace(".", "-").replace("/", "-") + " 09:00:00"
+
+                    match_sn = re.search(r"q_bbscttSn=(\d+)", href)
+                    sn = match_sn.group(1) if match_sn else f"{page}_{idx}"
+
+                    item_obj = {
+                        "id": f"yongin_press_{sn}",
+                        "keyword": "용인시 보도자료",
+                        "type": "news",
+                        "badge": f"🏛️ 용인시 ({dept})",
+                        "publisher": "용인시",
+                        "title": title,
+                        "time": date_str,
+                        "url": detail_url,
+                        "content": f"[용인특례시 보도자료] {title}",
+                        "dept": "용인시"
+                    }
+                    items.append(item_obj)
+                    if len(items) >= limit:
+                        break
+            if len(items) >= limit:
+                break
+    except Exception as e:
+        print("Yongin City Press Release fetch error:", e)
+    return items
+
 # ----------------------------------------------------
 # 메인 통합 수집 프로세스 (100% 네이버 뉴스 API 및 RSS 전용)
 # ----------------------------------------------------
 def collect_all_issues(keywords=None, tab="realtime"):
     if tab == "press":
-        raw_issues = fetch_korea_kr_rss(limit=60)
-        print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 탭[press] 공식 보도자료 정리 완료 ({len(raw_issues)}건)")
+        yongin_press = fetch_yongin_city_press_releases(limit=30)
+        gov_press = fetch_korea_kr_rss(limit=50)
+        raw_issues = yongin_press + gov_press
+        print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 탭[press] 용인시청 및 공식 보도자료 정리 완료 ({len(raw_issues)}건)")
         return raw_issues
 
     if not keywords:
