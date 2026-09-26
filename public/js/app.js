@@ -218,18 +218,29 @@ async function fetchKeywordIssues(keywordsList) {
 }
 
 async function fetchTabIssues(tabName) {
-  showToast(`🔄 [${tabName}] 수집 중...`);
   try {
-    const issues = await IssueApi.fetchTabIssues(tabName);
-    tabFeeds[tabName] = issues || [];
-    currentIssues = tabFeeds[tabName];
+    const cachedIssues = await IssueApi.loadDefaultIssues(tabName);
+    if (cachedIssues && cachedIssues.length > 0) {
+      tabFeeds[tabName] = cachedIssues;
+      currentIssues = cachedIssues;
+      renderIssues();
+    }
   } catch (e) {
-    console.warn(`Tab [${tabName}] fetch error:`, e);
-    tabFeeds[tabName] = [];
-    currentIssues = [];
-  } finally {
-    renderIssues();
+    console.warn(`Tab [${tabName}] cache load error:`, e);
   }
+
+  // Background live update without blocking UI
+  IssueApi.fetchLiveTabIssues(tabName).then(liveIssues => {
+    if (liveIssues && liveIssues.length > 0) {
+      tabFeeds[tabName] = liveIssues;
+      if (currentNavTab === tabName) {
+        currentIssues = liveIssues;
+        renderIssues();
+      }
+    }
+  }).catch(err => {
+    console.warn(`Background live update error for tab [${tabName}]:`, err);
+  });
 }
 
 async function switchNavTab(tab, btn) {

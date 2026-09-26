@@ -33,6 +33,11 @@ const IssueApi = (() => {
      * @returns {Promise<Array>}
      */
     async fetchTabIssues(tabName = 'realtime') {
+      const defaultData = await this.loadDefaultIssues(tabName);
+      return defaultData;
+    },
+
+    async fetchLiveTabIssues(tabName = 'realtime') {
       try {
         const res = await fetch(`/api/collect?tab=${tabName}&force=true&v=78&t=${Date.now()}`);
         if (res.ok) {
@@ -44,7 +49,7 @@ const IssueApi = (() => {
       } catch (err) {
         console.warn(`Live API collect error for tab [${tabName}]:`, err);
       }
-      return await this.loadDefaultIssues(tabName);
+      return null;
     },
 
     async loadDefaultIssues(tabName = 'realtime') {
