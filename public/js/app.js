@@ -232,10 +232,15 @@ async function fetchTabIssues(tabName) {
   // Background live update without blocking UI
   IssueApi.fetchLiveTabIssues(tabName).then(liveIssues => {
     if (liveIssues && liveIssues.length > 0) {
+      const prevKeys = (currentIssues || []).map(i => i.id || i.title).join('|');
+      const newKeys = liveIssues.map(i => i.id || i.title).join('|');
+
       tabFeeds[tabName] = liveIssues;
       if (currentNavTab === tabName) {
         currentIssues = liveIssues;
-        renderIssues();
+        if (prevKeys !== newKeys) {
+          renderIssues();
+        }
       }
     }
   }).catch(err => {
@@ -283,7 +288,9 @@ async function switchNavTab(tab, btn) {
       if (tab === 'bookmark') {
         renderIssues();
       } else {
-        if (tab === 'press') currentPressDept = '용인시';
+        if (tab === 'press' && !currentPressDept) {
+          currentPressDept = '용인시';
+        }
         await fetchTabIssues(tab);
       }
     }
