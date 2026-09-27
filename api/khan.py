@@ -7,6 +7,7 @@ import requests
 import urllib3
 import re
 import xml.etree.ElementTree as ET
+import hashlib
 from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor
 
@@ -18,7 +19,6 @@ headers = {
 }
 
 KHAN_RSS_FEEDS = {
-    "전체": "https://www.khan.co.kr/rss/rssdata/total_news.xml",
     "정치": "https://www.khan.co.kr/rss/rssdata/politic_news.xml",
     "경제": "https://www.khan.co.kr/rss/rssdata/economy_news.xml",
     "사회": "https://www.khan.co.kr/rss/rssdata/society_news.xml",
@@ -68,8 +68,9 @@ def fetch_single_feed(item_tuple):
 
                 creator = clean_html(creator_el.text) if creator_el is not None and creator_el.text else "경향신문"
 
+                art_id = f"khan_{hashlib.md5(link.encode('utf-8')).hexdigest()[:12]}"
                 article_obj = {
-                    "id": f"khan_rss_{section_name}_{idx}",
+                    "id": art_id,
                     "keyword": "경향신문",
                     "type": "news",
                     "badge": f"🗞️ 경향신문 · {section_name}",
@@ -99,7 +100,7 @@ def categorize_khan_title(t):
         return "IT·과학"
     elif any(k in t for k in ['사설', '칼럼', '오피니언', '시선', '기고', '그림마당', '아침을']):
         return "오피니언"
-    return "전체"
+    return "정치"
 
 def fetch_khan_past_q(q):
     url = f"https://news.google.com/rss/search?q={q}&hl=ko&gl=KR&ceid=KR:ko"
@@ -145,10 +146,15 @@ def fetch_past_khan(clean_ymd):
 
         categorized = {}
         all_articles = []
+        seen_urls = set()
         for idx, (link, title) in enumerate(dedup_items.items()):
+            if link in seen_urls:
+                continue
+            seen_urls.add(link)
             section = categorize_khan_title(title)
+            art_id = f"khan_{hashlib.md5(link.encode('utf-8')).hexdigest()[:12]}"
             article_obj = {
-                "id": f"khan_past_{clean_ymd}_{idx}",
+                "id": art_id,
                 "keyword": "경향신문",
                 "type": "news",
                 "badge": f"🗞️ 경향신문 · {section}",
@@ -189,12 +195,16 @@ def fetch_khan_by_date(ymd_str=None):
     if not is_past_date:
         categorized = {}
         all_articles = []
+        seen_urls = set()
         with ThreadPoolExecutor(max_workers=8) as executor:
             results = executor.map(fetch_single_feed, KHAN_RSS_FEEDS.items())
             for section_name, articles in results:
                 if articles:
                     categorized[section_name] = articles
-                    all_articles.extend(articles)
+                    for a in articles:
+                        if a["url"] not in seen_urls:
+                            seen_urls.add(a["url"])
+                            all_articles.append(a)
 
         if all_articles:
             return {
@@ -229,6 +239,7 @@ def fetch_khan_from_naver(clean_ymd=None):
             items = res.json().get("items", [])
             categorized = {}
             all_articles = []
+            seen_urls = set()
 
             formatted_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
             if clean_ymd and len(clean_ymd) == 8:
@@ -244,12 +255,17 @@ def fetch_khan_from_naver(clean_ymd=None):
                 if not title or len(title) < 4:
                     continue
                 link = item.get("originallink") or item.get("link") or "#"
+                if link in seen_urls:
+                    continue
+                seen_urls.add(link)
+
                 desc = clean_html(item.get("description", "")) or title
 
                 section = categorize_khan_title(title)
+                art_id = f"khan_{hashlib.md5(link.encode('utf-8')).hexdigest()[:12]}"
 
                 article_obj = {
-                    "id": f"khan_naver_{idx}",
+                    "id": art_id,
                     "keyword": "경향신문",
                     "type": "news",
                     "badge": f"🗞️ 경향신문 · {section}",
