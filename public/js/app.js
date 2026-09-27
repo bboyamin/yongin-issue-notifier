@@ -34,6 +34,16 @@ function getTodayKstStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function scrollToTop() {
+  try {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const feedContainer = document.getElementById('feedContainer');
+    if (feedContainer) feedContainer.scrollTop = 0;
+  } catch (e) {}
+}
+
 function formatRelativeTime(timeStr) {
   if (!timeStr) return '방금 전';
   if (timeStr.includes('방금') || timeStr.includes('전') || timeStr.includes('어제')) return timeStr;
@@ -89,6 +99,7 @@ function renderPaperProviderChips() {
 }
 
 function selectPaperProvider(providerId) {
+  scrollToTop();
   currentPaperProvider = providerId;
   StorageManager.savePaperProvider(providerId);
 
@@ -144,6 +155,7 @@ function renderKeywordChips() {
 }
 
 async function selectKeyword(kw) {
+  scrollToTop();
   currentKeyword = kw;
   renderKeywordChips();
   await fetchKeywordIssues([kw]);
@@ -185,6 +197,7 @@ function removeKeyword(kw, event) {
 
 // Realtime Feed Refresh Function
 async function refreshFeed() {
+  scrollToTop();
   const feedContainer = document.getElementById('feedContainer');
   showToast('🔄 실시간 이슈 수집 및 새로고침 중...');
   if (feedContainer) feedContainer.style.opacity = '0.5';
@@ -249,6 +262,7 @@ async function fetchTabIssues(tabName) {
 }
 
 async function switchNavTab(tab, btn) {
+  scrollToTop();
   currentNavTab = tab;
   StorageManager.saveActiveNavTab(tab);
 
@@ -656,6 +670,7 @@ function renderPressDeptChips() {
 }
 
 function selectPressDept(dept) {
+  scrollToTop();
   currentPressDept = dept;
   renderIssues();
 }
@@ -932,6 +947,7 @@ function renderPaperSections() {
 }
 
 function selectPaperSection(sec) {
+  scrollToTop();
   currentPaperSection = sec;
   const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
   try {
