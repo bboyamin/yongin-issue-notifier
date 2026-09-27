@@ -106,6 +106,9 @@ function selectPaperProvider(providerId) {
   const selectElem = document.getElementById('paperProviderSelect');
   if (selectElem) selectElem.value = providerId;
 
+  const container = document.getElementById('feedContainer');
+  if (container) container.removeAttribute('data-rendered-key');
+
   renderPaperProviderChips();
   loadPaperForCurrentDate();
 }
@@ -511,6 +514,8 @@ function renderIssues() {
     renderPaperView();
     return;
   }
+
+  container.removeAttribute('data-rendered-key');
 
   // --- Bookmark View (보관함) ---
   if (currentNavTab === 'bookmark') {
@@ -960,6 +965,10 @@ function selectPaperSection(sec) {
     sessionStorage.setItem(`paper_sec_${cacheKey}`, sec);
     localStorage.setItem(`paper_sec_${cacheKey}`, sec);
   } catch (e) { }
+
+  const container = document.getElementById('feedContainer');
+  if (container) container.removeAttribute('data-rendered-key');
+
   renderPaperSections();
   renderPaperView();
 }
@@ -967,6 +976,8 @@ function selectPaperSection(sec) {
 function onPaperDateChange(val) {
   if (val) {
     currentPaperDate = val;
+    const container = document.getElementById('feedContainer');
+    if (container) container.removeAttribute('data-rendered-key');
     loadPaperForCurrentDate();
   }
 }
@@ -975,6 +986,8 @@ function setPaperToday() {
   currentPaperDate = getTodayKstStr();
   const picker = document.getElementById('etnewsDatePicker');
   if (picker) picker.value = currentPaperDate;
+  const container = document.getElementById('feedContainer');
+  if (container) container.removeAttribute('data-rendered-key');
   loadPaperForCurrentDate();
 }
 
@@ -992,6 +1005,16 @@ function renderPaperView() {
         <p style="font-size:12px; color:#64748B;">선택하신 날짜(${currentPaperDate})의 지면 기사를 준비하고 있습니다.</p>
       </div>
     `;
+    container.removeAttribute('data-rendered-key');
+    return;
+  }
+
+  const currentKey = `${currentPaperProvider}_${currentPaperDate}_${currentPaperSection}`;
+  const existingKey = container.getAttribute('data-rendered-key');
+
+  // If container ALREADY has rendered cards for this exact provider, date & section, DO NOT TOUCH DOM!
+  if (existingKey === currentKey && container.querySelector('.issue-card')) {
+    restorePaperScrollY();
     return;
   }
 
@@ -1015,6 +1038,7 @@ function renderPaperView() {
   });
 
   container.innerHTML = html;
+  container.setAttribute('data-rendered-key', currentKey);
   restorePaperScrollY();
 }
 
@@ -1026,7 +1050,16 @@ document.addEventListener('scroll', () => {
 
 function handleBackOrRestore() {
   if (currentNavTab === 'paper') {
+    const container = document.getElementById('feedContainer');
     const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
+    const currentKey = `${currentPaperProvider}_${currentPaperDate}_${currentPaperSection}`;
+
+    // If paper view is ALREADY present and rendered for this exact key, DO NOT TOUCH DOM!
+    if (container && container.getAttribute('data-rendered-key') === currentKey && container.querySelector('.issue-card')) {
+      restorePaperScrollY();
+      return;
+    }
+
     let cachedData = paperFeedsCache[cacheKey];
     if (!cachedData) {
       cachedData = StorageManager.getPaperCache(cacheKey);
