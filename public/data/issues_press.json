@@ -480,6 +480,17 @@
     "dept": "용인시"
   },
   {
+    "id": "gov_press_156783204",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 외교부",
+    "publisher": "외교부",
+    "title": "중동평화 정부대표, 두 국가 해법 이행을 위한 글로벌 연대 고위급 회의 참석 및 중동 문제 관련 주요인사 면담",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783204&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "중동평화 정부대표, 두 국가 해법 이행을 위한 글로벌 연대 고위급 회의 참석 및 중동 문제 관련 주요인사 면담"
+  },
+  {
     "id": "gov_press_156783202",
     "keyword": "보도자료",
     "type": "news",
@@ -696,7 +707,7 @@
     "publisher": "국방부",
     "title": "강신철 국방부장관, 취임 후 첫 공식 현장지도로 서부전선 최전방 부대 방문",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783158&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783158&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "강신철 국방부장관, 취임 후 첫 공식 현장지도로 서부전선 최전방 부대 방문"
   },
   {
@@ -916,7 +927,7 @@
     "publisher": "산림청",
     "title": "풍성한 가을 결실에 청렴을 더해... - 국립산림과학원, 추석맞이 숲푸드 팝업스토어 방문객 대상 일상 속 청렴 가치 공유",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783125&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783125&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "풍성한 가을 결실에 청렴을 더해... - 국립산림과학원, 추석맞이 숲푸드 팝업스토어 방문객 대상 일상 속 청렴 가치 공유"
   },
   {
@@ -1017,16 +1028,5 @@
     "time": "2026-09-23 09:00:00",
     "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783106&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "\"입주까지 했는데 16년째 멈춘 대지권 등기\"… 일산 하이파크시티 '재산권 문제' 해결 나서"
-  },
-  {
-    "id": "gov_press_156783107",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 산업통상부",
-    "publisher": "산업통상부",
-    "title": "'26년 8월 주요 유통업체 매출 동향",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783107&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
-    "content": "'26년 8월 주요 유통업체 매출 동향"
   }
 ]

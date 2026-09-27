@@ -843,6 +843,12 @@ function saveCurrentPaperScroll() {
       } catch (e) { }
     }
   }
+
+  try {
+    if (!history.state || !history.state.articleOpen) {
+      history.pushState({ articleOpen: true, navTab: currentNavTab, provider: currentPaperProvider }, '');
+    }
+  } catch (e) { }
 }
 
 function restorePaperScrollY() {
@@ -1018,10 +1024,32 @@ document.addEventListener('scroll', () => {
   }
 }, { capture: true, passive: true });
 
-window.addEventListener('pageshow', (event) => {
+function handleBackOrRestore() {
   if (currentNavTab === 'paper') {
-    restorePaperScrollY();
+    const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
+    let cachedData = paperFeedsCache[cacheKey];
+    if (!cachedData) {
+      cachedData = StorageManager.getPaperCache(cacheKey);
+    }
+    if (cachedData && cachedData.articles && cachedData.articles.length > 0) {
+      paperData = cachedData;
+      paperFeedsCache[cacheKey] = cachedData;
+      const savedSection = sessionStorage.getItem(`paper_sec_${cacheKey}`) || localStorage.getItem(`paper_sec_${cacheKey}`);
+      currentPaperSection = (savedSection && (savedSection === 'all' || (cachedData.sections && cachedData.sections.includes(savedSection)))) ? savedSection : 'all';
+      renderPaperSections();
+      renderPaperView();
+    } else {
+      restorePaperScrollY();
+    }
   }
+}
+
+window.addEventListener('popstate', (event) => {
+  handleBackOrRestore();
+});
+
+window.addEventListener('pageshow', (event) => {
+  handleBackOrRestore();
 });
 
 // --- Settings Modal ---
