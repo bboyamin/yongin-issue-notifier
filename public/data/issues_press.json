@@ -480,6 +480,127 @@
     "dept": "용인시"
   },
   {
+    "id": "gov_press_156783202",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 고용노동부",
+    "publisher": "고용노동부",
+    "title": "\"지역을 잇다, 중장년을 키우다\"지역맞춤형 중장년 경력지원 행사 집중 개최",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783202&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "\"지역을 잇다, 중장년을 키우다\"지역맞춤형 중장년 경력지원 행사 집중 개최"
+  },
+  {
+    "id": "gov_press_156783195",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 과학기술정보통신부",
+    "publisher": "과학기술정보통신부",
+    "title": "과기정통부, 맞춤형 안전 지원으로 반도체 연구 든든히 뒷받침… 올해 시범 3곳·내년 22곳 점검",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783195&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "과기정통부, 맞춤형 안전 지원으로 반도체 연구 든든히 뒷받침… 올해 시범 3곳·내년 22곳 점검"
+  },
+  {
+    "id": "gov_press_156783201",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 행정안전부",
+    "publisher": "행정안전부",
+    "title": "인공지능(AI)으로 만드는 안전한 일상, 재난안전 분야 인공지능 전환 본격 시동",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783201&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "인공지능(AI)으로 만드는 안전한 일상, 재난안전 분야 인공지능 전환 본격 시동"
+  },
+  {
+    "id": "gov_press_156783199",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 행정안전부",
+    "publisher": "행정안전부",
+    "title": "AI로 재난안전 업무 혁신, 우수사례 찾는다",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783199&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "AI로 재난안전 업무 혁신, 우수사례 찾는다"
+  },
+  {
+    "id": "gov_press_156783197",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 환경부",
+    "publisher": "환경부",
+    "title": "전기재해 예방 및 안전관리 강화… 전기안전관리 실태 조사",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783197&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "전기재해 예방 및 안전관리 강화… 전기안전관리 실태 조사"
+  },
+  {
+    "id": "gov_press_156783196",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 환경부",
+    "publisher": "환경부",
+    "title": "한-타지키스탄 태양광 국제개발협력(ODA) 사업 준공식 개최",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783196&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "한-타지키스탄 태양광 국제개발협력(ODA) 사업 준공식 개최"
+  },
+  {
+    "id": "gov_press_156783194",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 국토교통부",
+    "publisher": "국토교통부",
+    "title": "도시의 오늘과 미래를 한눈에 … 29일부터 도시·지역혁신 박람회",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783194&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "도시의 오늘과 미래를 한눈에 … 29일부터 도시·지역혁신 박람회"
+  },
+  {
+    "id": "gov_press_156783193",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 해양수산부",
+    "publisher": "해양수산부",
+    "title": "우리나라가 제안한 '선상탄소포집장치(OCCS) 임시안전지침', 국제해사기구(IMO) 기본안 채택",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783193&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "우리나라가 제안한 '선상탄소포집장치(OCCS) 임시안전지침', 국제해사기구(IMO) 기본안 채택"
+  },
+  {
+    "id": "gov_press_156783192",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 해양수산부",
+    "publisher": "해양수산부",
+    "title": "기후변화 가속화에 대비해 양식수산물 재해보험 개편 추진",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783192&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "기후변화 가속화에 대비해 양식수산물 재해보험 개편 추진"
+  },
+  {
+    "id": "gov_press_156783191",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 해양수산부",
+    "publisher": "해양수산부",
+    "title": "해양수산부, 해양수산 건설공사 특별 관리 대상 사업 하반기 현장점검 실시",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783191&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "해양수산부, 해양수산 건설공사 특별 관리 대상 사업 하반기 현장점검 실시"
+  },
+  {
+    "id": "gov_press_156783190",
+    "keyword": "보도자료",
+    "type": "news",
+    "badge": "🏛️ 해양수산부",
+    "publisher": "해양수산부",
+    "title": "연안 선박 신규 건조 지원으로 바닷길은 안전하게, 연안 물류 경쟁력은 탄탄하게!",
+    "time": "2026-09-27 09:00:00",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783190&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
+    "content": "연안 선박 신규 건조 지원으로 바닷길은 안전하게, 연안 물류 경쟁력은 탄탄하게!"
+  },
+  {
     "id": "gov_press_156783181",
     "keyword": "보도자료",
     "type": "news",
@@ -487,7 +608,7 @@
     "publisher": "문화체육관광부",
     "title": "문체부 장관, 한-멕시코 문화협력 방안 논의",
     "time": "2026-09-25 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783181&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783181&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "문체부 장관, 한-멕시코 문화협력 방안 논의"
   },
   {
@@ -498,7 +619,7 @@
     "publisher": "외교부",
     "title": "한-멕시코 투자보장협정 개정 협상 타결",
     "time": "2026-09-25 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783180&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783180&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "한-멕시코 투자보장협정 개정 협상 타결"
   },
   {
@@ -509,7 +630,7 @@
     "publisher": "외교부",
     "title": "제81차 유엔총회 계기 「G7 개발장관회의」 결과",
     "time": "2026-09-24 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783168&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783168&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "제81차 유엔총회 계기 「G7 개발장관회의」 결과"
   },
   {
@@ -520,7 +641,7 @@
     "publisher": "외교부",
     "title": "제81차 유엔총회 계기 「에볼라 대응 관련 G20 외교장관회의」 결과",
     "time": "2026-09-24 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783167&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783167&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "제81차 유엔총회 계기 「에볼라 대응 관련 G20 외교장관회의」 결과"
   },
   {
@@ -531,7 +652,7 @@
     "publisher": "외교부",
     "title": "조현 장관, UN총회 계기 양자 외교장관 회담 개최",
     "time": "2026-09-24 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783166&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783166&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "조현 장관, UN총회 계기 양자 외교장관 회담 개최"
   },
   {
@@ -542,7 +663,7 @@
     "publisher": "국토교통부",
     "title": "[보도자료] 한성숙 국무총리, 추석 명절 대비 철도 수송·안전 점검",
     "time": "2026-09-24 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783165&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783165&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "[보도자료] 한성숙 국무총리, 추석 명절 대비 철도 수송·안전 점검"
   },
   {
@@ -553,7 +674,7 @@
     "publisher": "국무조정실",
     "title": "[보도자료] 한성숙 국무총리 스틸 신임 주한미국대사 면담",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783161&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783161&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "[보도자료] 한성숙 국무총리 스틸 신임 주한미국대사 면담"
   },
   {
@@ -564,7 +685,7 @@
     "publisher": "국토교통부",
     "title": "[장관동정] 추석 귀성길 안전·편의 빈틈없도록 … 주요 교통현장 집중 점검",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783160&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783160&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "[장관동정] 추석 귀성길 안전·편의 빈틈없도록 … 주요 교통현장 집중 점검"
   },
   {
@@ -575,7 +696,7 @@
     "publisher": "국방부",
     "title": "강신철 국방부장관, 취임 후 첫 공식 현장지도로 서부전선 최전방 부대 방문",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783158&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783158&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "강신철 국방부장관, 취임 후 첫 공식 현장지도로 서부전선 최전방 부대 방문"
   },
   {
@@ -586,7 +707,7 @@
     "publisher": "국토교통부",
     "title": "[설명] 국토교통부는 국민 안전을 최우선으로 조속히 대안을 결정할 계획입니다.",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783159&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783159&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "[설명] 국토교통부는 국민 안전을 최우선으로 조속히 대안을 결정할 계획입니다."
   },
   {
@@ -597,7 +718,7 @@
     "publisher": "국무조정실",
     "title": "[보도자료] 한성숙 국무총리 추석연휴 비상근무기관 격려",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783157&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783157&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "[보도자료] 한성숙 국무총리 추석연휴 비상근무기관 격려"
   },
   {
@@ -608,7 +729,7 @@
     "publisher": "해양수산부",
     "title": "(동정) 남재헌 해수부 차관, 울산항 위험물 하역 현장 방문, 철저한 해양 안전관리 당부",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783156&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783156&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "(동정) 남재헌 해수부 차관, 울산항 위험물 하역 현장 방문, 철저한 해양 안전관리 당부"
   },
   {
@@ -619,7 +740,7 @@
     "publisher": "해양수산부",
     "title": "(동정) 추석 연휴 앞두고 수산 성수품 수급·할인 실태 점검",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783155&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783155&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "(동정) 추석 연휴 앞두고 수산 성수품 수급·할인 실태 점검"
   },
   {
@@ -630,7 +751,7 @@
     "publisher": "법무부",
     "title": "출입국·외국인정책본부장, 추석 연휴 대비 출입국 현장 점검",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783164&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783164&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "출입국·외국인정책본부장, 추석 연휴 대비 출입국 현장 점검"
   },
   {
@@ -641,7 +762,7 @@
     "publisher": "기획재정부",
     "title": "[보도참고] 경제협력개발기구, 9월 중간 경제전망 발표",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783154&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783154&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "[보도참고] 경제협력개발기구, 9월 중간 경제전망 발표"
   },
   {
@@ -652,7 +773,7 @@
     "publisher": "산림청",
     "title": "양산산림항공관리소, 통도사 일원서 대대적 합동 캠페인",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783153&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783153&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "양산산림항공관리소, 통도사 일원서 대대적 합동 캠페인"
   },
   {
@@ -663,7 +784,7 @@
     "publisher": "방송미디어통신위원회",
     "title": "2026년 제37차 위원회 결과",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783149&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783149&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "2026년 제37차 위원회 결과"
   },
   {
@@ -674,7 +795,7 @@
     "publisher": "산림청",
     "title": "충주국유림관리소, 추석 맞이 아동복지시설 위문 및 규제합리화 홍보 실시",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783147&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783147&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "충주국유림관리소, 추석 맞이 아동복지시설 위문 및 규제합리화 홍보 실시"
   },
   {
@@ -685,7 +806,7 @@
     "publisher": "산림청",
     "title": "충주국유림관리소, 추석 연휴 산불예방 총력 대응",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783145&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783145&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "충주국유림관리소, 추석 연휴 산불예방 총력 대응"
   },
   {
@@ -696,7 +817,7 @@
     "publisher": "보건복지부",
     "title": "추석연휴에도 자살예방상담은 109",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783148&pageIndex=1&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783148&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "추석연휴에도 자살예방상담은 109"
   },
   {
@@ -707,7 +828,7 @@
     "publisher": "보건복지부",
     "title": "추석연휴 앞두고 응급환자 이송체계와 중증응급환자 진료체계 점검",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783142&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783142&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "추석연휴 앞두고 응급환자 이송체계와 중증응급환자 진료체계 점검"
   },
   {
@@ -718,7 +839,7 @@
     "publisher": "개인정보보호위원회",
     "title": "에이전틱 인공지능(Agentic AI)과 개인정보보호, 민관 협력을 통한 합리적 규율체계 모색",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783143&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783143&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "에이전틱 인공지능(Agentic AI)과 개인정보보호, 민관 협력을 통한 합리적 규율체계 모색"
   },
   {
@@ -729,7 +850,7 @@
     "publisher": "산림청",
     "title": "가을 주말 국립수목원 주차공간 넓어진다…88면 추가 시범 개방",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783141&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783141&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "가을 주말 국립수목원 주차공간 넓어진다…88면 추가 시범 개방"
   },
   {
@@ -740,7 +861,7 @@
     "publisher": "농림축산식품부",
     "title": "김종구 차관, 한가위를 앞두고  아이들과 농식품으로 정(情)을 나누다",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783133&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783133&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "김종구 차관, 한가위를 앞두고  아이들과 농식품으로 정(情)을 나누다"
   },
   {
@@ -751,7 +872,7 @@
     "publisher": "보건복지부",
     "title": "추석 앞두고 서울요양원 찾아 어르신 돌봄 살피고 현장 격려",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783136&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783136&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "추석 앞두고 서울요양원 찾아 어르신 돌봄 살피고 현장 격려"
   },
   {
@@ -762,7 +883,7 @@
     "publisher": "산림청",
     "title": "지위는 낮추고, 경청은 높이고... -국립산림과학원, 갑질근절과 상호 존중 위한 청렴 캠페인 실시",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783135&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783135&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "지위는 낮추고, 경청은 높이고... -국립산림과학원, 갑질근절과 상호 존중 위한 청렴 캠페인 실시"
   },
   {
@@ -773,7 +894,7 @@
     "publisher": "소방청",
     "title": "소방청, 전국 소방지휘관 회의 개최 \"추석 연휴 국민 안전 빈틈없도록\"…전국 소방 대응태세 집중 점검",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783137&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783137&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "소방청, 전국 소방지휘관 회의 개최 \"추석 연휴 국민 안전 빈틈없도록\"…전국 소방 대응태세 집중 점검"
   },
   {
@@ -784,7 +905,7 @@
     "publisher": "농림축산식품부",
     "title": "김종구 차관, 추석 성수품 수급 점검 및 전통시장 현장 목소리 청취",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783126&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783126&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "김종구 차관, 추석 성수품 수급 점검 및 전통시장 현장 목소리 청취"
   },
   {
@@ -795,7 +916,7 @@
     "publisher": "산림청",
     "title": "풍성한 가을 결실에 청렴을 더해... - 국립산림과학원, 추석맞이 숲푸드 팝업스토어 방문객 대상 일상 속 청렴 가치 공유",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783125&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783125&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "풍성한 가을 결실에 청렴을 더해... - 국립산림과학원, 추석맞이 숲푸드 팝업스토어 방문객 대상 일상 속 청렴 가치 공유"
   },
   {
@@ -806,7 +927,7 @@
     "publisher": "산업통상부",
     "title": "(참고자료) EU 산업가속화법 관련 유럽의회  핵심인사 대상 우리측 입장 적극 전달",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783123&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783123&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "(참고자료) EU 산업가속화법 관련 유럽의회  핵심인사 대상 우리측 입장 적극 전달"
   },
   {
@@ -817,7 +938,7 @@
     "publisher": "외교부",
     "title": "유럽-인도태평양 주요 8개국,  지역 간 전략적 연대 강화 및  글로벌 현안 대응 모색",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783120&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783120&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "유럽-인도태평양 주요 8개국,  지역 간 전략적 연대 강화 및  글로벌 현안 대응 모색"
   },
   {
@@ -828,7 +949,7 @@
     "publisher": "산림청",
     "title": "국산 합판·보드 산업 경쟁력 강화 위해 산·연·관 머리 맞대 - 국립산림과학원, 국산 목재 이용 확대부터 품질관리·목조건축까지…산업 실전방안 논의",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783119&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783119&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "국산 합판·보드 산업 경쟁력 강화 위해 산·연·관 머리 맞대 - 국립산림과학원, 국산 목재 이용 확대부터 품질관리·목조건축까지…산업 실전방안 논의"
   },
   {
@@ -839,7 +960,7 @@
     "publisher": "국방부",
     "title": "국방부장관, 미셸 스틸 주한미국대사 접견",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783115&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783115&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "국방부장관, 미셸 스틸 주한미국대사 접견"
   },
   {
@@ -850,7 +971,7 @@
     "publisher": "산림청",
     "title": "일터에서 확인하는 '내 혈관 숫자'…국립수목원 직원 건강 챙긴다",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783117&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783117&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "일터에서 확인하는 '내 혈관 숫자'…국립수목원 직원 건강 챙긴다"
   },
   {
@@ -861,7 +982,7 @@
     "publisher": "행정안전부",
     "title": "골목길 안전부터 장바구니 온기까지,국민 모두가 안심하는 풍성한 한가위",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783114&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783114&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "골목길 안전부터 장바구니 온기까지,국민 모두가 안심하는 풍성한 한가위"
   },
   {
@@ -872,7 +993,7 @@
     "publisher": "외교부",
     "title": "박종한 경제외교조정관, 유럽의회 내수시장·소비자보호위원회 대표단 면담",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783111&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783111&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "박종한 경제외교조정관, 유럽의회 내수시장·소비자보호위원회 대표단 면담"
   },
   {
@@ -883,7 +1004,7 @@
     "publisher": "재외동포청",
     "title": "[보도설명자료] 재외동포협력센터의 재외동포청 통합은 대통령 지시만으로 결정된 사안이 아닙니다",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783110&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783110&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "[보도설명자료] 재외동포협력센터의 재외동포청 통합은 대통령 지시만으로 결정된 사안이 아닙니다"
   },
   {
@@ -894,7 +1015,7 @@
     "publisher": "국민권익위원회",
     "title": "\"입주까지 했는데 16년째 멈춘 대지권 등기\"… 일산 하이파크시티 '재산권 문제' 해결 나서",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783106&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783106&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "\"입주까지 했는데 16년째 멈춘 대지권 등기\"… 일산 하이파크시티 '재산권 문제' 해결 나서"
   },
   {
@@ -905,128 +1026,7 @@
     "publisher": "산업통상부",
     "title": "'26년 8월 주요 유통업체 매출 동향",
     "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783107&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
+    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783107&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-27&endDate=2026-09-27&srchWord=&period=",
     "content": "'26년 8월 주요 유통업체 매출 동향"
-  },
-  {
-    "id": "gov_press_156783104",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 보건복지부",
-    "publisher": "보건복지부",
-    "title": "추석 앞두고 학대피해아동 보호 최일선 종사자 격려 및 현장의견 청취",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783104&pageIndex=2&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "추석 앞두고 학대피해아동 보호 최일선 종사자 격려 및 현장의견 청취"
-  },
-  {
-    "id": "gov_press_156783103",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 보건복지부",
-    "publisher": "보건복지부",
-    "title": "정은경 보건복지부 장관, 서울의료원 응급의료 현장 방문",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783103&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "정은경 보건복지부 장관, 서울의료원 응급의료 현장 방문"
-  },
-  {
-    "id": "gov_press_156783102",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 산림청",
-    "publisher": "산림청",
-    "title": "서부지방산림청, 추석 연휴·가을철 이용객 대비 국가숲길 현장점검",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783102&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "서부지방산림청, 추석 연휴·가을철 이용객 대비 국가숲길 현장점검"
-  },
-  {
-    "id": "gov_press_156783109",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 우주항공청",
-    "publisher": "우주항공청",
-    "title": "추석을 맞아 어르신들과 따뜻한 정 나눠",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783109&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "추석을 맞아 어르신들과 따뜻한 정 나눠"
-  },
-  {
-    "id": "gov_press_156783100",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 산림청",
-    "publisher": "산림청",
-    "title": "안동산림항공관리소, 추석 연휴 산불예방 활동 강화",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783100&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "안동산림항공관리소, 추석 연휴 산불예방 활동 강화"
-  },
-  {
-    "id": "gov_press_156783092",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 보건복지부",
-    "publisher": "보건복지부",
-    "title": "사회보장급여 정기 확인조사 실시, 국민 불편은 줄이고 행정은 효율화",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783092&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "사회보장급여 정기 확인조사 실시, 국민 불편은 줄이고 행정은 효율화"
-  },
-  {
-    "id": "gov_press_156783094",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 인사혁신처",
-    "publisher": "인사혁신처",
-    "title": "2026년 공무원 미술전 입상작 50점 선정",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783094&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "2026년 공무원 미술전 입상작 50점 선정"
-  },
-  {
-    "id": "gov_press_156783093",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 인사혁신처",
-    "publisher": "인사혁신처",
-    "title": "2026년 9월 퇴직공직자 취업심사 결과 공개",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783093&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "2026년 9월 퇴직공직자 취업심사 결과 공개"
-  },
-  {
-    "id": "gov_press_156783098",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 행정안전부",
-    "publisher": "행정안전부",
-    "title": "윤호중 장관, UN 사회연대경제 고위급 회의 참석… 국제사회 협력 주도",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783098&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "윤호중 장관, UN 사회연대경제 고위급 회의 참석… 국제사회 협력 주도"
-  },
-  {
-    "id": "gov_press_156783096",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 국가데이터처",
-    "publisher": "국가데이터처",
-    "title": "2026년 8월 국내인구이동통계",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783096&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "2026년 8월 국내인구이동통계"
-  },
-  {
-    "id": "gov_press_156783095",
-    "keyword": "보도자료",
-    "type": "news",
-    "badge": "🏛️ 국가데이터처",
-    "publisher": "국가데이터처",
-    "title": "2026년 7월 인구동향(출생, 사망, 혼인, 이혼)",
-    "time": "2026-09-23 09:00:00",
-    "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783095&pageIndex=3&repCodeType=&repCode=&startDate=2025-09-26&endDate=2026-09-26&srchWord=&period=",
-    "content": "2026년 7월 인구동향(출생, 사망, 혼인, 이혼)"
   }
 ]

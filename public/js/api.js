@@ -43,6 +43,9 @@ const IssueApi = (() => {
         if (res.ok) {
           const liveData = await res.json();
           if (Array.isArray(liveData) && liveData.length > 0) {
+            try {
+              localStorage.setItem(`cached_tab_issues_${tabName}`, JSON.stringify(liveData));
+            } catch (e) {}
             return liveData;
           }
         }
@@ -53,6 +56,16 @@ const IssueApi = (() => {
     },
 
     async loadDefaultIssues(tabName = 'realtime') {
+      try {
+        const localCached = localStorage.getItem(`cached_tab_issues_${tabName}`);
+        if (localCached) {
+          const parsed = JSON.parse(localCached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+
       const timestamp = Date.now();
       const paths = [
         `./data/issues_${tabName}.json?v=78&t=${timestamp}`,
