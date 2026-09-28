@@ -848,12 +848,6 @@ function saveCurrentPaperScroll() {
       } catch (e) { }
     }
   }
-
-  try {
-    if (!history.state || !history.state.articleOpen) {
-      history.pushState({ articleOpen: true, navTab: currentNavTab, provider: currentPaperProvider }, '');
-    }
-  } catch (e) { }
 }
 
 function restorePaperScrollY() {
@@ -889,6 +883,11 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
   if (picker) picker.value = currentPaperDate;
 
   const savedSection = sessionStorage.getItem(`paper_sec_${cacheKey}`) || localStorage.getItem(`paper_sec_${cacheKey}`);
+  const container = document.getElementById('feedContainer');
+
+  if (forceRefresh && container) {
+    container.removeAttribute('data-rendered-key');
+  }
 
   // 1. Instant rendering from Memory / Session / Local Storage Cache (0ms delay, no loading spinner)
   if (!forceRefresh) {
@@ -907,9 +906,9 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
     }
   }
 
-  // 2. Only show loading spinner if NO cached data exists
-  const container = document.getElementById('feedContainer');
-  if (container) {
+  // 2. Only show loading spinner if NO cards rendered and data not key-matched
+  const currentKey = `${currentPaperProvider}_${currentPaperDate}_${currentPaperSection}`;
+  if (container && (!container.querySelector('.issue-card') || container.getAttribute('data-rendered-key') !== currentKey)) {
     container.innerHTML = `
       <div style="text-align:center; padding: 60px 20px; color:#64748B;">
         <span class="spin-icon" style="font-size:24px; display:inline-block; margin-bottom:8px;">🔄</span>
@@ -929,7 +928,7 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
     renderPaperView();
   } catch (err) {
     console.warn('Paper fetch error:', err);
-    if (container) {
+    if (container && !container.querySelector('.issue-card')) {
       container.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:#EF4444;">지면 데이터를 불러오는 중 오류가 발생했습니다.</div>`;
     }
   }
