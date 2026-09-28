@@ -33,6 +33,15 @@ def clean_html(text):
         return ""
     return re.sub(r'<[^>]+>', '', text).strip()
 
+def normalize_khan_url(link):
+    if not link:
+        return "#"
+    clean_link = link.split("?")[0].strip()
+    match = re.search(r'/article/(\d+)', clean_link)
+    if match:
+        return f"https://www.khan.co.kr/article/{match.group(1)}"
+    return clean_link
+
 def fetch_single_feed(item_tuple):
     section_name, rss_url = item_tuple
     articles = []
@@ -52,9 +61,8 @@ def fetch_single_feed(item_tuple):
                 if not title or len(title) < 4:
                     continue
 
-                link = l_el.text.strip() if l_el is not None and l_el.text else "#"
-                if "khan.co.kr" in link and "?" in link:
-                    link = link.split("?")[0]
+                raw_link = l_el.text.strip() if l_el is not None and l_el.text else "#"
+                link = normalize_khan_url(raw_link)
                 desc = clean_html(d_el.text) if d_el is not None and d_el.text else title
 
                 kst = timezone(timedelta(hours=9))
@@ -254,7 +262,8 @@ def fetch_khan_from_naver(clean_ymd=None):
                     title = title.rsplit(" - ", 1)[0].strip()
                 if not title or len(title) < 4:
                     continue
-                link = item.get("originallink") or item.get("link") or "#"
+                raw_link = item.get("originallink") or item.get("link") or "#"
+                link = normalize_khan_url(raw_link)
                 if link in seen_urls:
                     continue
                 seen_urls.add(link)
