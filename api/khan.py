@@ -50,7 +50,7 @@ def fetch_single_feed(item_tuple):
         if res.status_code == 200 and len(res.content) > 100:
             soup = ET.fromstring(res.content)
             items = soup.findall('.//item')
-            for idx, item in enumerate(items):
+            for idx, item in enumerate(items[:15]):
                 t_el = item.find('title')
                 l_el = item.find('link')
                 d_el = item.find('description')
@@ -63,7 +63,7 @@ def fetch_single_feed(item_tuple):
 
                 raw_link = l_el.text.strip() if l_el is not None and l_el.text else "#"
                 link = normalize_khan_url(raw_link)
-                desc = clean_html(d_el.text) if d_el is not None and d_el.text else title
+                desc = clean_html(d_el.text)[:120] if d_el is not None and d_el.text else title
 
                 kst = timezone(timedelta(hours=9))
                 pub_time = datetime.now(kst).strftime("%Y/%m/%d")

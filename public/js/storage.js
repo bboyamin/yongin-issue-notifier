@@ -209,8 +209,8 @@ const StorageManager = (() => {
       if (!key || !data) return;
       try {
         const str = JSON.stringify(data);
-        sessionStorage.setItem(`paper_cache_${key}`, str);
-        localStorage.setItem(`paper_cache_${key}`, str);
+        try { sessionStorage.setItem(`paper_cache_${key}`, str); } catch (e) {}
+        try { localStorage.setItem(`paper_cache_${key}`, str); } catch (e) {}
       } catch (e) {}
     }
   };
