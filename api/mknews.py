@@ -5,6 +5,7 @@ import sys
 import os
 import requests
 import urllib3
+import hashlib
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor
@@ -17,7 +18,6 @@ headers = {
 }
 
 MK_RSS_SECTIONS = [
-    ("종합", "https://www.mk.co.kr/rss/30000001/"),
     ("정치", "https://www.mk.co.kr/rss/30200030/"),
     ("경제", "https://www.mk.co.kr/rss/30100041/"),
     ("증권", "https://www.mk.co.kr/rss/50200011/"),
@@ -28,13 +28,16 @@ MK_RSS_SECTIONS = [
 def fetch_single_mk_rss(section_tuple):
     section_title, rss_url = section_tuple
     sec_articles = []
-    formatted_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
+    kst = timezone(timedelta(hours=9))
+    today_dt = datetime.now(kst)
+    formatted_date = today_dt.strftime("%Y/%m/%d")
+
     try:
         res = requests.get(rss_url, headers=headers, verify=False, timeout=6)
         if res.status_code == 200 and len(res.text) > 300:
             soup = BeautifulSoup(res.text, "xml")
             items = soup.find_all("item")
-            for idx, item in enumerate(items):
+            for idx, item in enumerate(items[:15]):
                 title = item.title.text.strip() if item.title else ""
                 link = item.link.text.strip() if item.link else ""
                 if not title or not link:
@@ -42,19 +45,25 @@ def fetch_single_mk_rss(section_tuple):
                 
                 clean_title = BeautifulSoup(title, "html.parser").text.strip()
                 desc = item.description.text.strip() if item.description else clean_title
-                clean_desc = BeautifulSoup(desc, "html.parser").text.strip()
+                clean_desc = BeautifulSoup(desc, "html.parser").text.strip()[:120]
 
                 pub_date = item.pubDate.text.strip() if item.pubDate else ""
+                pub_time = formatted_date
+                item_dt = today_dt
                 if pub_date:
                     try:
-                        pub_time = datetime.strptime(pub_date[:16], "%a, %d %b %Y").strftime("%Y/%m/%d")
+                        item_dt = datetime.strptime(pub_date[:16], "%a, %d %b %Y").replace(tzinfo=kst)
+                        pub_time = item_dt.strftime("%Y/%m/%d")
                     except Exception:
                         pub_time = formatted_date
-                else:
-                    pub_time = formatted_date
 
+                # Filter out old articles older than 3 days for today feed
+                if (today_dt - item_dt).days > 3:
+                    continue
+
+                art_id = f"mknews_{hashlib.md5(link.encode('utf-8')).hexdigest()[:12]}"
                 article_obj = {
-                    "id": f"mknews_{section_title}_{idx}_{int(datetime.now().timestamp())}",
+                    "id": art_id,
                     "keyword": "매일경제",
                     "type": "news",
                     "badge": f"📈 매일경제 · {section_title}",
@@ -73,13 +82,17 @@ def fetch_single_mk_rss(section_tuple):
 def fetch_mknews_from_rss():
     categorized = {}
     all_articles = []
+    seen_urls = set()
 
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         results = executor.map(fetch_single_mk_rss, MK_RSS_SECTIONS)
         for section_title, sec_articles in results:
             if sec_articles:
                 categorized[section_title] = sec_articles
-                all_articles.extend(sec_articles)
+                for a in sec_articles:
+                    if a["url"] not in seen_urls:
+                        seen_urls.add(a["url"])
+                        all_articles.append(a)
 
     if all_articles:
         sections = list(categorized.keys())
@@ -104,7 +117,7 @@ def categorize_mk_title(t):
         return "기업"
     elif any(k in t for k in ["연예", "가수", "배우", "드라마", "영화", "스포츠", "올림픽", "아시안게임", "선수", "축구", "야구", "농구", "골프", "펜싱", "UFC", "홈런", "승리", "패배", "감독", "공연", "전시", "예능", "방송", "MK포토", "MK현장", "포토"]):
         return "문화·연예"
-    return "종합"
+    return "정치"
 
 def fetch_past_q(q):
     url = f"https://news.google.com/rss/search?q={q}&hl=ko&gl=KR&ceid=KR:ko"
@@ -148,10 +161,15 @@ def fetch_mknews_for_past_date(ymd_str):
 
         categorized = {}
         all_articles = []
+        seen_urls = set()
         for idx, (link, title) in enumerate(dedup_items.items()):
+            if link in seen_urls:
+                continue
+            seen_urls.add(link)
             section = categorize_mk_title(title)
+            art_id = f"mknews_{hashlib.md5(link.encode('utf-8')).hexdigest()[:12]}"
             article_obj = {
-                "id": f"mknews_past_{ymd_str}_{idx}",
+                "id": art_id,
                 "keyword": "매일경제",
                 "type": "news",
                 "badge": f"📈 매일경제 · {section}",
@@ -159,7 +177,7 @@ def fetch_mknews_for_past_date(ymd_str):
                 "title": title,
                 "time": formatted_date,
                 "url": link,
-                "content": title,
+                "content": title[:120],
                 "section": section
             }
             all_articles.append(article_obj)
@@ -196,6 +214,7 @@ def fetch_mknews_from_naver(clean_ymd=None):
             items = res.json().get("items", [])
             categorized = {}
             all_articles = []
+            seen_urls = set()
             formatted_date = datetime.now(timezone(timedelta(hours=9))).strftime("%Y/%m/%d")
             if clean_ymd and len(clean_ymd) == 8:
                 try:
@@ -205,13 +224,17 @@ def fetch_mknews_from_naver(clean_ymd=None):
 
             for idx, item in enumerate(items):
                 clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
-                clean_desc = BeautifulSoup(item.get("description", ""), "html.parser").text.strip()
+                clean_desc = BeautifulSoup(item.get("description", ""), "html.parser").text.strip()[:120]
                 link = item.get("originallink") or item.get("link")
+                if not link or link in seen_urls:
+                    continue
+                seen_urls.add(link)
 
                 section = categorize_mk_title(clean_title)
+                art_id = f"mknews_{hashlib.md5(link.encode('utf-8')).hexdigest()[:12]}"
 
                 article_obj = {
-                    "id": f"mknews_naver_{idx}_{int(datetime.now().timestamp())}",
+                    "id": art_id,
                     "keyword": "매일경제",
                     "type": "news",
                     "badge": f"📈 매일경제 · {section}",
