@@ -221,15 +221,21 @@ async function refreshFeed() {
 
 // 100% Original Realtime Feed Fetcher
 async function fetchKeywordIssues(keywordsList) {
+  const kwKey = keywordsList.join(',');
   showToast(`🔄 [${keywordsList.join(', ')}] 소식 수집 중...`);
   try {
     const issues = await IssueApi.fetchKeywordIssues(keywordsList);
-    currentIssues = issues || [];
+    if (issues && issues.length > 0) {
+      tabFeeds['feed'] = issues;
+      keywordFeeds[kwKey] = issues;
+      currentIssues = issues;
+    }
   } catch (e) {
     console.warn('Realtime feed fetch error:', e);
-    currentIssues = [];
   } finally {
-    renderIssues();
+    if (currentNavTab === 'feed') {
+      renderIssues();
+    }
   }
 }
 
@@ -299,6 +305,25 @@ async function switchNavTab(tab, btn) {
         currentKeyword = userKeywords.length ? userKeywords[0] : '용인시';
       }
       renderKeywordChips();
+
+      // Immediately render cached feed state from memory or localStorage
+      const kwKey = [currentKeyword].join(',');
+      const existingFeed = tabFeeds['feed'] || keywordFeeds[kwKey];
+      if (existingFeed && existingFeed.length > 0) {
+        currentIssues = existingFeed;
+        renderIssues();
+      } else {
+        try {
+          const cached = await IssueApi.loadDefaultIssues('realtime');
+          if (cached && cached.length > 0) {
+            tabFeeds['feed'] = cached;
+            keywordFeeds[kwKey] = cached;
+            currentIssues = cached;
+            renderIssues();
+          }
+        } catch (e) {}
+      }
+
       await fetchKeywordIssues([currentKeyword]);
     } else {
       if (keywordChips) keywordChips.style.display = 'none';

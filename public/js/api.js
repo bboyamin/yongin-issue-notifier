@@ -18,6 +18,10 @@ const IssueApi = (() => {
         if (res.ok) {
           const liveData = await res.json();
           if (Array.isArray(liveData) && liveData.length > 0) {
+            try {
+              localStorage.setItem('cached_tab_issues_realtime', JSON.stringify(liveData));
+              localStorage.setItem('cached_tab_issues_feed', JSON.stringify(liveData));
+            } catch (e) {}
             return liveData;
           }
         }
