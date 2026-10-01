@@ -255,12 +255,16 @@ function renderSkeletonFeed(keywordName = '용인시') {
 }
 
 // 100% Original Realtime Feed Fetcher
-async function fetchKeywordIssues(keywordsList) {
+async function fetchKeywordIssues(keywordsList, options = { silent: false }) {
   const kwKey = keywordsList.join(',');
-  showToast(`🔄 [${keywordsList.join(', ')}] 소식 수집 중...`);
+  const hasCache = currentIssues && currentIssues.length > 0;
 
-  // Render Skeleton UI if no current issues or cache exists
-  if ((!currentIssues || currentIssues.length === 0) && currentNavTab === 'feed') {
+  if (!options.silent && !hasCache) {
+    showToast(`🔄 [${keywordsList.join(', ')}] 소식 수집 중...`);
+  }
+
+  // Render Skeleton UI ONLY if no current issues or cache exists
+  if (!hasCache && currentNavTab === 'feed') {
     renderSkeletonFeed(keywordsList.join(', '));
   }
 
@@ -269,6 +273,11 @@ async function fetchKeywordIssues(keywordsList) {
     if (issues && issues.length > 0) {
       tabFeeds['feed'] = issues;
       keywordFeeds[kwKey] = issues;
+      try {
+        localStorage.setItem(`cached_tab_issues_${kwKey}`, JSON.stringify(issues));
+        localStorage.setItem('cached_tab_issues_realtime', JSON.stringify(issues));
+        localStorage.setItem('cached_tab_issues_feed', JSON.stringify(issues));
+      } catch (e) {}
       currentIssues = issues;
     }
   } catch (e) {
@@ -355,12 +364,20 @@ async function switchNavTab(tab, btn) {
         renderIssues();
       } else {
         try {
-          const cached = await IssueApi.loadDefaultIssues('realtime');
-          if (cached && cached.length > 0) {
-            tabFeeds['feed'] = cached;
-            keywordFeeds[kwKey] = cached;
-            currentIssues = cached;
-            renderIssues();
+          const localCached = localStorage.getItem(`cached_tab_issues_${kwKey}`) || 
+                              localStorage.getItem('cached_tab_issues_realtime') || 
+                              localStorage.getItem('cached_tab_issues_feed');
+          if (localCached) {
+            const parsed = JSON.parse(localCached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              tabFeeds['feed'] = parsed;
+              keywordFeeds[kwKey] = parsed;
+              currentIssues = parsed;
+              renderIssues();
+            } else {
+              currentIssues = [];
+              renderSkeletonFeed(currentKeyword);
+            }
           } else {
             currentIssues = [];
             renderSkeletonFeed(currentKeyword);
@@ -371,7 +388,7 @@ async function switchNavTab(tab, btn) {
         }
       }
 
-      await fetchKeywordIssues([currentKeyword]);
+      await fetchKeywordIssues([currentKeyword], { silent: true });
     } else {
       if (keywordChips) keywordChips.style.display = 'none';
       if (tab === 'bookmark') {
@@ -1272,7 +1289,10 @@ document.addEventListener('DOMContentLoaded', () => {
     switchNavTab(savedTab, navBtn);
   } else {
     // Restore cached feed state instantly on initial load if available
-    const localCached = localStorage.getItem('cached_tab_issues_realtime') || localStorage.getItem('cached_tab_issues_feed');
+    const kwKey = [currentKeyword].join(',');
+    const localCached = localStorage.getItem(`cached_tab_issues_${kwKey}`) || 
+                        localStorage.getItem('cached_tab_issues_realtime') || 
+                        localStorage.getItem('cached_tab_issues_feed');
     if (localCached) {
       try {
         const parsed = JSON.parse(localCached);
@@ -1289,6 +1309,6 @@ document.addEventListener('DOMContentLoaded', () => {
       renderSkeletonFeed(currentKeyword);
     }
 
-    fetchKeywordIssues([currentKeyword]);
+    fetchKeywordIssues([currentKeyword], { silent: true });
   }
 });
