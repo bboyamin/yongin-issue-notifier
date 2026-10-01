@@ -1336,3 +1336,48 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchKeywordIssues([currentKeyword], { silent: true });
   }
 });
+
+function openInstallModal() {
+  const modal = document.getElementById('installModal');
+  if (modal) modal.classList.add('show');
+}
+
+function closeInstallModal() {
+  const modal = document.getElementById('installModal');
+  if (modal) modal.classList.remove('show');
+}
+
+function switchInstallTab(type) {
+  const iosGuide = document.getElementById('installIosGuide');
+  const androidGuide = document.getElementById('installAndroidGuide');
+  const iosBtn = document.getElementById('tabIosBtn');
+  const androidBtn = document.getElementById('tabAndroidBtn');
+
+  if (type === 'ios') {
+    if (iosGuide) iosGuide.style.display = 'block';
+    if (androidGuide) androidGuide.style.display = 'none';
+    if (iosBtn) {
+      iosBtn.style.background = 'white';
+      iosBtn.style.color = '#1E293B';
+      iosBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.06)';
+    }
+    if (androidBtn) {
+      androidBtn.style.background = 'transparent';
+      androidBtn.style.color = '#64748B';
+      androidBtn.style.boxShadow = 'none';
+    }
+  } else {
+    if (iosGuide) iosGuide.style.display = 'none';
+    if (androidGuide) androidGuide.style.display = 'block';
+    if (androidBtn) {
+      androidBtn.style.background = 'white';
+      androidBtn.style.color = '#1E293B';
+      androidBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.06)';
+    }
+    if (iosBtn) {
+      iosBtn.style.background = 'transparent';
+      iosBtn.style.color = '#64748B';
+      iosBtn.style.boxShadow = 'none';
+    }
+  }
+}

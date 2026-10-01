@@ -190,8 +190,16 @@
               사내 포털에서 개인 발급키를 발급받아 입력하시면 AI 3줄 요약이 가동됩니다.
             </div>
 
+            <!-- Install Guide Button -->
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #E2E8F0; text-align: center;">
+              <button type="button" onclick="openInstallModal()"
+                style="width: 100%; background: linear-gradient(135deg, #2563EB, #1D4ED8); color: white; border: none; padding: 10px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(37,99,235,0.2);">
+                📲 스마트폰 홈 화면에 바로가기 앱 추가 (가이드)
+              </button>
+            </div>
+
             <!-- Reset Cache Button for Testing First-Time Experience -->
-            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #CBD5E1; text-align: center;">
+            <div style="margin-top: 10px; text-align: center;">
               <button type="button" onclick="resetAppCache()"
                 style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer;">
                 🧹 로컬 저장소 캐시 초기화
@@ -264,6 +272,72 @@
       <button type="button" onclick="closeOnboardingModal()"
         style="width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
         🚀 확인하고 시작하기
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Smartphone Home Screen Install Guide Modal -->
+  <div class="modal-overlay" id="installModal" style="z-index: 10001; align-items: center; justify-content: center; padding: 16px;">
+    <div class="modal-content" style="max-width: 400px; width: 100%; padding: 22px 18px 18px; border-radius: 20px; text-align: center; max-height: 88vh; display: flex; flex-direction: column;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 17px; font-weight: 800; color: var(--text-main); margin: 0;">📲 홈 화면 앱 추가 안내</h3>
+        <button type="button" onclick="closeInstallModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94A3B8;">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 14px; background: #F1F5F9; padding: 4px; border-radius: 10px;">
+        <button id="tabIosBtn" onclick="switchInstallTab('ios')" style="flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; background: white; color: #1E293B; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.06);">🍏 아이폰 (iOS)</button>
+        <button id="tabAndroidBtn" onclick="switchInstallTab('android')" style="flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; background: transparent; color: #64748B; cursor: pointer;">🤖 안드로이드 (삼성/크롬)</button>
+      </div>
+
+      <!-- iOS Guide -->
+      <div id="installIosGuide" style="text-align: left; font-size: 12px; line-height: 1.5; color: #334155; overflow-y: auto; flex: 1; padding-right: 4px;">
+        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 10px; border-radius: 10px; margin-bottom: 10px; color: #1E40AF; font-size: 11.5px;">
+          💡 <strong>카카오톡 링크로 접속하셨나요?</strong><br>
+          우측 하단 [···] 터치 ➔ <strong>[다른 브라우저(Safari)로 열기]</strong>를 선택한 후 진행해 주세요!
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+            <span style="font-size: 20px;">1️⃣</span>
+            <div>Safari 하단 중앙 <strong>공유 버튼 (⬆️)</strong> 클릭</div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+            <span style="font-size: 20px;">2️⃣</span>
+            <div>메뉴를 스크롤하여 <strong>[홈 화면에 추가 ➕]</strong> 선택</div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+            <span style="font-size: 20px;">3️⃣</span>
+            <div>우측 상단 <strong>[추가]</strong> 터치 ➔ 바탕화면에 앱 생성!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Android Guide -->
+      <div id="installAndroidGuide" style="display: none; text-align: left; font-size: 12px; line-height: 1.5; color: #334155; overflow-y: auto; flex: 1; padding-right: 4px;">
+        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 10px; border-radius: 10px; margin-bottom: 10px; color: #1E40AF; font-size: 11.5px;">
+          💡 <strong>카카오톡 링크로 접속하셨나요?</strong><br>
+          우측 하단 [···] 터치 ➔ <strong>[다른 브라우저(삼성인터넷/Chrome)로 열기]</strong>를 선택해 주세요!
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+            <span style="font-size: 20px;">1️⃣</span>
+            <div>브라우저 <strong>메뉴 버튼 (⋮ 또는 ≡)</strong> 클릭</div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+            <span style="font-size: 20px;">2️⃣</span>
+            <div><strong>[현재 페이지 추가]</strong> ➔ <strong>[홈 화면]</strong> (또는 <strong>[앱 설치]</strong>)</div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+            <span style="font-size: 20px;">3️⃣</span>
+            <div><strong>[추가]</strong> 터치 ➔ 바탕화면에 바로가기 생성!</div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" onclick="closeInstallModal()"
+        style="margin-top: 14px; width: 100%; background: #475569; color: white; border: none; padding: 11px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;">
+        닫기
       </button>
 
     </div>
