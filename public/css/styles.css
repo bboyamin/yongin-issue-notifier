@@ -157,11 +157,13 @@ body {
 /* Main App Screen */
 .app-screen {
   flex: 1;
+  min-height: 0;
   background: #F8FAFC;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  height: 100%;
 }
 
 /* App Header */
@@ -169,6 +171,7 @@ body {
   background: #FFFFFF;
   padding: 12px 16px 10px;
   border-bottom: 1px solid #E2E8F0;
+  flex-shrink: 0;
 }
 
 .app-title-bar {
@@ -376,11 +379,63 @@ body {
 /* Feed Container */
 .feed-container {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 12px 12px 90px 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Pull To Refresh (PTR) Banner */
+.ptr-banner {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+  color: #4F46E5;
+  border: 1px solid #C7D2FE;
+  border-radius: 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.12);
+  transition: height 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease, margin-bottom 0.25s ease;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.ptr-banner.pulling {
+  transition: none !important;
+}
+
+.ptr-banner.refreshing {
+  height: 46px !important;
+  opacity: 1 !important;
+  margin-bottom: 10px !important;
+}
+
+.ptr-banner .ptr-icon {
+  font-size: 17px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.ptr-banner.release .ptr-icon {
+  transform: rotate(180deg);
+}
+
+.ptr-banner.refreshing .ptr-icon {
+  animation: ptrSpin 0.8s linear infinite;
+}
+
+@keyframes ptrSpin {
+  100% { transform: rotate(360deg); }
 }
 
 /* Real-time Status Banner */
@@ -933,9 +988,11 @@ input:checked + .slider:before { transform: translateX(20px); }
     height: 100vh !important;
     height: 100dvh !important;
     max-width: 100% !important;
+    max-height: 100dvh !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    overflow: hidden !important;
   }
 }
 
@@ -947,6 +1004,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .etnews-date-bar {

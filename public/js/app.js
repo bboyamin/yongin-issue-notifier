@@ -1335,6 +1335,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchKeywordIssues([currentKeyword], { silent: true });
   }
+
+  // Initialize Pull-To-Refresh on all tabs
+  initPullToRefresh();
 });
 
 function openInstallModal() {
@@ -1379,5 +1382,178 @@ function switchInstallTab(type) {
       iosBtn.style.color = '#64748B';
       iosBtn.style.boxShadow = 'none';
     }
+  }
+}
+
+/* --- Pull-To-Refresh (PTR) Implementation Across All Tabs --- */
+function getPtrBanner() {
+  const container = document.getElementById('feedContainer');
+  if (!container) return null;
+  let banner = document.getElementById('ptrBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'ptrBanner';
+    banner.className = 'ptr-banner';
+    banner.innerHTML = `<span class="ptr-icon">👇</span><span class="ptr-text">아래로 당겨서 새로고침</span>`;
+    container.insertBefore(banner, container.firstChild);
+  }
+  return banner;
+}
+
+function initPullToRefresh() {
+  const container = document.getElementById('feedContainer');
+  if (!container) return;
+
+  let startY = 0;
+  let isPulling = false;
+  let isRefreshing = false;
+  let isMouseDown = false;
+  const THRESHOLD = 55;
+
+  const updatePtrVisuals = (dy) => {
+    if (dy <= 0) return;
+    const banner = getPtrBanner();
+    if (!banner) return;
+
+    const pullDist = Math.min(Math.pow(dy, 0.82), 75);
+    banner.classList.add('pulling');
+    banner.style.height = `${pullDist}px`;
+    banner.style.opacity = `${Math.min(pullDist / THRESHOLD, 1)}`;
+    banner.style.marginBottom = pullDist > 8 ? '8px' : '0';
+
+    const icon = banner.querySelector('.ptr-icon');
+    const text = banner.querySelector('.ptr-text');
+
+    if (pullDist >= THRESHOLD) {
+      banner.classList.add('release');
+      if (text) text.textContent = '놓으면 새로고침';
+    } else {
+      banner.classList.remove('release');
+      if (text) text.textContent = '아래로 당겨서 새로고침';
+    }
+  };
+
+  const handleDragEnd = async () => {
+    if (!isPulling || isRefreshing) return;
+    isPulling = false;
+    isMouseDown = false;
+
+    const banner = document.getElementById('ptrBanner');
+    if (!banner) return;
+
+    const currentHeight = parseFloat(banner.style.height || '0');
+    banner.classList.remove('pulling');
+
+    if (currentHeight >= THRESHOLD) {
+      isRefreshing = true;
+      banner.className = 'ptr-banner refreshing';
+      banner.style.height = '46px';
+      banner.style.opacity = '1';
+      banner.style.marginBottom = '10px';
+
+      const icon = banner.querySelector('.ptr-icon');
+      const text = banner.querySelector('.ptr-text');
+      if (icon) icon.textContent = '🔄';
+      if (text) text.textContent = '최신 데이터 업데이트 중...';
+
+      try {
+        await executeTabRefresh();
+      } catch (err) {
+        console.warn('PTR refresh error:', err);
+      } finally {
+        setTimeout(() => {
+          banner.style.height = '0';
+          banner.style.opacity = '0';
+          banner.style.marginBottom = '0';
+          setTimeout(() => {
+            banner.className = 'ptr-banner';
+            if (icon) icon.textContent = '👇';
+            if (text) text.textContent = '아래로 당겨서 새로고침';
+            isRefreshing = false;
+          }, 250);
+        }, 400);
+      }
+    } else {
+      banner.style.height = '0';
+      banner.style.opacity = '0';
+      banner.style.marginBottom = '0';
+      banner.classList.remove('release');
+    }
+  };
+
+  // Touch events for Mobile
+  container.addEventListener('touchstart', (e) => {
+    if (container.scrollTop <= 0 && !isRefreshing && e.touches.length === 1) {
+      startY = e.touches[0].pageY;
+      isPulling = true;
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
+    if (!isPulling || isRefreshing || e.touches.length !== 1) return;
+    const currentY = e.touches[0].pageY;
+    const dy = currentY - startY;
+    if (dy > 0 && container.scrollTop <= 0) {
+      updatePtrVisuals(dy);
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchend', handleDragEnd, { passive: true });
+  container.addEventListener('touchcancel', handleDragEnd, { passive: true });
+
+  // Mouse drag support for Desktop preview
+  container.addEventListener('mousedown', (e) => {
+    if (container.scrollTop <= 0 && !isRefreshing && e.button === 0) {
+      startY = e.pageY;
+      isMouseDown = true;
+      isPulling = true;
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isMouseDown || !isPulling || isRefreshing) return;
+    const dy = e.pageY - startY;
+    if (dy > 0 && container.scrollTop <= 0) {
+      updatePtrVisuals(dy);
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isMouseDown) {
+      handleDragEnd();
+    }
+  });
+}
+
+async function executeTabRefresh() {
+  switch (currentNavTab) {
+    case 'feed':
+      await refreshFeed();
+      break;
+    case 'paper':
+      await loadPaperForCurrentDate(true);
+      showToast('📰 지면 신문 최신 기사 수집 완료!');
+      break;
+    case 'exclusive':
+    case 'press':
+      const tabTitle = currentNavTab === 'exclusive' ? '단독뉴스' : '보도자료';
+      showToast(`🔄 [${tabTitle}] 최신 데이터 수집 중...`);
+      const liveIssues = await IssueApi.fetchLiveTabIssues(currentNavTab);
+      if (liveIssues && liveIssues.length > 0) {
+        tabFeeds[currentNavTab] = liveIssues;
+        currentIssues = liveIssues;
+        renderIssues();
+        showToast(`✅ ${tabTitle} 새로고침 완료!`);
+      } else {
+        showToast('✅ 최신 소식입니다.');
+      }
+      break;
+    case 'bookmark':
+      renderIssues();
+      showToast('⭐ 보관함 새로고침 완료');
+      break;
+    default:
+      await refreshFeed();
+      break;
   }
 }
