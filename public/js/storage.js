@@ -24,15 +24,47 @@ const StorageManager = (() => {
     }
   }
 
+  function getTodayKstStr() {
+    const d = new Date();
+    const kst = new Date(d.getTime() + (9 * 60 + d.getTimezoneOffset()) * 60000);
+    const yyyy = kst.getFullYear();
+    const mm = String(kst.getMonth() + 1).padStart(2, '0');
+    const dd = String(kst.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function cleanupOldCaches() {
+    try {
+      const today = getTodayKstStr();
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        if (k.startsWith('paper_cache_')) {
+          if (!k.includes(today) && !k.endsWith('_latest')) {
+            keysToRemove.push(k);
+          }
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+  }
+
   function safeSetJSON(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
-      console.warn(`StorageManager error writing ${key}:`, e);
+      console.warn(`StorageManager error writing ${key}, attempting cache cleanup:`, e);
+      cleanupOldCaches();
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (err) {}
     }
   }
 
   return {
+    cleanupOldCaches,
+
     getKeywords() {
       try {
         const item = localStorage.getItem(KEYS.KEYWORDS);
@@ -146,9 +178,9 @@ const StorageManager = (() => {
     },
 
     saveFeedCache(issues) {
-      if (Array.isArray(issues)) {
+      if (Array.isArray(issues) && issues.length > 0) {
         try { localStorage.setItem('feed_cache_ver', 'v75'); } catch(e) {}
-        safeSetJSON('feed_cache', issues.slice(0, 600));
+        safeSetJSON('feed_cache', issues.slice(0, 300));
       }
     },
 
@@ -199,7 +231,10 @@ const StorageManager = (() => {
 
     getPaperCache(key) {
       try {
-        const stored = sessionStorage.getItem(`paper_cache_${key}`) || localStorage.getItem(`paper_cache_${key}`);
+        const stored = sessionStorage.getItem(`paper_cache_${key}`) || 
+                       localStorage.getItem(`paper_cache_${key}`) ||
+                       sessionStorage.getItem('paper_cache_latest') ||
+                       localStorage.getItem('paper_cache_latest');
         if (stored) return JSON.parse(stored);
       } catch (e) {}
       return null;
@@ -207,10 +242,20 @@ const StorageManager = (() => {
 
     savePaperCache(key, data) {
       if (!key || !data) return;
+      cleanupOldCaches();
       try {
         const str = JSON.stringify(data);
         try { sessionStorage.setItem(`paper_cache_${key}`, str); } catch (e) {}
-        try { localStorage.setItem(`paper_cache_${key}`, str); } catch (e) {}
+        try { 
+          localStorage.setItem(`paper_cache_${key}`, str);
+          localStorage.setItem('paper_cache_latest', str);
+        } catch (e) {
+          try {
+            cleanupOldCaches();
+            localStorage.setItem(`paper_cache_${key}`, str);
+            localStorage.setItem('paper_cache_latest', str);
+          } catch (err) {}
+        }
       } catch (e) {}
     }
   };

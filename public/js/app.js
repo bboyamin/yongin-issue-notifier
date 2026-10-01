@@ -274,10 +274,20 @@ async function fetchKeywordIssues(keywordsList, options = { silent: false }) {
       tabFeeds['feed'] = issues;
       keywordFeeds[kwKey] = issues;
       try {
-        localStorage.setItem(`cached_tab_issues_${kwKey}`, JSON.stringify(issues));
-        localStorage.setItem('cached_tab_issues_realtime', JSON.stringify(issues));
-        localStorage.setItem('cached_tab_issues_feed', JSON.stringify(issues));
-      } catch (e) {}
+        const jsonStr = JSON.stringify(issues.slice(0, 300));
+        localStorage.setItem(`cached_tab_issues_${kwKey}`, jsonStr);
+        localStorage.setItem('cached_tab_issues_realtime', jsonStr);
+        localStorage.setItem('cached_tab_issues_feed', jsonStr);
+        StorageManager.saveFeedCache(issues);
+      } catch (e) {
+        StorageManager.cleanupOldCaches();
+        try {
+          const jsonStr = JSON.stringify(issues.slice(0, 300));
+          localStorage.setItem('cached_tab_issues_realtime', jsonStr);
+          localStorage.setItem('cached_tab_issues_feed', jsonStr);
+          StorageManager.saveFeedCache(issues);
+        } catch (err) {}
+      }
       currentIssues = issues;
     }
   } catch (e) {
@@ -1294,6 +1304,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const localCached = localStorage.getItem(`cached_tab_issues_${kwKey}`) || 
                         localStorage.getItem('cached_tab_issues_realtime') || 
                         localStorage.getItem('cached_tab_issues_feed');
+    let restored = false;
     if (localCached) {
       try {
         const parsed = JSON.parse(localCached);
@@ -1302,11 +1313,23 @@ document.addEventListener('DOMContentLoaded', () => {
           keywordFeeds[currentKeyword] = parsed;
           currentIssues = parsed;
           renderIssues();
+          restored = true;
         }
       } catch (e) {}
     }
 
-    if (!currentIssues || currentIssues.length === 0) {
+    if (!restored) {
+      const feedCache = StorageManager.getFeedCache();
+      if (Array.isArray(feedCache) && feedCache.length > 0) {
+        tabFeeds['feed'] = feedCache;
+        keywordFeeds[currentKeyword] = feedCache;
+        currentIssues = feedCache;
+        renderIssues();
+        restored = true;
+      }
+    }
+
+    if (!restored) {
       renderSkeletonFeed(currentKeyword);
     }
 
