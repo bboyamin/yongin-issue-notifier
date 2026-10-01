@@ -808,7 +808,8 @@ body {
   inset: 0;
   background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(4px);
-  z-index: 200;
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
   display: flex;
   align-items: flex-end;
   opacity: 0;
@@ -825,9 +826,11 @@ body {
   width: 100%;
   background: #FFFFFF;
   border-radius: 24px 24px 0 0;
-  padding: 20px;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px;
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-height: 88vh;
+  overflow-y: auto;
 }
 
 .modal-overlay.show .modal-content {
@@ -1015,6 +1018,12 @@ input:checked + .slider:before { transform: translateX(20px); }
     left: 12px !important;
     right: 12px !important;
     z-index: 1000 !important;
+  }
+
+  .modal-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
   }
 }
 
