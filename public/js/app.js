@@ -219,10 +219,51 @@ async function refreshFeed() {
   }
 }
 
+function renderSkeletonFeed(keywordName = '용인시') {
+  const container = document.getElementById('feedContainer');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="skeleton-wrapper" style="padding: 4px 0;">
+      <div class="realtime-bar" style="background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8;">
+        <div class="realtime-indicator">
+          <div class="live-dot" style="background: #2563EB;"></div>
+          <span># ${keywordName} 실시간 소식 수집 중...</span>
+        </div>
+        <span style="font-size: 11px; opacity: 0.8;">⏳ 1~2초 소요</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div class="skeleton-shimmer" style="height: 14px; width: 35%; border-radius: 4px; margin-bottom: 12px;"></div>
+          <div class="skeleton-shimmer" style="height: 18px; width: 85%; border-radius: 4px; margin-bottom: 8px;"></div>
+          <div class="skeleton-shimmer" style="height: 14px; width: 60%; border-radius: 4px;"></div>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div class="skeleton-shimmer" style="height: 14px; width: 28%; border-radius: 4px; margin-bottom: 12px;"></div>
+          <div class="skeleton-shimmer" style="height: 18px; width: 78%; border-radius: 4px; margin-bottom: 8px;"></div>
+          <div class="skeleton-shimmer" style="height: 14px; width: 50%; border-radius: 4px;"></div>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div class="skeleton-shimmer" style="height: 14px; width: 40%; border-radius: 4px; margin-bottom: 12px;"></div>
+          <div class="skeleton-shimmer" style="height: 18px; width: 90%; border-radius: 4px; margin-bottom: 8px;"></div>
+          <div class="skeleton-shimmer" style="height: 14px; width: 65%; border-radius: 4px;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // 100% Original Realtime Feed Fetcher
 async function fetchKeywordIssues(keywordsList) {
   const kwKey = keywordsList.join(',');
   showToast(`🔄 [${keywordsList.join(', ')}] 소식 수집 중...`);
+
+  // Render Skeleton UI if no current issues or cache exists
+  if ((!currentIssues || currentIssues.length === 0) && currentNavTab === 'feed') {
+    renderSkeletonFeed(keywordsList.join(', '));
+  }
+
   try {
     const issues = await IssueApi.fetchKeywordIssues(keywordsList);
     if (issues && issues.length > 0) {
@@ -306,7 +347,7 @@ async function switchNavTab(tab, btn) {
       }
       renderKeywordChips();
 
-      // Immediately render cached feed state from memory or localStorage
+      // Immediately render cached feed state from memory or localStorage if available
       const kwKey = [currentKeyword].join(',');
       const existingFeed = tabFeeds['feed'] || keywordFeeds[kwKey];
       if (existingFeed && existingFeed.length > 0) {
@@ -320,8 +361,14 @@ async function switchNavTab(tab, btn) {
             keywordFeeds[kwKey] = cached;
             currentIssues = cached;
             renderIssues();
+          } else {
+            currentIssues = [];
+            renderSkeletonFeed(currentKeyword);
           }
-        } catch (e) {}
+        } catch (e) {
+          currentIssues = [];
+          renderSkeletonFeed(currentKeyword);
+        }
       }
 
       await fetchKeywordIssues([currentKeyword]);
@@ -336,6 +383,16 @@ async function switchNavTab(tab, btn) {
         await fetchTabIssues(tab);
       }
     }
+  }
+}
+
+function resetAppCache() {
+  if (confirm('로컬 저장소 캐시를 초기화하시겠습니까?')) {
+    localStorage.clear();
+    showToast('🧹 캐시가 초기화되었습니다. 새로고침 중...');
+    setTimeout(() => {
+      window.location.reload();
+    }, 600);
   }
 }
 
@@ -778,7 +835,8 @@ async function toggleOnDemandAiSummary(btn) {
         if (listElem) {
           listElem.innerHTML = `
             <li style="color:#D97706; font-weight:700;">🔑 FactChat API 키 설정 필요</li>
-            <li style="font-size:11px; color:#64748B;">우측 상단 ⚙️ 설정 버튼을 눌러 사내/개인 FactChat API 키를 등록하시면 실시간 AI 요약이 생성됩니다.</li>
+            <li style="font-size:11px; color:#64748B; margin-bottom: 6px;">우측 상단 ⚙️ 설정 버튼을 눌러 사내/개인 FactChat API 키를 등록하시면 실시간 AI 요약이 생성됩니다.</li>
+            <li style="list-style:none; margin-top:4px;"><button onclick="toggleSettingsModal()" style="background:#4F46E5; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">⚙️ 설정에서 API 키 등록하기</button></li>
           `;
         }
         return;
@@ -839,16 +897,28 @@ function toggleScrap(btn) {
 function shareArticle(btn) {
   const card = btn.closest('.issue-card');
   if (!card) return;
-  const title = card.getAttribute('data-title');
-  const url = card.getAttribute('data-url');
+  const title = card.getAttribute('data-title') || '용인 핫이슈';
+  const url = card.getAttribute('data-url') || window.location.href;
+  const shareText = `[용인 핫이슈] ${title}\n🔗 ${url}`;
 
   if (navigator.share) {
-    navigator.share({ title: title, url: url }).catch(() => { });
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(`${title}\n${url}`);
-    showToast('📋 기사 링크가 클립보드에 복사되었습니다!');
+    navigator.share({ title: title, text: title, url: url }).catch(() => { });
   } else {
-    showToast('🔗 ' + url);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareText);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = shareText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      showToast('📋 기사 제목과 링크가 복사되었습니다!');
+    } catch (e) {
+      showToast('🔗 ' + url);
+    }
   }
 }
 
@@ -1168,18 +1238,57 @@ function showToast(msg) {
   setTimeout(() => { toast.style.opacity = '0'; }, 2200);
 }
 
+function checkOnboardingGuide() {
+  const completed = localStorage.getItem('onboarding_seen_v1');
+  if (!completed) {
+    const modal = document.getElementById('onboardingModal');
+    if (modal) {
+      setTimeout(() => {
+        modal.classList.add('show');
+      }, 200);
+    }
+  }
+}
+
+function closeOnboardingModal() {
+  localStorage.setItem('onboarding_seen_v1', 'true');
+  const modal = document.getElementById('onboardingModal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
 // Initializer
 document.addEventListener('DOMContentLoaded', () => {
   const userKws = StorageManager.getKeywords();
   currentKeyword = userKws.length ? userKws[0] : '용인시';
   renderKeywordChips();
   updateHeaderScrapBadge();
+  checkOnboardingGuide();
 
   const savedTab = StorageManager.getActiveNavTab();
   if (savedTab && savedTab !== 'feed') {
     const navBtn = document.querySelector(`.app-bottom-nav .nav-item[data-tab="${savedTab}"]`);
     switchNavTab(savedTab, navBtn);
   } else {
+    // Restore cached feed state instantly on initial load if available
+    const localCached = localStorage.getItem('cached_tab_issues_realtime') || localStorage.getItem('cached_tab_issues_feed');
+    if (localCached) {
+      try {
+        const parsed = JSON.parse(localCached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          tabFeeds['feed'] = parsed;
+          keywordFeeds[currentKeyword] = parsed;
+          currentIssues = parsed;
+          renderIssues();
+        }
+      } catch (e) {}
+    }
+
+    if (!currentIssues || currentIssues.length === 0) {
+      renderSkeletonFeed(currentKeyword);
+    }
+
     fetchKeywordIssues([currentKeyword]);
   }
 });

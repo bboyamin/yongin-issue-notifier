@@ -1029,3 +1029,27 @@ input:checked + .slider:before { transform: translateX(20px); }
   font-weight: 700;
 }
 
+/* Skeleton Loading Shimmer Animation */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Enhanced Modal Dialog Transitions */
+.modal-overlay#onboardingModal .modal-content {
+  transform: scale(0.92) translateY(20px);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+}
+
+.modal-overlay#onboardingModal.show .modal-content {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+

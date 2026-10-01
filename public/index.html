@@ -189,6 +189,14 @@
               💡 <strong>사내 FactChat API 키가 없으신가요?</strong><br>
               사내 포털에서 개인 발급키를 발급받아 입력하시면 AI 3줄 요약이 가동됩니다.
             </div>
+
+            <!-- Reset Cache Button for Testing First-Time Experience -->
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #CBD5E1; text-align: center;">
+              <button type="button" onclick="resetAppCache()"
+                style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer;">
+                🧹 로컬 저장소 캐시 초기화
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -196,10 +204,75 @@
     </div>
   </div>
 
+  <!-- First-Time User Onboarding Guide Modal -->
+  <div class="modal-overlay" id="onboardingModal" style="z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
+    <div class="modal-content" style="max-width: 380px; width: 100%; padding: 22px 18px 18px; border-radius: 20px; text-align: center; max-height: 85vh; display: flex; flex-direction: column;">
+      
+      <div style="font-size: 34px; margin-bottom: 4px;">👋</div>
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 2px;">용인 핫이슈 모니터</h3>
+      <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 14px;">핵심 기능 1분 이용 가이드</p>
+
+      <div style="display: flex; flex-direction: column; gap: 9px; text-align: left; margin-bottom: 16px; overflow-y: auto; padding-right: 4px; flex: 1;">
+        
+        <!-- 1. 실시간 피드 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 18px; line-height: 1;">🔥</span>
+          <div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">실시간 맞춤 이슈 피드</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">용인시, 처인구 등 주요 관심 키워드의 최신 뉴스를 실시간으로 자동 모아봅니다.</div>
+          </div>
+        </div>
+
+        <!-- 2. 단독뉴스 & 보도자료 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 18px; line-height: 1;">🎯</span>
+          <div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">단독 뉴스 & 공식 보도자료</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">주요 언론사의 <strong>[단독]</strong> 속보와 용인시청·정부 부처의 <strong>공식 보도자료</strong>를 한곳에서 탐색합니다.</div>
+          </div>
+        </div>
+
+        <!-- 3. 지면신문 보기 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 18px; line-height: 1;">🗞️</span>
+          <div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">오늘의 주요 지면신문 보기</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">매일경제, 전자신문, 경향신문의 오늘자 지면 기사를 지면/섹션별로 빠르게 읽습니다.</div>
+          </div>
+        </div>
+
+        <!-- 4. FactChat AI 3줄 요약 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 18px; line-height: 1;">🤖</span>
+          <div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">FactChat AI 3줄 요약 & 리스크 분석</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">기사 카드의 AI 요약 버튼 클릭 한 번으로 인공지능이 핵심 팩트 3줄과 리스크를 분석합니다.</div>
+          </div>
+        </div>
+
+        <!-- 5. 스크랩 & 카톡 공유 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 18px; line-height: 1;">⭐</span>
+          <div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">스크랩 보관함 & 카카오톡 공유</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">중요 기사는 <strong>[⭐ 스크랩]</strong>으로 보관하고, <strong>[🔗 공유]</strong> 버튼으로 동료들에게 빠르게 전달합니다.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <button type="button" onclick="closeOnboardingModal()"
+        style="width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+        🚀 확인하고 시작하기
+      </button>
+
+    </div>
+  </div>
+
   <!-- Deep Module Scripts -->
-  <script src="js/storage.js?v=1201"></script>
-  <script src="js/api.js?v=1201"></script>
-  <script src="js/app.js?v=1201"></script>
+  <script src="js/storage.js?v=1300"></script>
+  <script src="js/api.js?v=1300"></script>
+  <script src="js/app.js?v=1300"></script>
 </body>
 
 </html>

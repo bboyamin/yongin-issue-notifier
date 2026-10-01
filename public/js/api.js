@@ -70,25 +70,6 @@ const IssueApi = (() => {
         }
       } catch (e) {}
 
-      const timestamp = Date.now();
-      const paths = [
-        `./data/issues_${tabName}.json?v=78&t=${timestamp}`,
-        `data/issues_${tabName}.json?v=78&t=${timestamp}`,
-        `./data/issues.json?v=78&t=${timestamp}`
-      ];
-      for (const p of paths) {
-        try {
-          const res = await fetch(p);
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              return data;
-            }
-          }
-        } catch (err) {
-          console.warn(`Fetch error for ${p}:`, err);
-        }
-      }
       return [];
     },
 

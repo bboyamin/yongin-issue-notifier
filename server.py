@@ -98,7 +98,7 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
 if __name__ == "__main__":
-    port = 8080
+    port = int(os.getenv("PORT", 8088))
     print(f"🚀 Custom Server running on http://localhost:{port}")
     server = HTTPServer(('0.0.0.0', port), DynamicHTTPHandler)
     server.serve_forever()
