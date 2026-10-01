@@ -158,12 +158,12 @@ body {
 .app-screen {
   flex: 1;
   min-height: 0;
+  max-height: 100%;
   background: #F8FAFC;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  height: 100%;
 }
 
 /* App Header */
@@ -966,14 +966,18 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 /* Mobile Viewport & PWA Standalone Native Layout */
 @media (max-width: 768px), (display-mode: standalone) {
-  body {
+  html, body {
     padding: 0 !important;
     margin: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100% !important;
+    max-height: 100dvh !important;
     background-color: #F8FAFC !important;
-    min-height: 100vh;
-    min-height: 100dvh;
-    justify-content: flex-start !important;
-    overflow: hidden;
+    overflow: hidden !important;
+    position: fixed !important;
+    inset: 0 !important;
   }
 
   .demo-header,
@@ -993,6 +997,24 @@ input:checked + .slider:before { transform: translateX(20px); }
     box-shadow: none !important;
     border: none !important;
     overflow: hidden !important;
+    position: fixed !important;
+    inset: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .app-screen {
+    height: 100% !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .app-bottom-nav {
+    position: fixed !important;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 12px !important;
+    right: 12px !important;
+    z-index: 1000 !important;
   }
 }
 
