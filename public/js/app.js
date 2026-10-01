@@ -1001,26 +1001,22 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
     container.removeAttribute('data-rendered-key');
   }
 
-  // 1. Instant rendering from Memory / Session / Local Storage Cache (0ms delay, no loading spinner)
-  if (!forceRefresh) {
-    let cachedData = paperFeedsCache[cacheKey];
-    if (!cachedData) {
-      cachedData = StorageManager.getPaperCache(cacheKey);
-    }
+  // 1. Instant rendering from Memory / Local Storage Cache (0ms delay, no loading spinner)
+  let cachedData = paperFeedsCache[cacheKey] || StorageManager.getPaperCache(cacheKey);
+  let hasRenderedCache = false;
 
-    if (cachedData && cachedData.articles && cachedData.articles.length > 0) {
-      paperData = cachedData;
-      paperFeedsCache[cacheKey] = cachedData;
-      currentPaperSection = (savedSection && (savedSection === 'all' || (cachedData.sections && cachedData.sections.includes(savedSection)))) ? savedSection : 'all';
-      renderPaperSections();
-      renderPaperView();
-      return;
-    }
+  if (!forceRefresh && cachedData && cachedData.articles && cachedData.articles.length > 0) {
+    paperData = cachedData;
+    paperFeedsCache[cacheKey] = cachedData;
+    currentPaperSection = (savedSection && (savedSection === 'all' || (cachedData.sections && cachedData.sections.includes(savedSection)))) ? savedSection : 'all';
+    renderPaperSections();
+    renderPaperView();
+    hasRenderedCache = true;
   }
 
-  // 2. Only show loading spinner if NO cards rendered and data not key-matched
+  // 2. Only show loading spinner if NO cached cards rendered
   const currentKey = `${currentPaperProvider}_${currentPaperDate}_${currentPaperSection}`;
-  if (container && (!container.querySelector('.issue-card') || container.getAttribute('data-rendered-key') !== currentKey)) {
+  if (!hasRenderedCache && container && (!container.querySelector('.issue-card') || container.getAttribute('data-rendered-key') !== currentKey)) {
     container.innerHTML = `
       <div style="text-align:center; padding: 60px 20px; color:#64748B;">
         <span class="spin-icon" style="font-size:24px; display:inline-block; margin-bottom:8px;">🔄</span>
@@ -1029,18 +1025,23 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
     `;
   }
 
+  // 3. Background live fetch & silent update
   try {
-    paperData = await IssueApi.fetchPaperNews(currentPaperProvider, currentPaperDate);
-    if (paperData && paperData.articles && paperData.articles.length > 0) {
-      paperFeedsCache[cacheKey] = paperData;
-      StorageManager.savePaperCache(cacheKey, paperData);
+    const liveData = await IssueApi.fetchPaperNews(currentPaperProvider, currentPaperDate);
+    if (liveData && liveData.articles && liveData.articles.length > 0) {
+      paperData = liveData;
+      paperFeedsCache[cacheKey] = liveData;
+      StorageManager.savePaperCache(cacheKey, liveData);
+
+      if (currentNavTab === 'paper') {
+        currentPaperSection = (savedSection && (savedSection === 'all' || (liveData.sections && liveData.sections.includes(savedSection)))) ? savedSection : 'all';
+        renderPaperSections();
+        renderPaperView();
+      }
     }
-    currentPaperSection = (savedSection && (savedSection === 'all' || (paperData.sections && paperData.sections.includes(savedSection)))) ? savedSection : 'all';
-    renderPaperSections();
-    renderPaperView();
   } catch (err) {
     console.warn('Paper fetch error:', err);
-    if (container && !container.querySelector('.issue-card')) {
+    if (!hasRenderedCache && container && !container.querySelector('.issue-card')) {
       container.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:#EF4444;">지면 데이터를 불러오는 중 오류가 발생했습니다.</div>`;
     }
   }

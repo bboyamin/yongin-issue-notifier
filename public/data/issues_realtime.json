@@ -1,6 +1,48 @@
 [
   {
-    "id": "naver_news_용인시_0_1790816725",
+    "id": "naver_news_용인시_0_1790817372",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 ENEWSTODAY",
+    "publisher": "ENEWSTODAY",
+    "title": "용인시, 세계 문학으로 만나는 인문학 강연 운영",
+    "time": "2026-10-01 10:10:00",
+    "url": "http://www.enewstoday.co.kr/news/articleView.html?idxno=2475986",
+    "content": "용인특례시(시장 이상일)가 시민들이 세계 각국의 언어와 문화를 문학을 통해 이해할 수 있는 온라인... 수강 신청은 지난 9월 30일부터 용인시도서관 홈페이지에서 받고 있으며, 회차별 50명을 선착순으로 모집한다....",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_1_1790817372",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 아이뉴스24",
+    "publisher": "아이뉴스24",
+    "title": "용인특례시 처인구, 개발사업 단계부터 학교 앞 &lsquo;차량 승하차 공간&rsquo; 선제 확보",
+    "time": "2026-10-01 10:09:00",
+    "url": "http://www.inews24.com/view/2010700",
+    "content": "경기도 용인특례시 처인구는 대규모 공동주택이나 도시개발사업으로 학생과 통학 차량이 늘어날 경우를 고려해 개발사업 인허가 단계에서부터 학교 주변에 차량 승하차 공간(승하차베이)을 확보하는 방안을 추진하고...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_2_1790817372",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 아이뉴스24",
+    "publisher": "아이뉴스24",
+    "title": "&lsquo;용인병&rsquo; 부승찬 의원 &ldquo;동천IC 설치 등 수지 교통현안 약속대로 착착 풀겠다&rdquo;",
+    "time": "2026-10-01 10:09:00",
+    "url": "http://www.inews24.com/view/2010707",
+    "content": "등 용인 수지지역 주요 교통현안이 잇따라 구체화되고 있다. 국회 국토교통위원회 소속 부승찬 의원... 유 사장은 용인시가 타당성조사를 실시해 그 결과를 도로공사에 제출하면 국토부와 협의해 후속 사업 추진절차에...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_3_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 FPN119",
@@ -14,7 +56,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_1_1790816725",
+    "id": "naver_news_용인시_4_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 연합뉴스",
@@ -28,7 +70,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_2_1790816725",
+    "id": "naver_news_용인시_5_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 HANKOOKILBO",
@@ -42,7 +84,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_3_1790816725",
+    "id": "naver_news_용인시_6_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 00NEWS",
@@ -56,7 +98,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_4_1790816725",
+    "id": "naver_news_용인시_7_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 연합뉴스",
@@ -70,7 +112,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_5_1790816725",
+    "id": "naver_news_용인시_8_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 연합뉴스",
@@ -84,7 +126,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_6_1790816725",
+    "id": "naver_news_용인시_9_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 기호일보",
@@ -98,7 +140,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_7_1790816725",
+    "id": "naver_news_용인시_10_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 SHINAILBO",
@@ -112,7 +154,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_8_1790816725",
+    "id": "naver_news_용인시_11_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 뉴스1",
@@ -126,7 +168,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_9_1790816725",
+    "id": "naver_news_용인시_12_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 파이낸셜뉴스",
@@ -140,7 +182,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_10_1790816725",
+    "id": "naver_news_용인시_13_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 기호일보",
@@ -154,7 +196,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_11_1790816725",
+    "id": "naver_news_용인시_14_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 PAXETV",
@@ -168,7 +210,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_12_1790816725",
+    "id": "naver_news_용인시_15_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 ENEWSTODAY",
@@ -182,7 +224,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_13_1790816725",
+    "id": "naver_news_용인시_16_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 서울신문",
@@ -196,21 +238,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_14_1790816725",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 국제뉴스",
-    "publisher": "국제뉴스",
-    "title": "용인 처인구, 대규모 개발사업에 학교 차량 승하차 공간 추진",
-    "time": "2026-10-01 09:12:00",
-    "url": "https://www.gukjenews.com/news/articleView.html?idxno=3710076",
-    "content": "처인구 도현초등학교 승하차베이 설치 모습(사진=용인시)  용인시 처인구는 대규모 공동주택 및... 이러한 선제적 조치는 지난 3월 '2026년 상반기 용인특례시 적극행정 우수사례'로 선정된 바 있다.",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_15_1790816725",
+    "id": "naver_news_용인시_17_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 ECONOVILL",
@@ -224,7 +252,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_16_1790816725",
+    "id": "naver_news_용인시_18_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 국제뉴스",
@@ -238,7 +266,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_17_1790816725",
+    "id": "naver_news_용인시_19_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 국제뉴스",
@@ -252,7 +280,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_18_1790816725",
+    "id": "naver_news_용인시_20_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 국제뉴스",
@@ -266,35 +294,21 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_19_1790816725",
+    "id": "naver_news_용인시_21_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 국제뉴스",
     "publisher": "국제뉴스",
-    "title": "용인시, 임산부의 날 맞아 보건소별 다양한 프로그램 운영",
+    "title": "용인 처인구, 대규모 개발사업에 학교 차량 승하차 공간 추진",
     "time": "2026-10-01 09:12:00",
-    "url": "https://www.gukjenews.com/news/articleView.html?idxno=3710054",
-    "content": "용인특례시 처인구보건소의 직장인 임산부를 위한 탁상용 임산부 배려 표지판(사진=용인시)  용인시는 임산부의 날을 맞아 건강한 임신과 출산 환경 조성을 위해 보건소별로 다양한 프로그램을 진행한다고 밝혔다....",
+    "url": "https://www.gukjenews.com/news/articleView.html?idxno=3710076",
+    "content": "처인구 도현초등학교 승하차베이 설치 모습(사진=용인시)  용인시 처인구는 대규모 공동주택 및... 이러한 선제적 조치는 지난 3월 '2026년 상반기 용인특례시 적극행정 우수사례'로 선정된 바 있다.",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_20_1790816725",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 국제뉴스",
-    "publisher": "국제뉴스",
-    "title": "용인시, 지역 복지기관과 '돌봄 연결의 시간' 행사 개최",
-    "time": "2026-10-01 09:12:00",
-    "url": "https://www.gukjenews.com/news/articleView.html?idxno=3710070",
-    "content": "용인특례시가 '빈틈없는 지역 돌봄망' 구축을 위한 소통의 자리를 마련했다.(사진=용인시)  용인시는 9월 30일 지역 내 복지기관 관계자들과 함께 '지역 돌봄 연결의 시간'을 열어 통합 돌봄 협력체계 강화를 위한 소통의 장을...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_21_1790816725",
+    "id": "naver_news_용인시_22_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 국제뉴스",
@@ -308,7 +322,35 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_22_1790816725",
+    "id": "naver_news_용인시_23_1790817372",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 국제뉴스",
+    "publisher": "국제뉴스",
+    "title": "용인시, 임산부의 날 맞아 보건소별 다양한 프로그램 운영",
+    "time": "2026-10-01 09:12:00",
+    "url": "https://www.gukjenews.com/news/articleView.html?idxno=3710054",
+    "content": "용인특례시 처인구보건소의 직장인 임산부를 위한 탁상용 임산부 배려 표지판(사진=용인시)  용인시는 임산부의 날을 맞아 건강한 임신과 출산 환경 조성을 위해 보건소별로 다양한 프로그램을 진행한다고 밝혔다....",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_24_1790817372",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 국제뉴스",
+    "publisher": "국제뉴스",
+    "title": "용인시, 지역 복지기관과 '돌봄 연결의 시간' 행사 개최",
+    "time": "2026-10-01 09:12:00",
+    "url": "https://www.gukjenews.com/news/articleView.html?idxno=3710070",
+    "content": "용인특례시가 '빈틈없는 지역 돌봄망' 구축을 위한 소통의 자리를 마련했다.(사진=용인시)  용인시는 9월 30일 지역 내 복지기관 관계자들과 함께 '지역 돌봄 연결의 시간'을 열어 통합 돌봄 협력체계 강화를 위한 소통의 장을...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_25_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 국제뉴스",
@@ -322,7 +364,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_23_1790816725",
+    "id": "naver_news_용인시_26_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 포인트데일리",
@@ -336,7 +378,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_25_1790816725",
+    "id": "naver_news_용인시_28_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 브레이크뉴스",
@@ -350,7 +392,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_26_1790816725",
+    "id": "naver_news_용인시_29_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 VENTURESQUARE",
@@ -364,7 +406,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_27_1790816725",
+    "id": "naver_news_용인시_30_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 스포츠서울",
@@ -378,7 +420,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_28_1790816725",
+    "id": "naver_news_용인시_31_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 이투데이",
@@ -392,7 +434,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_29_1790816725",
+    "id": "naver_news_용인시_32_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 ASIATIME",
@@ -406,7 +448,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_30_1790816725",
+    "id": "naver_news_용인시_33_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 FNTIMES",
@@ -420,7 +462,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_31_1790816725",
+    "id": "naver_news_용인시_34_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 서울경제",
@@ -434,49 +476,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_32_1790816725",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 M-I",
-    "publisher": "M-I",
-    "title": "용인특례시, '특수한 언어, 특별한 문학' 회차별 수강생 50명 모집",
-    "time": "2026-10-01 08:30:00",
-    "url": "https://www.m-i.kr/news/articleView.html?idxno=2001495",
-    "content": "매일일보 = 김길수 기자 | 용인특례시는 한국외국어대학교 특수외국어교육진흥원과 함께 운영하는 온라인... 수강 신청은 지난달 30일부터 용인시도서관 누리집에서 받고 있다. 시 관계자는 \"문학은 낯선 언어와 문화를...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_33_1790816725",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 서울신문",
-    "publisher": "서울신문",
-    "title": "경기도 안민석 교육감, \"용인을 AI 교육 중심지로 육성\"",
-    "time": "2026-10-01 08:30:00",
-    "url": "http://www.metroseoul.co.kr/article/20260930500510",
-    "content": "이날 행사에는 이상식 국회의원과 전자영 경기도의원, 임현수 용인시의원 등 용인지역 도·시의원 10명, 지구장학협의회 대표 교장 11명과 학부모 등이 참석했다. 안 교육감은 \"경기도는 전국 최대 규모의 반도체 산업...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_34_1790816725",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 M-I",
-    "publisher": "M-I",
-    "title": "용인특례시, 제36회 문화상 수상자로 이종민·안석제·전성훈 선정",
-    "time": "2026-10-01 08:30:00",
-    "url": "https://www.m-i.kr/news/articleView.html?idxno=2001496",
-    "content": "매일일보 = 김길수 기자 | 용인특례시는 지역 문화예술과 체육 발전에 기여한 시민 3명을 '제36회 문화상' 문화... 씨(㈔한국연예예술인협회 용인지회 사무국장), 체육 분야 전성훈 씨(용인시장애인체육회 차석이사)다. 이...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_35_1790816725",
+    "id": "naver_news_용인시_35_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 JOONGANGENEWS",
@@ -490,7 +490,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_36_1790816725",
+    "id": "naver_news_용인시_36_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 M-I",
@@ -504,7 +504,35 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_37_1790816725",
+    "id": "naver_news_용인시_37_1790817372",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 M-I",
+    "publisher": "M-I",
+    "title": "용인특례시, 제36회 문화상 수상자로 이종민·안석제·전성훈 선정",
+    "time": "2026-10-01 08:30:00",
+    "url": "https://www.m-i.kr/news/articleView.html?idxno=2001496",
+    "content": "매일일보 = 김길수 기자 | 용인특례시는 지역 문화예술과 체육 발전에 기여한 시민 3명을 '제36회 문화상' 문화... 씨(㈔한국연예예술인협회 용인지회 사무국장), 체육 분야 전성훈 씨(용인시장애인체육회 차석이사)다. 이...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_38_1790817372",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 서울신문",
+    "publisher": "서울신문",
+    "title": "경기도 안민석 교육감, \"용인을 AI 교육 중심지로 육성\"",
+    "time": "2026-10-01 08:30:00",
+    "url": "http://www.metroseoul.co.kr/article/20260930500510",
+    "content": "이날 행사에는 이상식 국회의원과 전자영 경기도의원, 임현수 용인시의원 등 용인지역 도·시의원 10명, 지구장학협의회 대표 교장 11명과 학부모 등이 참석했다. 안 교육감은 \"경기도는 전국 최대 규모의 반도체 산업...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_39_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 서울신문",
@@ -518,7 +546,21 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_38_1790816725",
+    "id": "naver_news_용인시_40_1790817372",
+    "keyword": "용인시",
+    "type": "news",
+    "badge": "📰 M-I",
+    "publisher": "M-I",
+    "title": "용인특례시, '특수한 언어, 특별한 문학' 회차별 수강생 50명 모집",
+    "time": "2026-10-01 08:30:00",
+    "url": "https://www.m-i.kr/news/articleView.html?idxno=2001495",
+    "content": "매일일보 = 김길수 기자 | 용인특례시는 한국외국어대학교 특수외국어교육진흥원과 함께 운영하는 온라인... 수강 신청은 지난달 30일부터 용인시도서관 누리집에서 받고 있다. 시 관계자는 \"문학은 낯선 언어와 문화를...",
+    "dedup_badge": null,
+    "summary": [],
+    "is_negative": false
+  },
+  {
+    "id": "naver_news_용인시_41_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 M-I",
@@ -532,7 +574,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_39_1790816725",
+    "id": "naver_news_용인시_42_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 M-I",
@@ -546,7 +588,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_40_1790816725",
+    "id": "naver_news_용인시_43_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 이데일리",
@@ -560,7 +602,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_41_1790816725",
+    "id": "naver_news_용인시_44_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 DISCOVERYNEWS",
@@ -574,7 +616,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_42_1790816725",
+    "id": "naver_news_용인시_45_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 TOURNEWS21",
@@ -588,7 +630,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_43_1790816725",
+    "id": "naver_news_용인시_46_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 TOURNEWS21",
@@ -602,7 +644,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_44_1790816725",
+    "id": "naver_news_용인시_47_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 TOURNEWS21",
@@ -616,7 +658,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_45_1790816725",
+    "id": "naver_news_용인시_48_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 포인트데일리",
@@ -630,7 +672,7 @@
     "is_negative": false
   },
   {
-    "id": "naver_news_용인시_46_1790816725",
+    "id": "naver_news_용인시_49_1790817372",
     "keyword": "용인시",
     "type": "news",
     "badge": "📰 아시아경제",
@@ -639,48 +681,6 @@
     "time": "2026-10-01 07:21:00",
     "url": "https://view.asiae.co.kr/article/2026100107214714499",
     "content": "경기 용인특례시(시장 이상일)는 '제36회 문화상' 수상자로 문화 분야 이종민 전 용인문화원장, 예술 분야... 한국연예예술인협회 용인지회 사무국장, 체육 분야 전성훈 용인시장애인체육회 차석이사 등 3명을 선정했다고...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_47_1790816725",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 QUEEN",
-    "publisher": "QUEEN",
-    "title": "서울 오피스텔 중대형 주도, 3분기 연속 상승 ... 경기·인천은 하락 지속",
-    "time": "2026-10-01 07:20:00",
-    "url": "http://www.queen.co.kr/news/articleView.html?idxno=464130",
-    "content": "용인시 수지구 신봉동의 전용 84㎡ 오피스텔 역시 실거래가가 5월 5억3000만원에서 7월 5억2000만원으로 1000만원 하락했다. 경기와 인천에서 오피스텔이 아파트 대체재로서 갖는 가격 경쟁력이 서울보다 상대적으로 크지...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_48_1790816725",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 BUSINESSPOST",
-    "publisher": "BUSINESSPOST",
-    "title": "[Who Is ?] 이강석 대우건설 대표이사",
-    "time": "2026-10-01 07:02:00",
-    "url": "https://www.businesspost.co.kr/BP?command=article_view&num=448232",
-    "content": "발주한 '용인 첨단시스템반도체 클러스터 국가산업단지 조성공사 1공구' 낙찰자로 선정됐다. 컨소시엄에는 대우건설(48%) 외에 남광토건(40%), 중흥토건(7%), 삼호(5%) 등이 참여했다. 이번 사업은 경기도 용인시 처인구...",
-    "dedup_badge": null,
-    "summary": [],
-    "is_negative": false
-  },
-  {
-    "id": "naver_news_용인시_49_1790816725",
-    "keyword": "용인시",
-    "type": "news",
-    "badge": "📰 JTBC",
-    "publisher": "JTBC",
-    "title": "'철근 누락' 책임지고 LH 떠난 임원…4개월 만에 지방도시공사 사장으로",
-    "time": "2026-10-01 06:57:00",
-    "url": "https://news.jtbc.co.kr/article/NB12320819?influxDiv=NAVER",
-    "content": "장 의원은 \"LH와 용인도시공사가 업무상 관련이 없다는 공직자윤리위원회의 판정도 황당하며 '순살 아파트' 사태에 책임이 있는 인물에게 인구가 110만 명에 달하는 용인시 개발 및 건설 사업을 맡긴 이상일 시장의...",
     "dedup_badge": null,
     "summary": [],
     "is_negative": false
