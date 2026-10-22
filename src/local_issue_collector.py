@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -174,32 +174,62 @@ def mock_llm_summarize(title, content, keyword):
     is_negative = any(word in title for word in ["수질", "악취", "민원", "우려", "논란", "지연", "정체", "사고", "화재", "불편", "갈등"])
     return summary, is_negative
 
-def fetch_full_title_from_url(url):
-    if not url or not url.startswith("http"):
-        return None
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        res = requests.get(url, headers=headers, timeout=0.6)
-        if res.status_code == 200:
-            res.encoding = res.apparent_encoding or 'utf-8'
-            soup = BeautifulSoup(res.text, "html.parser")
-            og = soup.find("meta", property="og:title") or soup.find("meta", attrs={"name": "twitter:title"}) or soup.find("meta", attrs={"name": "title"})
-            t = ""
-            if og and og.get("content"):
-                t = og["content"].strip()
-            elif soup.title and soup.title.text:
-                t = soup.title.text.strip()
+TITLE_RESOLVE_CACHE = {}
 
-            if t:
-                import re
-                t = re.sub(r'\s*[-|:]\s*(네이버\s*뉴스|Daum\s*뉴스|[가-힣a-zA-Z0-9\s]+신문|[가-힣a-zA-Z0-9\s]+일보|[가-힣a-zA-Z0-9\s]+뉴스|[가-힣a-zA-Z0-9\s]+미디어)$', '', t)
-                t = t.strip()
-                if len(t) > 10 and not (t.endswith("...") or t.endswith("…")):
-                    return t
-    except Exception:
-        pass
+def fetch_full_title_from_url(url, naver_url=None):
+    if not url and not naver_url:
+        return None
+        
+    # Check in-memory cache first to avoid redundant network requests
+    if url and url in TITLE_RESOLVE_CACHE:
+        return TITLE_RESOLVE_CACHE[url]
+    if naver_url and naver_url in TITLE_RESOLVE_CACHE:
+        return TITLE_RESOLVE_CACHE[naver_url]
+
+    targets = []
+    # If naver_url (n.news.naver.com) exists, prioritize it because Naver CDN responds in <100ms
+    if naver_url and str(naver_url).startswith("http") and ("news.naver.com" in naver_url or "naver.me" in naver_url):
+        targets.append(naver_url)
+    if url and str(url).startswith("http") and url not in targets:
+        targets.append(url)
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+    }
+
+    for target_url in targets:
+        try:
+            # Strict 1.2s timeout per target to prevent slow media servers from degrading overall performance
+            res = requests.get(target_url, headers=headers, timeout=1.2, allow_redirects=True)
+            if res.status_code == 200:
+                res.encoding = res.apparent_encoding or 'utf-8'
+                soup = BeautifulSoup(res.text, "html.parser")
+                og = soup.find("meta", property="og:title") or soup.find("meta", attrs={"name": "twitter:title"}) or soup.find("meta", attrs={"name": "title"})
+                t = ""
+                if og and og.get("content"):
+                    t = og["content"].strip()
+                elif soup.title and soup.title.text:
+                    t = soup.title.text.strip()
+
+                if t:
+                    import re
+                    # Remove any HTML tags inside title
+                    t = re.sub(r'<[^>]+>', ' ', t)
+                    # Clean press suffix e.g. " - 매일경제", " | 조선일보", "< 기사본문 - 국제뉴스"
+                    t = re.sub(r'\s*[-|:<]\s*(네이버\s*뉴스|Daum\s*뉴스|[가-힣a-zA-Z0-9\s]+신문|[가-힣a-zA-Z0-9\s]+일보|[가-힣a-zA-Z0-9\s]+뉴스|[가-힣a-zA-Z0-9\s]+미디어|[가-힣a-zA-Z0-9\s]+경제|기사본문).*$', '', t)
+                    t = t.strip()
+                    if len(t) > 10 and not (t.endswith("...") or t.endswith("…") or t.endswith("..")):
+                        if url:
+                            TITLE_RESOLVE_CACHE[url] = t
+                        if naver_url:
+                            TITLE_RESOLVE_CACHE[naver_url] = t
+                        return t
+        except Exception:
+            # Exception caught cleanly: immediately try next target or fallback
+            continue
+
     return None
 
 # ----------------------------------------------------
@@ -554,6 +584,7 @@ def fetch_naver_news(keyword, limit=50):
         # Extract publisher or estimate press name
         publisher = extract_press_name(link, clean_title, clean_desc, item.get("link"))
 
+        naver_link = item.get("link") if (item.get("link") and "news.naver.com" in item.get("link")) else None
         items.append({
             "id": f"naver_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
             "keyword": keyword,
@@ -563,23 +594,14 @@ def fetch_naver_news(keyword, limit=50):
             "title": clean_title,
             "time": format_pub_date(pub_date_raw),
             "url": link,
+            "naver_url": naver_link,
             "content": clean_desc
         })
 
-    def enrich_item_title(item_obj):
-        title = item_obj["title"]
-        if title.endswith("...") or title.endswith("…") or "..." in title:
-            full_title = fetch_full_title_from_url(item_obj["url"])
-            if full_title:
-                item_obj["title"] = full_title
-        return item_obj
-
-    if os.getenv("VERCEL") != "1":
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            items = list(executor.map(enrich_item_title, items))
-
     print(f"✅ [네이버 뉴스 (고품질 정밀 수집)] '{keyword}' {len(items)}건 수집 완료!")
     return items
+
+
 
 def fetch_korea_kr_rss(limit=100):
     headers = {
@@ -633,7 +655,7 @@ def fetch_korea_kr_rss(limit=100):
     def fetch_single_page(page):
         url = f"https://www.korea.kr/briefing/pressReleaseList.do?pageIndex={page}"
         try:
-            res = requests.get(url, headers=headers, timeout=4)
+            res = requests.get(url, headers=headers, timeout=5.0)
             if res.status_code == 200:
                 return (page, res.text)
         except Exception as e:
@@ -645,7 +667,7 @@ def fetch_korea_kr_rss(limit=100):
         futures = [executor.submit(fetch_single_page, p) for p in range(1, 4)]
         for f in futures:
             try:
-                pages_html.append(f.result(timeout=4.0))
+                pages_html.append(f.result(timeout=6.0))
             except Exception:
                 pass
 
@@ -723,56 +745,80 @@ def fetch_korea_kr_rss(limit=100):
 
     return items
 
-def fetch_yongin_city_press_page(session, page, headers):
+
+def fetch_yongin_city_press_page(page, headers):
+    import ssl
+    class LegacySSLAdapter(requests.adapters.HTTPAdapter):
+        def init_poolmanager(self, *args, **kwargs):
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            try:
+                ctx.set_ciphers('DEFAULT@SECLEVEL=1')
+            except Exception:
+                pass
+            kwargs['ssl_context'] = ctx
+            return super().init_poolmanager(*args, **kwargs)
+
     base_url = "https://www.yongin.go.kr/user/bbs/BD_selectBbsList.do?q_bbsCode=1020"
     url = f"{base_url}&q_currPage={page}"
     items = []
-    try:
-        res = session.get(url, headers=headers, timeout=10)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, "html.parser")
-            for idx, li in enumerate(soup.select("ul.bbs_list > li, ol.bbs_list > li, .heading")):
-                a_tag = li.select_one("dt.btitle a")
-                if not a_tag:
-                    continue
-                title = a_tag.get_text(strip=True)
-                if not title or len(title) < 4:
-                    continue
-                
-                href = a_tag.get("href", "")
-                if href.startswith("BD_selectBbs"):
-                    detail_url = f"https://www.yongin.go.kr/user/bbs/{href}"
-                elif href.startswith("/"):
-                    detail_url = f"https://www.yongin.go.kr{href}"
-                else:
-                    detail_url = href
-                
-                info_lis = li.select("dd.binfo li")
-                dept = info_lis[0].get_text(strip=True) if len(info_lis) > 0 else "공보관"
-                raw_date = info_lis[1].get_text(strip=True) if len(info_lis) > 1 else ""
-                
-                date_str = datetime.now().strftime("%Y-%m-%d 09:00:00")
-                if raw_date and len(raw_date) >= 10:
-                    date_str = raw_date[:10].replace(".", "-").replace("/", "-") + " 09:00:00"
 
-                match_sn = re.search(r"q_bbscttSn=(\d+)", href)
-                sn = match_sn.group(1) if match_sn else f"{page}_{idx}"
+    for attempt in range(2):
+        session = requests.Session()
+        session.mount('https://', LegacySSLAdapter())
+        try:
+            res = session.get(url, headers=headers, timeout=10.0)
+            if res.status_code == 200:
+                soup = BeautifulSoup(res.text, "html.parser")
+                for idx, li in enumerate(soup.select("ul.bbs_list > li, ol.bbs_list > li, .heading")):
+                    a_tag = li.select_one("dt.btitle a")
+                    if not a_tag:
+                        continue
+                    title = a_tag.get_text(strip=True)
+                    if not title or len(title) < 4:
+                        continue
+                    
+                    href = a_tag.get("href", "")
+                    if href.startswith("BD_selectBbs"):
+                        detail_url = f"https://www.yongin.go.kr/user/bbs/{href}"
+                    elif href.startswith("/"):
+                        detail_url = f"https://www.yongin.go.kr{href}"
+                    else:
+                        detail_url = href
+                    
+                    info_lis = li.select("dd.binfo li")
+                    dept = info_lis[0].get_text(strip=True) if len(info_lis) > 0 else "공보관"
+                    raw_date = info_lis[1].get_text(strip=True) if len(info_lis) > 1 else ""
+                    
+                    date_str = datetime.now().strftime("%Y-%m-%d 09:00:00")
+                    if raw_date and len(raw_date) >= 10:
+                        date_str = raw_date[:10].replace(".", "-").replace("/", "-") + " 09:00:00"
 
-                item_obj = {
-                    "id": f"yongin_press_{sn}",
-                    "keyword": "용인시 보도자료",
-                    "type": "news",
-                    "badge": f"🏛️ 용인시 ({dept})",
-                    "publisher": "용인시",
-                    "title": title,
-                    "time": date_str,
-                    "url": detail_url,
-                    "content": f"[용인특례시 보도자료] {title}",
-                    "dept": "용인시"
-                }
-                items.append(item_obj)
-    except Exception as e:
-        print(f"Yongin City Press page {page} fetch error:", e)
+                    match_sn = re.search(r"q_bbscttSn=(\d+)", href)
+                    sn = match_sn.group(1) if match_sn else f"{page}_{idx}"
+
+                    item_obj = {
+                        "id": f"yongin_press_{sn}",
+                        "keyword": "용인시 보도자료",
+                        "type": "news",
+                        "badge": f"🏛️ 용인시 ({dept})",
+                        "publisher": "용인시",
+                        "title": title,
+                        "time": date_str,
+                        "url": detail_url,
+                        "content": f"[용인특례시 보도자료] {title}",
+                        "dept": "용인시"
+                    }
+                    items.append(item_obj)
+                if items:
+                    return page, items
+        except Exception as e:
+            if attempt == 0:
+                import time
+                time.sleep(0.5)
+            else:
+                print(f"Yongin City Press page {page} fetch error:", e)
     return page, items
 
 def fetch_yongin_city_press_releases(limit=40):
@@ -781,26 +827,10 @@ def fetch_yongin_city_press_releases(limit=40):
     }
     items = []
     try:
-        import ssl
-        class LegacySSLAdapter(requests.adapters.HTTPAdapter):
-            def init_poolmanager(self, *args, **kwargs):
-                ctx = ssl.create_default_context()
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
-                try:
-                    ctx.set_ciphers('DEFAULT@SECLEVEL=1')
-                except Exception:
-                    pass
-                kwargs['ssl_context'] = ctx
-                return super().init_poolmanager(*args, **kwargs)
-
-        session = requests.Session()
-        session.mount('https://', LegacySSLAdapter())
-
         pages_map = {}
         with ThreadPoolExecutor(max_workers=4) as executor:
-            futures = [executor.submit(fetch_yongin_city_press_page, session, page, headers) for page in range(1, 5)]
-            for f in futures:
+            futures = {executor.submit(fetch_yongin_city_press_page, page, headers): page for page in range(1, 5)}
+            for f in as_completed(futures, timeout=15.0):
                 try:
                     p, p_items = f.result()
                     pages_map[p] = p_items
@@ -816,6 +846,7 @@ def fetch_yongin_city_press_releases(limit=40):
                 break
     except Exception as e:
         print("Yongin City Press Release fetch error:", e)
+
     return items
 
 # ----------------------------------------------------
@@ -826,15 +857,21 @@ def collect_all_issues(keywords=None, tab="realtime"):
         with ThreadPoolExecutor(max_workers=2) as executor:
             f_yongin = executor.submit(fetch_yongin_city_press_releases, 40)
             f_gov = executor.submit(fetch_korea_kr_rss, 50)
-            yongin_press = f_yongin.result()
-            gov_press = f_gov.result()
-        raw_issues = yongin_press + gov_press
+            try:
+                yongin_press = f_yongin.result() or []
+            except Exception:
+                yongin_press = []
+            try:
+                gov_press = f_gov.result() or []
+            except Exception:
+                gov_press = []
+        raw_issues = (yongin_press or []) + (gov_press or [])
         print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 탭[press] 용인시청 및 공식 보도자료 정리 완료 ({len(raw_issues)}건)")
         return raw_issues
 
     if not keywords:
         if tab == "exclusive":
-            keywords = ["[단독]", "단독 보도", "단독 뉴스"]
+            keywords = ["[단독]"]
         else:
             keywords = ["용인시", "처인구", "용인특례시"]
 
@@ -871,22 +908,33 @@ def collect_all_issues(keywords=None, tab="realtime"):
 
     print(f"📊 원본 이슈 {len(raw_issues)}건 ➔ 탭[{tab}] 정리 완료 ({len(deduped_issues)}건)")
 
-    # 뉴스 타이틀 원문 긁어오기 (Vercel 서벌리스 환경에서는 타임아웃 방지를 위해 건너뜀)
+    # 뉴스 타이틀 원문 복원 (오직 말줄임표 ... 으로 끝난 기사만 선별하여 안전하게 병렬 보강)
     def enrich_item_title(item_obj):
-        if os.getenv("VERCEL") == "1":
-            return item_obj
-        if item_obj.get("type") != "news":
+        if not item_obj or item_obj.get("type") != "news":
             return item_obj
         title = item_obj.get("title", "")
-        if title.endswith("...") or title.endswith("…") or "..." in title:
-            full_title = fetch_full_title_from_url(item_obj.get("url", ""))
+        if title.endswith("...") or title.endswith("…") or title.endswith(".."):
+            full_title = fetch_full_title_from_url(item_obj.get("url", ""), item_obj.get("naver_url"))
             if full_title:
                 item_obj["title"] = full_title
         return item_obj
 
-    if os.getenv("VERCEL") != "1":
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            deduped_issues = list(executor.map(enrich_item_title, deduped_issues))
+    # 제목이 잘린 기사만 추출하여 병렬 보강 (최대 8스레드, 타임아웃 및 언론사 장애 완벽 격리)
+    items_to_enrich = [
+        item for item in deduped_issues
+        if item.get("type") == "news" and (item.get("title", "").endswith("...") or item.get("title", "").endswith("…") or item.get("title", "").endswith(".."))
+    ]
+    if items_to_enrich:
+        try:
+            with ThreadPoolExecutor(max_workers=min(len(items_to_enrich), 8)) as executor:
+                futures = [executor.submit(enrich_item_title, it) for it in items_to_enrich]
+                for f in as_completed(futures, timeout=2.5):
+                    try:
+                        f.result()
+                    except Exception:
+                        pass
+        except Exception as e:
+            pass
 
     # 온디맨드 AI 요약 캐시 연동
     final_issues = []

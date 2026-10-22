@@ -21,7 +21,7 @@
     rel="stylesheet">
 
   <!-- Modular Design System CSS -->
-  <link rel="stylesheet" href="css/styles.css?v=2300">
+  <link rel="stylesheet" href="css/styles.css?v=3100">
 </head>
 
 <body>
@@ -108,32 +108,51 @@
         </div>
       </div>
 
-      <!-- Feed Container -->
-      <div class="feed-container" id="feedContainer">
-        <div class="ptr-banner" id="ptrBanner">
-          <span class="ptr-icon">👇</span>
+      <!-- Top Refresh Progress Indicator -->
+      <div class="refresh-progress-bar" id="refreshProgressBar"></div>
+
+      <!-- Pull To Refresh Banner (Persistent across all tabs) -->
+      <div class="ptr-banner" id="ptrBanner">
+        <div class="ptr-status-indicator">
+          <div class="ptr-icon-wrap">
+            <svg class="ptr-icon ptr-arrow-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
+            <svg class="ptr-icon ptr-spinner-svg" viewBox="0 0 24 24" width="16" height="16" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.4" stroke-opacity="0.25"/>
+              <path d="M12 3 A9 9 0 0 1 21 12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+            <svg class="ptr-icon ptr-check-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
           <span class="ptr-text">아래로 당겨서 새로고침</span>
         </div>
+      </div>
+
+      <!-- Feed Container -->
+      <div class="feed-container" id="feedContainer">
         <!-- Rendered dynamically by app.js -->
       </div>
 
       <!-- Bottom Navigation Bar (4 Main Content Categories) -->
       <div class="app-bottom-nav">
         <button class="nav-item active" data-tab="feed" onclick="switchNavTab('feed', this)">
-          <span class="nav-icon">🏠</span>
-          <span>실시간 피드</span>
-        </button>
-        <button class="nav-item" data-tab="paper" onclick="switchNavTab('paper', this)">
-          <span class="nav-icon">📰</span>
-          <span>지면보기</span>
-        </button>
-        <button class="nav-item" data-tab="exclusive" onclick="switchNavTab('exclusive', this)">
-          <span class="nav-icon">🎯</span>
-          <span>단독뉴스</span>
+          <span class="nav-icon">📡</span>
+          <span>언론보도</span>
         </button>
         <button class="nav-item" data-tab="press" onclick="switchNavTab('press', this)">
-          <span class="nav-icon">📋</span>
+          <span class="nav-icon">📢</span>
           <span>보도자료</span>
+        </button>
+        <button class="nav-item" data-tab="paper" onclick="switchNavTab('paper', this)">
+          <span class="nav-icon">🗞️</span>
+          <span>지면신문</span>
+        </button>
+        <button class="nav-item" data-tab="exclusive" onclick="switchNavTab('exclusive', this)">
+          <span class="nav-icon">🔍</span>
+          <span>주요기사</span>
         </button>
       </div>
 
@@ -145,20 +164,7 @@
             <button class="modal-close" onclick="toggleSettingsModal()">✕</button>
           </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <h4>📰 지면 신문사 선택</h4>
-              <p>지면 탭에 기본 노출할 주요 신문사를 선택합니다.</p>
-            </div>
-            <select id="paperProviderSelect" onchange="updatePaperProviderSetting(this.value)"
-              style="padding: 6px 10px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 12px; font-weight: 700; background: #F8FAFC; color: #1E293B; cursor: pointer;">
-              <option value="mknews">📈 매일경제</option>
-              <option value="etnews">📰 전자신문</option>
-              <option value="khan">🗞️ 경향신문</option>
-            </select>
-          </div>
-
-          <div style="margin-top: 16px;">
+          <div style="margin-top: 4px;">
             <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">📌 모니터링 키워드 관리
             </h4>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="settingsKeywordChips">
@@ -226,35 +232,44 @@
 
       <div style="display: flex; flex-direction: column; gap: 9px; text-align: left; margin-bottom: 16px; overflow-y: auto; padding-right: 4px; flex: 1;">
         
-        <!-- 1. 실시간 피드 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 18px; line-height: 1;">🔥</span>
+        <!-- 1. 언론보도 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 18px; line-height: 1;">📡</span>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">실시간 맞춤 이슈 피드</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">용인시, 처인구 등 주요 관심 키워드의 최신 뉴스를 실시간으로 자동 모아봅니다.</div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">언론보도 (실시간 맞춤 이슈)</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">용인시, 처인구 등 주요 관심 키워드의 최신 언론 보도를 실시간으로 자동 모아봅니다.</div>
           </div>
         </div>
 
-        <!-- 2. 단독뉴스 & 보도자료 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 18px; line-height: 1;">🎯</span>
+        <!-- 2. 보도자료 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 18px; line-height: 1;">📢</span>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">단독 뉴스 & 공식 보도자료</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">주요 언론사의 <strong>[단독]</strong> 속보와 용인시청·정부 부처의 <strong>공식 보도자료</strong>를 한곳에서 탐색합니다.</div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">보도자료 (공식 시정 발표)</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">용인특례시청과 정부 중앙부처의 공신력 있는 <strong>공식 보도자료</strong>를 부처별로 탐색합니다.</div>
           </div>
         </div>
 
-        <!-- 3. 지면신문 보기 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+        <!-- 3. 지면신문 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
           <span style="font-size: 18px; line-height: 1;">🗞️</span>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">오늘의 주요 지면신문 보기</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">매일경제, 전자신문, 경향신문의 오늘자 지면 기사를 지면/섹션별로 빠르게 읽습니다.</div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">지면신문 (오늘의 조간 지면)</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">매일경제, 전자신문, 경향신문의 오늘자 인쇄 지면 기사를 지면/섹션별로 빠르게 읽습니다.</div>
           </div>
         </div>
 
-        <!-- 4. FactChat AI 3줄 요약 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+        <!-- 4. 주요기사 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 18px; line-height: 1;">🔍</span>
+          <div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">주요기사 (단독·심층 탐사)</div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">주요 언론사의 <strong>[단독]</strong> 속보와 꼭 챙겨봐야 할 핵심 주요 뉴스를 엄선하여 탐색합니다.</div>
+          </div>
+        </div>
+
+        <!-- 5. FactChat AI 3줄 요약 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
           <span style="font-size: 18px; line-height: 1;">🤖</span>
           <div>
             <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">FactChat AI 3줄 요약 & 리스크 분석</div>
@@ -262,8 +277,8 @@
           </div>
         </div>
 
-        <!-- 5. 스크랩 & 카톡 공유 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 10px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+        <!-- 6. 스크랩 & 카톡 공유 -->
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
           <span style="font-size: 18px; line-height: 1;">⭐</span>
           <div>
             <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">스크랩 보관함 & 카카오톡 공유</div>
@@ -348,9 +363,9 @@
   </div>
 
   <!-- Deep Module Scripts -->
-  <script src="js/storage.js?v=2300"></script>
-  <script src="js/api.js?v=2300"></script>
-  <script src="js/app.js?v=2300"></script>
+  <script src="js/storage.js?v=3100"></script>
+  <script src="js/api.js?v=3100"></script>
+  <script src="js/app.js?v=3100"></script>
 </body>
 
 </html>

@@ -1,6 +1,28 @@
 /**
  * Application Controller & UI View Coordinator
  */
+
+// Disable automatic browser scroll restoration so views always start at top (0)
+if ('scrollRestoration' in history) {
+  try {
+    history.scrollRestoration = 'manual';
+  } catch (e) {}
+}
+
+// Proactively purge all legacy paper_scroll keys from storage
+try {
+  localStorage.removeItem('paper_scroll_y');
+  sessionStorage.removeItem('paper_scroll_y');
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && k.includes('paper_scroll')) localStorage.removeItem(k);
+  }
+  for (let i = sessionStorage.length - 1; i >= 0; i--) {
+    const k = sessionStorage.key(i);
+    if (k && k.includes('paper_scroll')) sessionStorage.removeItem(k);
+  }
+} catch (e) {}
+
 let deferredPrompt = null;
 let currentIssues = [];
 const keywordFeeds = {}; // Cache feeds per keyword
@@ -99,7 +121,6 @@ function renderPaperProviderChips() {
 }
 
 function selectPaperProvider(providerId) {
-  scrollToTop();
   currentPaperProvider = providerId;
   StorageManager.savePaperProvider(providerId);
 
@@ -107,7 +128,11 @@ function selectPaperProvider(providerId) {
   if (selectElem) selectElem.value = providerId;
 
   const container = document.getElementById('feedContainer');
-  if (container) container.removeAttribute('data-rendered-key');
+  if (container) {
+    container.removeAttribute('data-rendered-key');
+    container.scrollTop = 0;
+  }
+  scrollToTop();
 
   renderPaperProviderChips();
   loadPaperForCurrentDate();
@@ -198,12 +223,22 @@ function removeKeyword(kw, event) {
   showToast(`'# ${kw}' 키워드가 삭제되었습니다.`);
 }
 
+// Helper: Toggle Top Refresh Progress Bar
+function setRefreshProgress(active) {
+  const bar = document.getElementById('refreshProgressBar');
+  if (bar) {
+    if (active) {
+      bar.classList.add('active');
+    } else {
+      bar.classList.remove('active');
+    }
+  }
+}
+
 // Realtime Feed Refresh Function
 async function refreshFeed() {
   scrollToTop();
   const feedContainer = document.getElementById('feedContainer');
-  showToast('🔄 실시간 이슈 수집 및 새로고침 중...');
-  if (feedContainer) feedContainer.style.opacity = '0.5';
   try {
     const userKws = StorageManager.getKeywords();
     if (!userKws.includes(currentKeyword)) {
@@ -214,7 +249,6 @@ async function refreshFeed() {
   } catch (err) {
     console.warn('Refresh error:', err);
   } finally {
-    if (feedContainer) feedContainer.style.opacity = '1';
     showToast('✅ 실시간 피드 새로고침 완료!');
   }
 }
@@ -353,6 +387,12 @@ async function switchNavTab(tab, btn) {
   if (tab === 'paper') {
     if (keywordChips) keywordChips.style.display = 'none';
     if (etnewsHeader) etnewsHeader.style.display = 'flex';
+    const container = document.getElementById('feedContainer');
+    if (container) {
+      container.scrollTop = 0;
+      container.removeAttribute('data-rendered-key');
+    }
+    scrollToTop();
     renderPaperProviderChips();
     await loadPaperForCurrentDate();
   } else {
@@ -673,7 +713,7 @@ function renderIssues() {
     displayItems = deduplicateIssues(displayItems);
 
     let html = `
-      <div class="realtime-bar" onclick="refreshFeed()" style="cursor:pointer;" title="클릭 시 실시간 소식 새로고침">
+      <div class="realtime-bar" onclick="executeTabRefresh()" style="cursor:pointer;" title="클릭 시 실시간 소식 새로고침">
         <div class="realtime-indicator">
           <div class="live-dot"></div>
           <span>접속 시점 기준 실시간 이슈 피드 (${displayItems.length}건)</span>
@@ -703,8 +743,10 @@ function renderIssues() {
 
   // --- Other Feed Views ('exclusive', 'press') ---
   const tabTitles = {
-    exclusive: '🎯 단독 뉴스',
-    press: '📋 공식 보도자료'
+    feed: '📡 언론보도',
+    press: '📢 공식 보도자료',
+    paper: '🗞️ 지면신문',
+    exclusive: '🔍 주요기사'
   };
 
   let displayItems = currentIssues;
@@ -720,10 +762,10 @@ function renderIssues() {
   }
 
   let html = `
-    <div class="realtime-bar" onclick="switchNavTab('${currentNavTab}')" style="cursor:pointer;">
+    <div class="realtime-bar" onclick="executeTabRefresh()" style="cursor:pointer;" title="클릭 시 최신 소식 새로고침">
       <div class="realtime-indicator">
         <div class="live-dot"></div>
-        <span>${tabTitles[currentNavTab] || '실시간 피드'} (${displayItems.length}건)</span>
+        <span>${tabTitles[currentNavTab] || '📡 언론보도'} (${displayItems.length}건)</span>
       </div>
       <span style="font-size: 11px; opacity: 0.8;">🔄 새로고침</span>
     </div>
@@ -802,7 +844,7 @@ function renderIssueCardHtml(item, isScrapped) {
   const timeAttr = (item.time || '').replace(/"/g, '&quot;');
 
   return `
-    <div class="issue-card" onclick="saveCurrentPaperScroll()" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '뉴스'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
+    <div class="issue-card" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '뉴스'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
       <div class="card-top">
         <span class="source-tag source-news">${item.badge || '📰 이슈'} ${isNegBadge}</span>
         <span class="card-date card-time">${formatRelativeTime(item.time)}</span>
@@ -827,7 +869,7 @@ function renderIssueCardHtml(item, isScrapped) {
           </button>
           <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
         </div>
-        <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn" onclick="saveCurrentPaperScroll()">원문 보기 ↗</a>
+        <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">원문 보기 ↗</a>
       </div>
     </div>
   `;
@@ -952,50 +994,18 @@ function shareArticle(btn) {
 // --- Paper View logic ---
 function getPaperScrollY() {
   const container = document.getElementById('feedContainer');
-  const containerScroll = container ? container.scrollTop : 0;
-  const winScroll = window.scrollY || document.documentElement.scrollTop || 0;
-  return Math.max(containerScroll, winScroll);
+  return container ? container.scrollTop : 0;
 }
 
 function saveCurrentPaperScroll() {
-  if (currentNavTab === 'paper') {
-    const y = getPaperScrollY();
-    if (y > 0) {
-      const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
-      try {
-        sessionStorage.setItem(`paper_scroll_${cacheKey}`, y);
-        localStorage.setItem(`paper_scroll_${cacheKey}`, y);
-        sessionStorage.setItem('paper_scroll_y', y);
-        localStorage.setItem('paper_scroll_y', y);
-      } catch (e) { }
-    }
-  }
+  // Purposely empty: Never store or restore mid-article scroll positions in paper view
 }
 
 function restorePaperScrollY() {
-  if (currentNavTab !== 'paper') return;
-  const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
-  try {
-    const savedScroll = sessionStorage.getItem(`paper_scroll_${cacheKey}`) ||
-      localStorage.getItem(`paper_scroll_${cacheKey}`) ||
-      sessionStorage.getItem('paper_scroll_y') ||
-      localStorage.getItem('paper_scroll_y');
-
-    if (savedScroll && parseInt(savedScroll, 10) > 0) {
-      const y = parseInt(savedScroll, 10);
-      const applyScroll = () => {
-        const container = document.getElementById('feedContainer');
-        if (container) container.scrollTop = y;
-        window.scrollTo(0, y);
-      };
-      applyScroll();
-      requestAnimationFrame(applyScroll);
-      setTimeout(applyScroll, 20);
-      setTimeout(applyScroll, 80);
-      setTimeout(applyScroll, 200);
-      setTimeout(applyScroll, 450);
-    }
-  } catch (e) { }
+  // Always guarantee paper view starts cleanly at the top (scrollTop = 0)
+  const container = document.getElementById('feedContainer');
+  if (container) container.scrollTop = 0;
+  scrollToTop();
 }
 
 async function loadPaperForCurrentDate(forceRefresh = false) {
@@ -1011,11 +1021,11 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
     container.removeAttribute('data-rendered-key');
   }
 
-  // 1. Instant rendering from Memory / Local Storage Cache (0ms delay, no loading spinner)
+  // 1. Instant rendering from Memory / Local Storage Cache
   let cachedData = paperFeedsCache[cacheKey] || StorageManager.getPaperCache(cacheKey);
   let hasRenderedCache = false;
 
-  if (!forceRefresh && cachedData && cachedData.articles && cachedData.articles.length > 0) {
+  if (cachedData && cachedData.articles && cachedData.articles.length > 0) {
     paperData = cachedData;
     paperFeedsCache[cacheKey] = cachedData;
     currentPaperSection = (savedSection && (savedSection === 'all' || (cachedData.sections && cachedData.sections.includes(savedSection)))) ? savedSection : 'all';
@@ -1024,9 +1034,9 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
     hasRenderedCache = true;
   }
 
-  // 2. Only show loading spinner if NO cached cards rendered
+  // 2. Only show loading placeholder if container is completely empty
   const currentKey = `${currentPaperProvider}_${currentPaperDate}_${currentPaperSection}`;
-  if (!hasRenderedCache && container && (!container.querySelector('.issue-card') || container.getAttribute('data-rendered-key') !== currentKey)) {
+  if (!hasRenderedCache && container && !container.querySelector('.issue-card')) {
     container.innerHTML = `
       <div style="text-align:center; padding: 60px 20px; color:#64748B;">
         <span class="spin-icon" style="font-size:24px; display:inline-block; margin-bottom:8px;">🔄</span>
@@ -1051,9 +1061,6 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
     }
   } catch (err) {
     console.warn('Paper fetch error:', err);
-    if (!hasRenderedCache && container && !container.querySelector('.issue-card')) {
-      container.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:#EF4444;">지면 데이터를 불러오는 중 오류가 발생했습니다.</div>`;
-    }
   }
 }
 
@@ -1080,7 +1087,6 @@ function renderPaperSections() {
 }
 
 function selectPaperSection(sec) {
-  scrollToTop();
   currentPaperSection = sec;
   const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
   try {
@@ -1089,17 +1095,25 @@ function selectPaperSection(sec) {
   } catch (e) { }
 
   const container = document.getElementById('feedContainer');
-  if (container) container.removeAttribute('data-rendered-key');
+  if (container) {
+    container.removeAttribute('data-rendered-key');
+    container.scrollTop = 0;
+  }
+  scrollToTop();
 
   renderPaperSections();
-  renderPaperView();
+  renderPaperView(false);
 }
 
 function onPaperDateChange(val) {
   if (val) {
     currentPaperDate = val;
     const container = document.getElementById('feedContainer');
-    if (container) container.removeAttribute('data-rendered-key');
+    if (container) {
+      container.removeAttribute('data-rendered-key');
+      container.scrollTop = 0;
+    }
+    scrollToTop();
     loadPaperForCurrentDate();
   }
 }
@@ -1109,11 +1123,15 @@ function setPaperToday() {
   const picker = document.getElementById('etnewsDatePicker');
   if (picker) picker.value = currentPaperDate;
   const container = document.getElementById('feedContainer');
-  if (container) container.removeAttribute('data-rendered-key');
+  if (container) {
+    container.removeAttribute('data-rendered-key');
+    container.scrollTop = 0;
+  }
+  scrollToTop();
   loadPaperForCurrentDate();
 }
 
-function renderPaperView() {
+function renderPaperView(isRestoring = false) {
   const container = document.getElementById('feedContainer');
   if (!container) return;
 
@@ -1128,15 +1146,18 @@ function renderPaperView() {
       </div>
     `;
     container.removeAttribute('data-rendered-key');
+    container.scrollTop = 0;
+    scrollToTop();
     return;
   }
 
   const currentKey = `${currentPaperProvider}_${currentPaperDate}_${currentPaperSection}`;
   const existingKey = container.getAttribute('data-rendered-key');
 
-  // If container ALREADY has rendered cards for this exact provider, date & section, DO NOT TOUCH DOM!
+  // If container ALREADY has rendered cards for this exact provider, date & section, simply ensure top
   if (existingKey === currentKey && container.querySelector('.issue-card')) {
-    restorePaperScrollY();
+    container.scrollTop = 0;
+    scrollToTop();
     return;
   }
 
@@ -1146,7 +1167,7 @@ function renderPaperView() {
   }
 
   let html = `
-    <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155; cursor:pointer;" onclick="loadPaperForCurrentDate(true)" title="클릭 시 지면 신문 새로고침">
+    <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155; cursor:pointer;" onclick="executeTabRefresh()" title="클릭 시 지면 신문 새로고침">
       <div class="realtime-indicator">
         <span>${providerObj.badge} ${providerObj.name} 지면 (${articlesToRender.length}건)</span>
       </div>
@@ -1161,49 +1182,23 @@ function renderPaperView() {
 
   container.innerHTML = html;
   container.setAttribute('data-rendered-key', currentKey);
-  restorePaperScrollY();
+  container.scrollTop = 0;
+  scrollToTop();
 }
-
-document.addEventListener('scroll', () => {
-  if (currentNavTab === 'paper') {
-    saveCurrentPaperScroll();
-  }
-}, { capture: true, passive: true });
 
 function handleBackOrRestore() {
   if (currentNavTab === 'paper') {
     const container = document.getElementById('feedContainer');
-    const cacheKey = `${currentPaperProvider}_${currentPaperDate}`;
-    const currentKey = `${currentPaperProvider}_${currentPaperDate}_${currentPaperSection}`;
-
-    // If paper view is ALREADY present and rendered for this exact key, DO NOT TOUCH DOM!
-    if (container && container.getAttribute('data-rendered-key') === currentKey && container.querySelector('.issue-card')) {
-      restorePaperScrollY();
-      return;
-    }
-
-    let cachedData = paperFeedsCache[cacheKey];
-    if (!cachedData) {
-      cachedData = StorageManager.getPaperCache(cacheKey);
-    }
-    if (cachedData && cachedData.articles && cachedData.articles.length > 0) {
-      paperData = cachedData;
-      paperFeedsCache[cacheKey] = cachedData;
-      const savedSection = sessionStorage.getItem(`paper_sec_${cacheKey}`) || localStorage.getItem(`paper_sec_${cacheKey}`);
-      currentPaperSection = (savedSection && (savedSection === 'all' || (cachedData.sections && cachedData.sections.includes(savedSection)))) ? savedSection : 'all';
-      renderPaperSections();
-      renderPaperView();
-    } else {
-      restorePaperScrollY();
-    }
+    if (container) container.scrollTop = 0;
+    scrollToTop();
   }
 }
 
-window.addEventListener('popstate', (event) => {
+window.addEventListener('popstate', () => {
   handleBackOrRestore();
 });
 
-window.addEventListener('pageshow', (event) => {
+window.addEventListener('pageshow', () => {
   handleBackOrRestore();
 });
 
@@ -1387,46 +1382,34 @@ function switchInstallTab(type) {
 
 /* --- Pull-To-Refresh (PTR) Implementation Across All Tabs --- */
 function getPtrBanner() {
-  const container = document.getElementById('feedContainer');
-  if (!container) return null;
-  let banner = document.getElementById('ptrBanner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'ptrBanner';
-    banner.className = 'ptr-banner';
-    banner.innerHTML = `<span class="ptr-icon">👇</span><span class="ptr-text">아래로 당겨서 새로고침</span>`;
-    container.insertBefore(banner, container.firstChild);
-  }
-  return banner;
+  return document.getElementById('ptrBanner');
 }
 
 function initPullToRefresh() {
   const container = document.getElementById('feedContainer');
-  if (!container) return;
+  const banner = document.getElementById('ptrBanner');
+  const screen = document.querySelector('.app-screen') || document.body;
+  if (!container || !banner) return;
 
   let startY = 0;
   let isPulling = false;
   let isRefreshing = false;
   let isMouseDown = false;
-  const THRESHOLD = 55;
+  const THRESHOLD = 52;
 
   const updatePtrVisuals = (dy) => {
     if (dy <= 0) return;
-    const banner = getPtrBanner();
-    if (!banner) return;
-
-    const pullDist = Math.min(Math.pow(dy, 0.82), 75);
+    const pullDist = Math.min(Math.pow(dy, 0.82), 52);
     banner.classList.add('pulling');
     banner.style.height = `${pullDist}px`;
     banner.style.opacity = `${Math.min(pullDist / THRESHOLD, 1)}`;
-    banner.style.marginBottom = pullDist > 8 ? '8px' : '0';
+    banner.style.marginTop = '0';
+    banner.style.marginBottom = '0';
 
-    const icon = banner.querySelector('.ptr-icon');
     const text = banner.querySelector('.ptr-text');
-
     if (pullDist >= THRESHOLD) {
       banner.classList.add('release');
-      if (text) text.textContent = '놓으면 새로고침';
+      if (text) text.textContent = '손을 놓으면 최신 소식 수집';
     } else {
       banner.classList.remove('release');
       if (text) text.textContent = '아래로 당겨서 새로고침';
@@ -1438,58 +1421,34 @@ function initPullToRefresh() {
     isPulling = false;
     isMouseDown = false;
 
-    const banner = document.getElementById('ptrBanner');
-    if (!banner) return;
-
     const currentHeight = parseFloat(banner.style.height || '0');
     banner.classList.remove('pulling');
 
     if (currentHeight >= THRESHOLD) {
       isRefreshing = true;
-      banner.className = 'ptr-banner refreshing';
-      banner.style.height = '46px';
-      banner.style.opacity = '1';
-      banner.style.marginBottom = '10px';
-
-      const icon = banner.querySelector('.ptr-icon');
-      const text = banner.querySelector('.ptr-text');
-      if (icon) icon.textContent = '🔄';
-      if (text) text.textContent = '최신 데이터 업데이트 중...';
-
       try {
         await executeTabRefresh();
-      } catch (err) {
-        console.warn('PTR refresh error:', err);
       } finally {
-        setTimeout(() => {
-          banner.style.height = '0';
-          banner.style.opacity = '0';
-          banner.style.marginBottom = '0';
-          setTimeout(() => {
-            banner.className = 'ptr-banner';
-            if (icon) icon.textContent = '👇';
-            if (text) text.textContent = '아래로 당겨서 새로고침';
-            isRefreshing = false;
-          }, 250);
-        }, 400);
+        isRefreshing = false;
       }
     } else {
       banner.style.height = '0';
       banner.style.opacity = '0';
+      banner.style.marginTop = '0';
       banner.style.marginBottom = '0';
       banner.classList.remove('release');
     }
   };
 
-  // Touch events for Mobile
-  container.addEventListener('touchstart', (e) => {
+  // Touch events for Mobile: attached to screen so pulling on header works on all tabs
+  screen.addEventListener('touchstart', (e) => {
     if (container.scrollTop <= 0 && !isRefreshing && e.touches.length === 1) {
       startY = e.touches[0].pageY;
       isPulling = true;
     }
   }, { passive: true });
 
-  container.addEventListener('touchmove', (e) => {
+  screen.addEventListener('touchmove', (e) => {
     if (!isPulling || isRefreshing || e.touches.length !== 1) return;
     const currentY = e.touches[0].pageY;
     const dy = currentY - startY;
@@ -1498,11 +1457,12 @@ function initPullToRefresh() {
     }
   }, { passive: true });
 
-  container.addEventListener('touchend', handleDragEnd, { passive: true });
-  container.addEventListener('touchcancel', handleDragEnd, { passive: true });
+  screen.addEventListener('touchend', handleDragEnd, { passive: true });
+  screen.addEventListener('touchcancel', handleDragEnd, { passive: true });
 
   // Mouse drag support for Desktop preview
-  container.addEventListener('mousedown', (e) => {
+  screen.addEventListener('mousedown', (e) => {
+    if (e.target.closest('button, input, select, .nav-item, .chip, .etnews-today-btn, .ai-summary-toggle-btn')) return;
     if (container.scrollTop <= 0 && !isRefreshing && e.button === 0) {
       startY = e.pageY;
       isMouseDown = true;
@@ -1525,35 +1485,75 @@ function initPullToRefresh() {
   });
 }
 
+// Unified Refresh Architecture across ALL 4 TABS
 async function executeTabRefresh() {
-  switch (currentNavTab) {
-    case 'feed':
-      await refreshFeed();
-      break;
-    case 'paper':
-      await loadPaperForCurrentDate(true);
-      showToast('📰 지면 신문 최신 기사 수집 완료!');
-      break;
-    case 'exclusive':
-    case 'press':
-      const tabTitle = currentNavTab === 'exclusive' ? '단독뉴스' : '보도자료';
-      showToast(`🔄 [${tabTitle}] 최신 데이터 수집 중...`);
-      const liveIssues = await IssueApi.fetchLiveTabIssues(currentNavTab);
-      if (liveIssues && liveIssues.length > 0) {
-        tabFeeds[currentNavTab] = liveIssues;
-        currentIssues = liveIssues;
+  const banner = document.getElementById('ptrBanner');
+  const feedContainer = document.getElementById('feedContainer');
+  const realtimeBar = document.querySelector('.realtime-bar');
+
+  setRefreshProgress(true);
+  if (realtimeBar) realtimeBar.classList.add('refreshing');
+  if (feedContainer) feedContainer.style.opacity = '0.7';
+
+  const currentTab = currentNavTab;
+  let tabLabel = '언론보도';
+  if (currentTab === 'paper') tabLabel = '지면신문';
+  else if (currentTab === 'exclusive') tabLabel = '주요기사';
+  else if (currentTab === 'press') tabLabel = '보도자료';
+  else if (currentTab === 'bookmark') tabLabel = '보관함';
+
+  if (banner) {
+    banner.className = 'ptr-banner refreshing';
+    banner.style.height = '38px';
+    banner.style.opacity = '1';
+    banner.style.marginTop = '0';
+    banner.style.marginBottom = '0';
+    const text = banner.querySelector('.ptr-text');
+    if (text) text.textContent = `${tabLabel} 최신화 중...`;
+  }
+
+  try {
+    switch (currentTab) {
+      case 'feed':
+        await refreshFeed();
+        break;
+      case 'paper':
+        await loadPaperForCurrentDate(true);
+        break;
+      case 'exclusive':
+      case 'press':
+        const liveIssues = await IssueApi.fetchLiveTabIssues(currentTab);
+        if (liveIssues && liveIssues.length > 0) {
+          tabFeeds[currentTab] = liveIssues;
+          currentIssues = liveIssues;
+          renderIssues();
+        }
+        break;
+      case 'bookmark':
         renderIssues();
-        showToast(`✅ ${tabTitle} 새로고침 완료!`);
-      } else {
-        showToast('✅ 최신 소식입니다.');
-      }
-      break;
-    case 'bookmark':
-      renderIssues();
-      showToast('⭐ 보관함 새로고침 완료');
-      break;
-    default:
-      await refreshFeed();
-      break;
+        break;
+      default:
+        await refreshFeed();
+        break;
+    }
+  } catch (err) {
+    console.warn('executeTabRefresh error:', err);
+  } finally {
+    if (feedContainer) feedContainer.style.opacity = '1';
+    setRefreshProgress(false);
+    if (realtimeBar) realtimeBar.classList.remove('refreshing');
+    if (banner) {
+      banner.className = 'ptr-banner success';
+      const text = banner.querySelector('.ptr-text');
+      if (text) text.textContent = `${tabLabel} 동기화 완료`;
+      setTimeout(() => {
+        banner.style.height = '0';
+        banner.style.opacity = '0';
+        setTimeout(() => {
+          banner.className = 'ptr-banner';
+          if (text) text.textContent = '아래로 당겨서 새로고침';
+        }, 260);
+      }, 550);
+    }
   }
 }

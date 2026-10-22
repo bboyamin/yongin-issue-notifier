@@ -60,9 +60,18 @@ class DynamicHTTPHandler(SimpleHTTPRequestHandler):
                 print("Collector execution error:", e)
                 issues = []
             
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(issues, f, ensure_ascii=False, indent=2)
+            if issues and len(issues) > 0:
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                with open(output_path, "w", encoding="utf-8") as f:
+                    json.dump(issues, f, ensure_ascii=False, indent=2)
+            elif os.path.exists(output_path):
+                try:
+                    with open(output_path, "r", encoding="utf-8") as f:
+                        fallback_cached = json.load(f)
+                    if fallback_cached and len(fallback_cached) > 0:
+                        issues = fallback_cached
+                except Exception:
+                    pass
 
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')

@@ -388,7 +388,35 @@ body {
   gap: 12px;
 }
 
-/* Pull To Refresh (PTR) Banner */
+/* Top Refresh Progress Indicator */
+.refresh-progress-bar {
+  width: 100%;
+  height: 2.5px;
+  background: transparent;
+  overflow: hidden;
+  display: none;
+  z-index: 99;
+}
+
+.refresh-progress-bar.active {
+  display: block;
+}
+
+.refresh-progress-bar.active::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, #4F46E5, #06B6D4, #3B82F6, transparent);
+  animation: progressSlide 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes progressSlide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Pull To Refresh (PTR) Header Integrated Sync Ribbon */
 .ptr-banner {
   height: 0;
   opacity: 0;
@@ -396,17 +424,22 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
-  color: #4F46E5;
-  border: 1px solid #C7D2FE;
-  border-radius: 14px;
-  font-size: 12.5px;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.12);
-  transition: height 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease, margin-bottom 0.25s ease;
-  margin-bottom: 0;
+  width: 100%;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  transition: height 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+  margin: 0;
   flex-shrink: 0;
+  z-index: 90;
+  box-sizing: border-box;
 }
 
 .ptr-banner.pulling {
@@ -414,24 +447,80 @@ body {
 }
 
 .ptr-banner.refreshing {
-  height: 46px !important;
+  height: 38px !important;
   opacity: 1 !important;
-  margin-bottom: 10px !important;
+  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  color: #1E293B;
+  border-bottom: 1px solid #CBD5E1;
 }
 
-.ptr-banner .ptr-icon {
-  font-size: 17px;
-  line-height: 1;
+.ptr-banner.success {
+  height: 38px !important;
+  opacity: 1 !important;
+  background: #F0FDF4;
+  border-bottom: 1px solid #BBF7D0;
+  color: #15803D;
+}
+
+.ptr-banner .ptr-status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.ptr-banner .ptr-icon-wrap {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.ptr-banner .ptr-arrow-svg {
   display: inline-block;
-  transition: transform 0.2s ease;
+  color: #64748B;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
 }
 
-.ptr-banner.release .ptr-icon {
+.ptr-banner.release .ptr-arrow-svg {
   transform: rotate(180deg);
+  color: #2563EB;
 }
 
-.ptr-banner.refreshing .ptr-icon {
-  animation: ptrSpin 0.8s linear infinite;
+.ptr-banner .ptr-spinner-svg {
+  display: none;
+  color: #2563EB;
+}
+
+.ptr-banner .ptr-check-svg {
+  display: none;
+  color: #16A34A;
+}
+
+.ptr-banner.refreshing .ptr-arrow-svg {
+  display: none;
+}
+
+.ptr-banner.refreshing .ptr-spinner-svg {
+  display: inline-block;
+  animation: ptrSpin 0.7s linear infinite;
+}
+
+.ptr-banner.success .ptr-arrow-svg,
+.ptr-banner.success .ptr-spinner-svg {
+  display: none;
+}
+
+.ptr-banner.success .ptr-check-svg {
+  display: inline-block;
+  animation: ptrPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes ptrPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes ptrSpin {
@@ -450,6 +539,24 @@ body {
   font-size: 12px;
   color: #1E40AF;
   font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.realtime-bar.refreshing {
+  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+  border-color: #A5B4FC;
+  color: #4338CA;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
+}
+
+.realtime-bar.refreshing .live-dot {
+  background: #4F46E5 !important;
+  animation: liveDotPulse 0.6s infinite alternate !important;
+}
+
+@keyframes liveDotPulse {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 8px rgba(79, 70, 229, 0.6); }
 }
 
 .realtime-indicator {

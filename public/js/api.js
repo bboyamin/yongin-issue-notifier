@@ -5,6 +5,19 @@
 const IssueApi = (() => {
   const FACTCHAT_ENDPOINT = 'https://factchat-cloud.mindlogic.ai/v1/gateway/chat/completions';
 
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+      return response;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
   return {
     /**
      * Collect issues dynamically for the provided keywords (Realtime feed 100% original)
@@ -14,7 +27,7 @@ const IssueApi = (() => {
     async fetchKeywordIssues(keywordsList = ['용인시']) {
       try {
         const kwParam = encodeURIComponent(keywordsList.join(','));
-        const res = await fetch(`/api/collect?keywords=${kwParam}&force=true&v=78&t=${Date.now()}`);
+        const res = await fetchWithTimeout(`/api/collect?keywords=${kwParam}&force=true&v=78&t=${Date.now()}`, {}, 8000);
         if (res.ok) {
           const liveData = await res.json();
           if (Array.isArray(liveData) && liveData.length > 0) {
@@ -43,7 +56,8 @@ const IssueApi = (() => {
 
     async fetchLiveTabIssues(tabName = 'realtime') {
       try {
-        const res = await fetch(`/api/collect?tab=${tabName}&force=true&v=78&t=${Date.now()}`);
+        const timeoutMs = tabName === 'press' ? 10000 : 7000;
+        const res = await fetchWithTimeout(`/api/collect?tab=${tabName}&force=true&v=78&t=${Date.now()}`, {}, timeoutMs);
         if (res.ok) {
           const liveData = await res.json();
           if (Array.isArray(liveData) && liveData.length > 0) {
@@ -56,7 +70,7 @@ const IssueApi = (() => {
       } catch (err) {
         console.warn(`Live API collect error for tab [${tabName}]:`, err);
       }
-      return null;
+      return await this.loadDefaultIssues(tabName);
     },
 
     async loadDefaultIssues(tabName = 'realtime') {
@@ -70,11 +84,23 @@ const IssueApi = (() => {
         }
       } catch (e) {}
 
+      // Fallback to static JSON file if localStorage is empty
+      try {
+        const staticFile = `/data/issues_${tabName}.json`;
+        const res = await fetchWithTimeout(staticFile, {}, 1500);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            return data;
+          }
+        }
+      } catch (e) {}
+
       return [];
     },
 
     /**
-     * Fetch paper news for 3 news providers (etnews, mknews, jtbc)
+     * Fetch paper news for news providers (etnews, mknews, khan)
      * @param {string} provider 
      * @param {string} dateStr 
      */
@@ -87,7 +113,7 @@ const IssueApi = (() => {
 
       for (const url of endpoints) {
         try {
-          const res = await fetch(url);
+          const res = await fetchWithTimeout(url, {}, 2500);
           if (res.ok) {
             const data = await res.json();
             if (data && (data.articles || data.sections) && Array.isArray(data.articles) && data.articles.length > 0) {
