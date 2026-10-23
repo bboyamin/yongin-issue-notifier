@@ -66,13 +66,19 @@ def fetch_single_feed(item_tuple):
                 desc = clean_html(d_el.text)[:120] if d_el is not None and d_el.text else title
 
                 kst = timezone(timedelta(hours=9))
-                pub_time = datetime.now(kst).strftime("%Y/%m/%d")
+                pub_time = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
                 item_ymd = ""
                 if date_el is not None and date_el.text:
                     raw_date = date_el.text.strip()
-                    if len(raw_date) >= 10 and raw_date[:4].isdigit():
-                        pub_time = raw_date[:10].replace('-', '/')
-                        item_ymd = raw_date[:10].replace('-', '')
+                    try:
+                        dt = datetime.fromisoformat(raw_date)
+                        kst_dt = dt.astimezone(kst)
+                        pub_time = kst_dt.strftime("%Y-%m-%d %H:%M:%S")
+                        item_ymd = kst_dt.strftime("%Y%m%d")
+                    except Exception:
+                        if len(raw_date) >= 10 and raw_date[:4].isdigit():
+                            pub_time = raw_date[:10].replace('/', '-') + " 00:00:00"
+                            item_ymd = raw_date[:10].replace('-', '')
 
                 creator = clean_html(creator_el.text) if creator_el is not None and creator_el.text else "경향신문"
 
@@ -179,6 +185,7 @@ def fetch_past_khan(clean_ymd):
             categorized[section].append(article_obj)
 
         if all_articles:
+            all_articles.sort(key=lambda x: x.get("time", ""), reverse=True)
             return {
                 "sections": list(categorized.keys()),
                 "categorized": categorized,
@@ -215,6 +222,7 @@ def fetch_khan_by_date(ymd_str=None):
                             all_articles.append(a)
 
         if all_articles:
+            all_articles.sort(key=lambda x: x.get("time", ""), reverse=True)
             return {
                 "sections": list(categorized.keys()),
                 "categorized": categorized,
@@ -290,6 +298,8 @@ def fetch_khan_from_naver(clean_ymd=None):
                     categorized[section] = []
                 categorized[section].append(article_obj)
 
+            if all_articles:
+                all_articles.sort(key=lambda x: x.get("time", ""), reverse=True)
             return {
                 "sections": list(categorized.keys()),
                 "categorized": categorized,

@@ -43,28 +43,33 @@ def fetch_paper_news(provider="etnews", ymd_str=None):
     clean_ymd = ymd_str.replace("-", "").strip()
     provider = (provider or "etnews").lower().strip()
 
+    res = None
     # 1. ETNews
     if provider == "etnews" and fetch_etnews_by_date:
         try:
-            return fetch_etnews_by_date(clean_ymd)
+            res = fetch_etnews_by_date(clean_ymd)
         except Exception as e:
             print("etnews dispatch error:", e)
 
     # 2. MKNews
     elif provider == "mknews" and fetch_mknews_by_date:
         try:
-            return fetch_mknews_by_date(clean_ymd)
+            res = fetch_mknews_by_date(clean_ymd)
         except Exception as e:
             print("mknews dispatch error:", e)
 
     # 3. Khan (경향신문)
     elif provider in ["khan", "kyunghyang"] and fetch_khan_by_date:
         try:
-            return fetch_khan_by_date(clean_ymd)
+            res = fetch_khan_by_date(clean_ymd)
         except Exception as e:
             print("khan dispatch error:", e)
 
-    return {"sections": [], "categorized": {}, "articles": []}
+    if res and isinstance(res.get("articles"), list):
+        res["articles"].sort(key=lambda x: str(x.get("time", "")), reverse=True)
+        return res
+
+    return res or {"sections": [], "categorized": {}, "articles": []}
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):

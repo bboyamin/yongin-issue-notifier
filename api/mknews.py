@@ -6,6 +6,7 @@ import os
 import requests
 import urllib3
 import hashlib
+import email.utils
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor
@@ -30,7 +31,7 @@ def fetch_single_mk_rss(section_tuple):
     sec_articles = []
     kst = timezone(timedelta(hours=9))
     today_dt = datetime.now(kst)
-    formatted_date = today_dt.strftime("%Y/%m/%d")
+    formatted_date = today_dt.strftime("%Y-%m-%d %H:%M:%S")
 
     try:
         res = requests.get(rss_url, headers=headers, verify=False, timeout=6)
@@ -52,10 +53,16 @@ def fetch_single_mk_rss(section_tuple):
                 item_dt = today_dt
                 if pub_date:
                     try:
-                        item_dt = datetime.strptime(pub_date[:16], "%a, %d %b %Y").replace(tzinfo=kst)
-                        pub_time = item_dt.strftime("%Y/%m/%d")
+                        dt = email.utils.parsedate_to_datetime(pub_date)
+                        if dt:
+                            item_dt = dt.astimezone(kst)
+                            pub_time = item_dt.strftime("%Y-%m-%d %H:%M:%S")
                     except Exception:
-                        pub_time = formatted_date
+                        try:
+                            item_dt = datetime.strptime(pub_date[:16], "%a, %d %b %Y").replace(tzinfo=kst)
+                            pub_time = item_dt.strftime("%Y-%m-%d %H:%M:%S")
+                        except Exception:
+                            pub_time = formatted_date
 
                 # Filter out old articles older than 3 days for today feed
                 if (today_dt - item_dt).days > 3:
@@ -95,6 +102,7 @@ def fetch_mknews_from_rss():
                         all_articles.append(a)
 
     if all_articles:
+        all_articles.sort(key=lambda x: x.get("time", ""), reverse=True)
         sections = list(categorized.keys())
         return {
             "sections": sections,
@@ -186,6 +194,7 @@ def fetch_mknews_for_past_date(ymd_str):
             categorized[section].append(article_obj)
 
         if all_articles:
+            all_articles.sort(key=lambda x: x.get("time", ""), reverse=True)
             return {
                 "sections": list(categorized.keys()),
                 "categorized": categorized,

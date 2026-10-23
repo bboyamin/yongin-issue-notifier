@@ -149,6 +149,7 @@ def fetch_etnews_from_rss():
                 categorized[section].append(article_obj)
 
             sections = list(categorized.keys())
+            all_articles.sort(key=lambda x: str(x.get("time", "")), reverse=True)
             return {
                 "sections": sections,
                 "categorized": categorized,
@@ -203,6 +204,7 @@ def fetch_etnews_from_naver():
                     categorized[section] = []
                 categorized[section].append(article_obj)
             if all_articles:
+                all_articles.sort(key=lambda x: str(x.get("time", "")), reverse=True)
                 return {
                     "sections": list(categorized.keys()),
                     "categorized": categorized,

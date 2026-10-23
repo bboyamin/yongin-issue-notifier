@@ -467,6 +467,7 @@ function getRecencyWeight(timeStr) {
   if (!timeStr) return 0;
   let s = String(timeStr).trim();
 
+  // 1. Full datetime: YYYY-MM-DD HH:mm(:ss) or YYYY/MM/DD HH:mm(:ss)
   let match = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
   if (match) {
     const year = parseInt(match[1], 10);
@@ -478,6 +479,22 @@ function getRecencyWeight(timeStr) {
     return new Date(year, month, day, hour, min, sec).getTime();
   }
 
+  // 2. ISO 8601 string: e.g. 2026-10-23T09:01:00+09:00
+  if (s.includes('T')) {
+    const parsed = Date.parse(s);
+    if (!isNaN(parsed)) return parsed;
+  }
+
+  // 3. Date only: YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
+  match = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    return new Date(year, month, day, 0, 0, 0).getTime();
+  }
+
+  // 4. Short date with time: MM-DD HH:mm
   match = s.match(/^(\d{1,2})[\.\/-](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
   if (match) {
     const now = new Date();
@@ -488,6 +505,7 @@ function getRecencyWeight(timeStr) {
     return new Date(now.getFullYear(), month, day, hour, min).getTime();
   }
 
+  // 5. Relative text
   if (s.includes('분 전')) {
     const m = parseInt(s, 10);
     return Date.now() - (m * 60 * 1000);
@@ -496,8 +514,15 @@ function getRecencyWeight(timeStr) {
     const h = parseInt(s, 10);
     return Date.now() - (h * 60 * 60 * 1000);
   }
+  if (s.includes('일 전')) {
+    const d = parseInt(s, 10);
+    return Date.now() - (d * 24 * 60 * 60 * 1000);
+  }
   if (s.includes('방금')) return Date.now();
   if (s.includes('어제')) return Date.now() - (24 * 60 * 60 * 1000);
+
+  const fallback = Date.parse(s);
+  if (!isNaN(fallback)) return fallback;
 
   return 0;
 }
@@ -1161,9 +1186,19 @@ function renderPaperView(isRestoring = false) {
     return;
   }
 
-  let articlesToRender = paperData.articles;
-  if (currentPaperSection !== 'all' && paperData.categorized[currentPaperSection]) {
+  let articlesToRender = [];
+  if (currentPaperSection === 'all') {
+    // 전체 면 선택 시: 모든 분야의 기사를 최신순으로 정렬하여 표시
+    articlesToRender = [...(paperData.articles || [])].sort((a, b) => {
+      const weightA = getRecencyWeight(a.time);
+      const weightB = getRecencyWeight(b.time);
+      return weightB - weightA;
+    });
+  } else if (paperData.categorized && paperData.categorized[currentPaperSection]) {
+    // 분야별 필터 선택 시: 해당 분야의 기존 기사 목록 표시
     articlesToRender = paperData.categorized[currentPaperSection];
+  } else {
+    articlesToRender = paperData.articles || [];
   }
 
   let html = `
