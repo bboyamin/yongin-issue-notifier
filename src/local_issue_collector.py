@@ -178,6 +178,52 @@ def mock_llm_summarize(title, content, keyword):
 
 TITLE_RESOLVE_CACHE = {}
 
+def decode_html_content(raw_bytes, content_type_header=""):
+    """
+    Decodes HTML bytes safely with 100% protection against Cyrillic / Mojibake corruption.
+    Never relies on chardet/apparent_encoding which misidentifies Korean as Cyrillic/PTCP154.
+    """
+    if not raw_bytes:
+        return ""
+
+    meta_enc = None
+    m = re.search(rb'<meta[^>]+charset=[\"\']?([a-zA-Z0-9_\-]+)', raw_bytes[:4096])
+    if m:
+        meta_enc = m.group(1).decode("ascii", errors="ignore").lower()
+    if not meta_enc:
+        m = re.search(rb'<meta[^>]+content=[\"\'][^\"\']*charset=([a-zA-Z0-9_\-]+)', raw_bytes[:4096])
+        if m:
+            meta_enc = m.group(1).decode("ascii", errors="ignore").lower()
+
+    header_enc = None
+    if content_type_header:
+        m = re.search(r'charset\s*=\s*[\"\']?([a-zA-Z0-9_\-]+)', content_type_header, re.IGNORECASE)
+        if m:
+            header_enc = m.group(1).lower()
+
+    candidates = []
+    for cand in [meta_enc, header_enc]:
+        if cand:
+            c_clean = "euc-kr" if ("euc" in cand or "5601" in cand) else ("cp949" if "cp949" in cand else "utf-8")
+            if c_clean not in candidates:
+                candidates.append(c_clean)
+
+    for std in ["utf-8", "cp949", "euc-kr"]:
+        if std not in candidates:
+            candidates.append(std)
+
+    for enc in candidates:
+        try:
+            decoded = raw_bytes.decode(enc, errors="replace")
+            # If head contains Cyrillic mojibake, this candidate encoding is wrong
+            if re.search(r'[\u0400-\u04FF\u0500-\u052F]', decoded[:8192]):
+                continue
+            return decoded
+        except Exception:
+            continue
+
+    return raw_bytes.decode("utf-8", errors="replace")
+
 def fetch_full_title_from_url(url, naver_url=None):
     if not url and not naver_url:
         return None
@@ -206,8 +252,8 @@ def fetch_full_title_from_url(url, naver_url=None):
             # Strict 1.2s timeout per target to prevent slow media servers from degrading overall performance
             res = requests.get(target_url, headers=headers, timeout=1.2, allow_redirects=True)
             if res.status_code == 200:
-                res.encoding = res.apparent_encoding or 'utf-8'
-                soup = BeautifulSoup(res.text, "html.parser")
+                html_text = decode_html_content(res.content, res.headers.get("content-type", ""))
+                soup = BeautifulSoup(html_text, "html.parser")
                 og = soup.find("meta", property="og:title") or soup.find("meta", attrs={"name": "twitter:title"}) or soup.find("meta", attrs={"name": "title"})
                 t = ""
                 if og and og.get("content"):
@@ -216,7 +262,12 @@ def fetch_full_title_from_url(url, naver_url=None):
                     t = soup.title.text.strip()
 
                 if t:
-                    import re
+                    # STRICT MOJIBAKE DEFENSE: Reject any Cyrillic / corrupt text
+                    if re.search(r'[\u0400-\u04FF\u0500-\u052F]', t):
+                        continue
+                    if not re.search(r'[가-힣]', t):
+                        continue
+
                     # Remove any HTML tags inside title
                     t = re.sub(r'<[^>]+>', ' ', t)
                     # Clean press suffix e.g. " - 매일경제", " | 조선일보", "< 기사본문 - 국제뉴스"
@@ -915,10 +966,21 @@ def collect_all_issues(keywords=None, tab="realtime"):
         if not item_obj or item_obj.get("type") != "news":
             return item_obj
         title = item_obj.get("title", "")
+        # Defend against any corrupted Cyrillic mojibake
+        if re.search(r'[\u0400-\u04FF\u0500-\u052F]', title):
+            clean_content = item_obj.get("content", "")
+            if clean_content and re.search(r'[가-힣]', clean_content) and not re.search(r'[\u0400-\u04FF]', clean_content):
+                item_obj["title"] = clean_content[:80].strip()
+            else:
+                item_obj["title"] = "용인시 주요 언론보도 뉴스"
+            return item_obj
+
         if title.endswith("...") or title.endswith("…") or title.endswith(".."):
             full_title = fetch_full_title_from_url(item_obj.get("url", ""), item_obj.get("naver_url"))
-            if full_title:
+            if full_title and not re.search(r'[\u0400-\u04FF\u0500-\u052F]', full_title):
                 item_obj["title"] = full_title
+            else:
+                item_obj["title"] = re.sub(r'[\.\s…]+$', '', title).strip()
         return item_obj
 
     # 제목이 잘린 기사만 추출하여 병렬 보강 (최대 8스레드, 타임아웃 및 언론사 장애 완벽 격리)

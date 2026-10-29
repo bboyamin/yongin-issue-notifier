@@ -916,14 +916,28 @@ function cleanBadgeText(badge, publisher) {
   return text || '언론보도';
 }
 
+function cleanTitleText(title, content) {
+  let text = String(title || '').trim();
+  // Detect Cyrillic mojibake corruption e.g. [мк©мқё 24мӣң]
+  if (/[\u0400-\u04FF\u0500-\u052F]/.test(text)) {
+    let fallback = String(content || '').trim();
+    if (fallback && /[가-힣]/.test(fallback) && !/[\u0400-\u04FF\u0500-\u052F]/.test(fallback)) {
+      return fallback.slice(0, 70).replace(/[\.\s…]+$/, '') + '...';
+    }
+    return '용인시 주요 언론보도 뉴스';
+  }
+  return text;
+}
+
 function renderIssueCardHtml(item, isScrapped) {
   const hasPreSummary = item.summary && item.summary.length > 0;
   const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
   const isNegBadge = item.is_negative ? `<span class="is-neg-tag"><span class="neg-dot"></span>주요 이슈</span>` : '';
 
   const cleanBadge = cleanBadgeText(item.badge, item.publisher);
-  const titleAttr = (item.title || '').replace(/"/g, '&quot;');
-  const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
+  const safeTitle = cleanTitleText(item.title, item.content);
+  const titleAttr = safeTitle.replace(/"/g, '&quot;');
+  const contentAttr = (item.content || safeTitle).replace(/"/g, '&quot;');
   const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
   const publisherAttr = (item.publisher || cleanBadge).replace(/"/g, '&quot;');
   const badgeAttr = cleanBadge.replace(/"/g, '&quot;');
@@ -935,7 +949,7 @@ function renderIssueCardHtml(item, isScrapped) {
         <span class="source-tag source-news">${cleanBadge} ${isNegBadge}</span>
         <span class="card-date card-time">${formatRelativeTime(item.time)}</span>
       </div>
-      <h3 class="card-title">${item.title}</h3>
+      <h3 class="card-title">${safeTitle}</h3>
       
       <button class="ai-summary-toggle-btn" onclick="toggleOnDemandAiSummary(this)" type="button">
         <svg class="ai-spark-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
