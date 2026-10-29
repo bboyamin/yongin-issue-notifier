@@ -33,9 +33,9 @@ let currentKeyword = '용인시';
 let currentPaperDate = getTodayKstStr();
 let currentPaperSection = 'all';
 const PAPER_PROVIDERS = [
-  { id: 'mknews', name: '매일경제', badge: '📈' },
-  { id: 'etnews', name: '전자신문', badge: '📰' },
-  { id: 'khan', name: '경향신문', badge: '🗞️' }
+  { id: 'mknews', name: '매일경제' },
+  { id: 'etnews', name: '전자신문' },
+  { id: 'khan', name: '경향신문' }
 ];
 
 let currentPaperProvider = StorageManager.getPaperProvider() || 'mknews';
@@ -113,7 +113,7 @@ function renderPaperProviderChips() {
     const isActive = currentPaperProvider === p.id;
     html += `
       <span class="chip ${isActive ? 'active' : ''}" onclick="selectPaperProvider('${p.id}')" style="cursor:pointer; font-weight:700;">
-        ${p.badge} ${p.name}
+        ${p.name}
       </span>
     `;
   });
@@ -249,7 +249,7 @@ async function refreshFeed() {
   } catch (err) {
     console.warn('Refresh error:', err);
   } finally {
-    showToast('✅ 실시간 피드 새로고침 완료!');
+    showToast('실시간 피드가 최신화되었습니다.');
   }
 }
 
@@ -262,9 +262,9 @@ function renderSkeletonFeed(keywordName = '용인시') {
       <div class="realtime-bar" style="background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8;">
         <div class="realtime-indicator">
           <div class="live-dot" style="background: #2563EB;"></div>
-          <span># ${keywordName} 실시간 소식 수집 중...</span>
+          <span># ${keywordName} 실시간 소식 동기화 중...</span>
         </div>
-        <span style="font-size: 11px; opacity: 0.8;">⏳ 1~2초 소요</span>
+        <span style="font-size: 11px; opacity: 0.85;">최신 뉴스 수집</span>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
@@ -294,7 +294,7 @@ async function fetchKeywordIssues(keywordsList, options = { silent: false }) {
   const hasCache = currentIssues && currentIssues.length > 0;
 
   if (!options.silent && !hasCache) {
-    showToast(`🔄 [${keywordsList.join(', ')}] 소식 수집 중...`);
+    showToast(`'${keywordsList.join(', ')}' 최신 소식 수집 중...`);
   }
 
   // Render Skeleton UI ONLY if no current issues or cache exists
@@ -456,7 +456,7 @@ async function switchNavTab(tab, btn) {
 function resetAppCache() {
   if (confirm('로컬 저장소 캐시를 초기화하시겠습니까?')) {
     localStorage.clear();
-    showToast('🧹 캐시가 초기화되었습니다. 새로고침 중...');
+    showToast('저장소 캐시가 초기화되었습니다.');
     setTimeout(() => {
       window.location.reload();
     }, 600);
@@ -579,33 +579,45 @@ function isTitleDuplicate(normA, normB) {
   return false;
 }
 
+function prepareIssueMetadata(item) {
+  if (!item) return null;
+  if (item._meta) return item._meta;
+
+  const title = item.title || '';
+  const norm = normalizeTitleForDedupe(title);
+  const clean = String(title).replace(/[^가-힣a-zA-Z0-9\s]/g, ' ');
+  const words = Array.from(new Set(clean.split(/\s+/).filter(w => w.length >= 2)));
+  const nums = (clean.match(/\d+(?:주|개|월|년|억|조|%|건|차|위|번|동|구)?/g) || []).map(n => n.replace(/\D/g, '')).filter(Boolean);
+  const ts = getRecencyWeight(item.time);
+  const pubScore = getPublisherScore(item.publisher);
+  const score = ts + (pubScore * 60000) + (item.summary && item.summary.length ? 300000 : 0);
+
+  const meta = { norm, clean, words, nums, ts, score };
+  item._meta = meta;
+  return meta;
+}
+
 function isSameTopicStory(titleA, titleB) {
   if (!titleA || !titleB) return false;
 
+  const metaA = (typeof titleA === 'object' && titleA._meta) ? titleA._meta : (typeof titleA === 'object' ? prepareIssueMetadata(titleA) : prepareIssueMetadata({ title: titleA }));
+  const metaB = (typeof titleB === 'object' && titleB._meta) ? titleB._meta : (typeof titleB === 'object' ? prepareIssueMetadata(titleB) : prepareIssueMetadata({ title: titleB }));
+
+  if (!metaA || !metaB) return false;
+
   // 1) Direct title similarity
-  const normA = normalizeTitleForDedupe(titleA);
-  const normB = normalizeTitleForDedupe(titleB);
-  if (isTitleDuplicate(normA, normB)) return true;
+  if (isTitleDuplicate(metaA.norm, metaB.norm)) return true;
 
   // 2) Keyword & metric match (e.g. "85주", "1.09%", "25사단" + "서울", "아파트", "매매가")
-  const cleanA = String(titleA).replace(/[^가-힣a-zA-Z0-9\s]/g, ' ');
-  const cleanB = String(titleB).replace(/[^가-힣a-zA-Z0-9\s]/g, ' ');
+  const numsA = metaA.nums;
+  const numsB = metaB.nums;
 
-  const numsA = cleanA.match(/\d+(?:주|개|월|년|억|조|%|건|차|위|번|동|구)?/g) || [];
-  const numsB = cleanB.match(/\d+(?:주|개|월|년|억|조|%|건|차|위|번|동|구)?/g) || [];
-
-  const commonNums = numsA.filter(n => {
-    const numOnly = n.replace(/\D/g, '');
-    return numOnly && numsB.some(nb => nb.includes(numOnly));
-  });
+  const commonNums = numsA.filter(na => numsB.includes(na));
 
   if (commonNums.length > 0) {
-    const wordsA = cleanA.split(/\s+/).filter(w => w.length >= 2);
-    const wordsB = cleanB.split(/\s+/).filter(w => w.length >= 2);
-
     let sharedNounCount = 0;
-    for (const wA of wordsA) {
-      if (wordsB.some(wB => wB.includes(wA) || wA.includes(wB))) {
+    for (const wA of metaA.words) {
+      if (metaB.words.some(wB => wB.includes(wA) || wA.includes(wB))) {
         sharedNounCount++;
       }
     }
@@ -613,8 +625,8 @@ function isSameTopicStory(titleA, titleB) {
   }
 
   // 3) Keyword Jaccard Overlap check (3+ shared nouns without numbers)
-  const wordsA = Array.from(new Set(cleanA.split(/\s+/).filter(w => w.length >= 2)));
-  const wordsB = Array.from(new Set(cleanB.split(/\s+/).filter(w => w.length >= 2)));
+  const wordsA = metaA.words;
+  const wordsB = metaB.words;
   let overlapCount = 0;
   for (const wA of wordsA) {
     if (wordsB.some(wB => wB === wA || (wA.length >= 3 && wB.includes(wA)))) {
@@ -643,6 +655,10 @@ function getPublisherScore(publisherName) {
 function deduplicateIssues(items) {
   if (!Array.isArray(items) || items.length === 0) return [];
 
+  for (let i = 0; i < items.length; i++) {
+    prepareIssueMetadata(items[i]);
+  }
+
   const uniqueItems = [];
 
   for (const item of items) {
@@ -651,7 +667,7 @@ function deduplicateIssues(items) {
 
     let duplicateIndex = -1;
     for (let i = 0; i < uniqueItems.length; i++) {
-      if (isSameTopicStory(rawTitle, uniqueItems[i].title)) {
+      if (isSameTopicStory(item, uniqueItems[i])) {
         duplicateIndex = i;
         break;
       }
@@ -661,11 +677,8 @@ function deduplicateIssues(items) {
       uniqueItems.push(item);
     } else {
       const existing = uniqueItems[duplicateIndex];
-      const recencyWeightExisting = getRecencyWeight(existing.time);
-      const recencyWeightCurrent = getRecencyWeight(item.time);
-
-      const existingScore = recencyWeightExisting + (getPublisherScore(existing.publisher) * 60000) + (existing.summary && existing.summary.length ? 300000 : 0);
-      const currentScore = recencyWeightCurrent + (getPublisherScore(item.publisher) * 60000) + (item.summary && item.summary.length ? 300000 : 0);
+      const existingScore = existing._meta ? existing._meta.score : 0;
+      const currentScore = item._meta ? item._meta.score : 0;
 
       if (currentScore > existingScore) {
         uniqueItems[duplicateIndex] = item;
@@ -694,20 +707,27 @@ function renderIssues() {
   // --- Bookmark View (보관함) ---
   if (currentNavTab === 'bookmark') {
     let html = `
-      <div class="realtime-bar" style="background:#FFFBEB; border-color:#FDE68A; color:#D97706;">
+      <div class="realtime-bar" style="background:#F8FAFC; border-color:#E2E8F0; color:#334155;">
         <div class="realtime-indicator">
-          <span>⭐ 내가 보관한 주요 이슈 (${scraps.length}건)</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+          </svg>
+          <span>보관한 중요 이슈 (${scraps.length}건)</span>
         </div>
-        <span style="font-size: 11px; opacity: 0.8;">보관함</span>
+        <span style="font-size: 11.5px; color:#64748B;">보관함</span>
       </div>
     `;
 
     if (scraps.length === 0) {
       html += `
-        <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
-          <p style="font-size:36px; margin-bottom:12px;">⭐</p>
-          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">보관된 이슈가 없습니다.</p>
-          <p style="font-size:12px; color:#64748B;">이슈 카드의 <strong>[⭐ 스크랩]</strong> 버튼을 눌러 보관함에 담아보세요!</p>
+        <div class="empty-state-wrap">
+          <div class="empty-icon-circle">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+            </svg>
+          </div>
+          <div class="empty-title">보관된 이슈가 없습니다</div>
+          <div class="empty-desc">주요 기사 카드의 [보관] 버튼을 누르면 이 곳에 안전하게 모아볼 수 있습니다.</div>
         </div>
       `;
     } else {
@@ -734,25 +754,41 @@ function renderIssues() {
       return !SPAM_PROMO_KEYWORDS.some(s => itemTitle.includes(s));
     });
 
-    displayItems.sort((a, b) => getRecencyWeight(b.time) - getRecencyWeight(a.time));
+    displayItems.forEach(it => prepareIssueMetadata(it));
+    displayItems.sort((a, b) => (b._meta ? b._meta.ts : 0) - (a._meta ? a._meta.ts : 0));
     displayItems = deduplicateIssues(displayItems);
 
     let html = `
-      <div class="realtime-bar" onclick="executeTabRefresh()" style="cursor:pointer;" title="클릭 시 실시간 소식 새로고침">
+      <div class="realtime-bar" onclick="executeTabRefresh()" style="cursor:pointer;" title="클릭 시 실시간 소식 최신화">
         <div class="realtime-indicator">
           <div class="live-dot"></div>
-          <span>접속 시점 기준 실시간 이슈 피드 (${displayItems.length}건)</span>
+          <span>실시간 이슈 피드 (${displayItems.length}건)</span>
         </div>
-        <span style="font-size: 11px; opacity: 0.8;" id="updateTimestamp">🔄 새로고침</span>
+        <div style="display:flex; align-items:center; gap:4px; font-size:11.5px; opacity:0.85;">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M8 16H3v5"/>
+          </svg>
+          <span id="updateTimestamp">새로고침</span>
+        </div>
       </div>
     `;
 
     if (displayItems.length === 0) {
       html += `
-        <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
-          <p style="font-size:36px; margin-bottom:12px;">📰</p>
-          <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">'# ${currentKeyword}' 관련 수집 기사를 가져오는 중...</p>
-          <p style="font-size:12px; color:#64748B;">위의 <strong>[🔄 새로고침]</strong> 버튼을 누르시거나 잠시만 기다려 주세요.</p>
+        <div class="empty-state-wrap">
+          <div class="empty-icon-circle">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+              <path d="M18 14h-8"/>
+              <path d="M15 18h-5"/>
+              <path d="M10 6h8v4h-8V6Z"/>
+            </svg>
+          </div>
+          <div class="empty-title">'# ${currentKeyword}' 관련 기사 수집 중</div>
+          <div class="empty-desc">실시간 포털에서 최신 뉴스를 불러오고 있습니다. 잠시만 기다려 주세요.</div>
         </div>
       `;
     } else {
@@ -768,10 +804,10 @@ function renderIssues() {
 
   // --- Other Feed Views ('exclusive', 'press') ---
   const tabTitles = {
-    feed: '📡 언론보도',
-    press: '📢 공식 보도자료',
-    paper: '🗞️ 지면신문',
-    exclusive: '🔍 주요기사'
+    feed: '언론보도',
+    press: '공식 보도자료',
+    paper: '지면신문',
+    exclusive: '주요기사'
   };
 
   let displayItems = currentIssues;
@@ -790,18 +826,31 @@ function renderIssues() {
     <div class="realtime-bar" onclick="executeTabRefresh()" style="cursor:pointer;" title="클릭 시 최신 소식 새로고침">
       <div class="realtime-indicator">
         <div class="live-dot"></div>
-        <span>${tabTitles[currentNavTab] || '📡 언론보도'} (${displayItems.length}건)</span>
+        <span>${tabTitles[currentNavTab] || '언론보도'} (${displayItems.length}건)</span>
       </div>
-      <span style="font-size: 11px; opacity: 0.8;">🔄 새로고침</span>
+      <div style="display:flex; align-items:center; gap:4px; font-size:11.5px; opacity:0.85;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M8 16H3v5"/>
+        </svg>
+        <span>새로고침</span>
+      </div>
     </div>
   `;
 
   if (displayItems.length === 0) {
     html += `
-      <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
-        <p style="font-size:36px; margin-bottom:12px;">📰</p>
-        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">수집된 보도자료가 없습니다.</p>
-        <p style="font-size:12px; color:#64748B;">선택하신 부처의 공식 발표 소식을 준비 중입니다.</p>
+      <div class="empty-state-wrap">
+        <div class="empty-icon-circle">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 11 18-5v12L3 13v-2z"/>
+            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+          </svg>
+        </div>
+        <div class="empty-title">수집된 소식이 없습니다</div>
+        <div class="empty-desc">선택하신 카테고리의 최신 공식 발표 자료를 확인 중입니다.</div>
       </div>
     `;
   } else {
@@ -829,7 +878,7 @@ function renderPressDeptChips() {
 
   let html = `
     <span class="chip ${currentPressDept === '용인시' ? 'active' : ''}" onclick="selectPressDept('용인시')">
-      🏛️ 용인시 (${yonginCount})
+      용인시 (${yonginCount})
     </span>
     <span class="chip ${currentPressDept === 'central' ? 'active' : ''}" onclick="selectPressDept('central')">
       중앙부처 전체 (${centralCount})
@@ -842,7 +891,7 @@ function renderPressDeptChips() {
     const isActive = (currentPressDept === dept);
     html += `
       <span class="chip ${isActive ? 'active' : ''}" onclick="selectPressDept('${dept}')">
-        🏛️ ${dept} (${count})
+        ${dept} (${count})
       </span>
     `;
   });
@@ -856,32 +905,55 @@ function selectPressDept(dept) {
   renderIssues();
 }
 
+function cleanBadgeText(badge, publisher) {
+  let text = String(badge || publisher || '').trim();
+  text = text.replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D\u200B]/gu, '').trim();
+  text = text.replace(/^[·\-\s|]+|[·\-\s|]+$/g, '').trim();
+  if (!text || text === '뉴스' || text === '이슈') {
+    let p = String(publisher || '').replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D\u200B]/gu, '').trim();
+    text = p || '언론보도';
+  }
+  return text || '언론보도';
+}
+
 function renderIssueCardHtml(item, isScrapped) {
   const hasPreSummary = item.summary && item.summary.length > 0;
   const summaryItems = hasPreSummary ? item.summary.map(s => `<li>${s}</li>`).join('') : '';
-  const isNegBadge = item.is_negative ? `<span class="is-neg-tag" style="background:#FEF2F2; color:#EF4444; border:1px solid #FECACA; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:6px;">🚨 주요 이슈</span>` : '';
+  const isNegBadge = item.is_negative ? `<span class="is-neg-tag"><span class="neg-dot"></span>주요 이슈</span>` : '';
 
+  const cleanBadge = cleanBadgeText(item.badge, item.publisher);
   const titleAttr = (item.title || '').replace(/"/g, '&quot;');
   const contentAttr = (item.content || item.title || '').replace(/"/g, '&quot;');
   const urlAttr = (item.url || '#').replace(/"/g, '&quot;');
-  const publisherAttr = (item.publisher || '뉴스').replace(/"/g, '&quot;');
-  const badgeAttr = (item.badge || '📰 이슈').replace(/"/g, '&quot;');
+  const publisherAttr = (item.publisher || cleanBadge).replace(/"/g, '&quot;');
+  const badgeAttr = cleanBadge.replace(/"/g, '&quot;');
   const timeAttr = (item.time || '').replace(/"/g, '&quot;');
 
   return `
-    <div class="issue-card" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '뉴스'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
+    <article class="issue-card" data-title="${titleAttr}" data-url="${urlAttr}" data-content="${contentAttr}" data-keyword="${item.keyword || '뉴스'}" data-publisher="${publisherAttr}" data-badge="${badgeAttr}" data-time="${timeAttr}">
       <div class="card-top">
-        <span class="source-tag source-news">${item.badge || '📰 이슈'} ${isNegBadge}</span>
+        <span class="source-tag source-news">${cleanBadge} ${isNegBadge}</span>
         <span class="card-date card-time">${formatRelativeTime(item.time)}</span>
       </div>
       <h3 class="card-title">${item.title}</h3>
       
-      <button class="ai-summary-toggle-btn" onclick="toggleOnDemandAiSummary(this)">
-        ✨ AI 핵심 요약 보기 ▾
+      <button class="ai-summary-toggle-btn" onclick="toggleOnDemandAiSummary(this)" type="button">
+        <svg class="ai-spark-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/>
+        </svg>
+        <span>AI 핵심 요약</span>
+        <svg class="chevron-svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
       </button>
 
       <div class="ai-summary-box" style="display: none;" data-generated="${hasPreSummary ? 'true' : 'false'}">
-        <div class="ai-summary-head">✨ FactChat AI 핵심 요약</div>
+        <div class="ai-summary-head">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/>
+          </svg>
+          FactChat AI 분석 요약
+        </div>
         <ul class="ai-summary-list">
           ${summaryItems}
         </ul>
@@ -889,14 +961,33 @@ function renderIssueCardHtml(item, isScrapped) {
 
       <div class="card-footer">
         <div class="card-btns">
-          <button class="card-action-btn ${isScrapped ? 'scrapped' : ''}" onclick="toggleScrap(this)">
-            ${isScrapped ? '★ 스크랩됨' : '☆ 스크랩'}
+          <button class="card-action-btn ${isScrapped ? 'scrapped' : ''}" onclick="toggleScrap(this)" type="button">
+            <svg class="card-btn-svg" viewBox="0 0 24 24" width="13" height="13" fill="${isScrapped ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+            </svg>
+            <span>${isScrapped ? '보관됨' : '보관'}</span>
           </button>
-          <button class="card-action-btn" onclick="shareArticle(this)">🔗 공유</button>
+          <button class="card-action-btn" onclick="shareArticle(this)" type="button">
+            <svg class="card-btn-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <span>공유</span>
+          </button>
         </div>
-        <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">원문 보기 ↗</a>
+        <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-btn">
+          <span>원문 보기</span>
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
       </div>
-    </div>
+    </article>
   `;
 }
 
@@ -911,7 +1002,7 @@ async function toggleOnDemandAiSummary(btn) {
 
   if (isHidden) {
     box.style.display = 'block';
-    btn.innerHTML = '✨ AI 핵심 요약 접기 ▴';
+    btn.classList.add('open');
 
     const isGenerated = box.getAttribute('data-generated') === 'true';
     if (!isGenerated) {
@@ -922,15 +1013,15 @@ async function toggleOnDemandAiSummary(btn) {
 
       const listElem = box.querySelector('.ai-summary-list');
       if (listElem) {
-        listElem.innerHTML = `<li style="color:#64748B;"><span class="spin-icon">🔄</span> FactChat AI 핵심 요약 분석 중...</li>`;
+        listElem.innerHTML = `<li style="color:#64748B;"><span class="spin-icon">●</span> FactChat AI 핵심 요약 분석 중...</li>`;
       }
 
       if (!apiKey) {
         if (listElem) {
           listElem.innerHTML = `
-            <li style="color:#D97706; font-weight:700;">🔑 FactChat API 키 설정 필요</li>
-            <li style="font-size:11px; color:#64748B; margin-bottom: 6px;">우측 상단 ⚙️ 설정 버튼을 눌러 사내/개인 FactChat API 키를 등록하시면 실시간 AI 요약이 생성됩니다.</li>
-            <li style="list-style:none; margin-top:4px;"><button onclick="toggleSettingsModal()" style="background:#4F46E5; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">⚙️ 설정에서 API 키 등록하기</button></li>
+            <li style="color:#D97706; font-weight:700;">FactChat API 키 설정 필요</li>
+            <li style="font-size:11.5px; color:#64748B; margin-bottom: 6px;">우측 상단 설정 아이콘을 눌러 FactChat API 키를 등록하시면 실시간 AI 요약이 가동됩니다.</li>
+            <li style="list-style:none; margin-top:4px;"><button onclick="toggleSettingsModal()" style="background:#2563EB; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer;">설정에서 API 키 등록</button></li>
           `;
         }
         return;
@@ -953,7 +1044,7 @@ async function toggleOnDemandAiSummary(btn) {
     }
   } else {
     box.style.display = 'none';
-    btn.innerHTML = '✨ AI 핵심 요약 보기 ▾';
+    btn.classList.remove('open');
   }
 }
 
@@ -973,11 +1064,21 @@ function toggleScrap(btn) {
 
   if (isScrapped) {
     btn.classList.add('scrapped');
-    btn.innerHTML = '★ 스크랩됨';
-    showToast('⭐ 보관함에 추가되었습니다.');
+    btn.innerHTML = `
+      <svg class="card-btn-svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+      </svg>
+      <span>보관됨</span>
+    `;
+    showToast('보관함에 추가되었습니다.');
   } else {
     btn.classList.remove('scrapped');
-    btn.innerHTML = '☆ 스크랩';
+    btn.innerHTML = `
+      <svg class="card-btn-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+      </svg>
+      <span>보관</span>
+    `;
     showToast('보관함에서 삭제되었습니다.');
   }
 
@@ -993,7 +1094,7 @@ function shareArticle(btn) {
   if (!card) return;
   const title = card.getAttribute('data-title') || '용인 핫이슈';
   const url = card.getAttribute('data-url') || window.location.href;
-  const shareText = `[용인 핫이슈] ${title}\n🔗 ${url}`;
+  const shareText = `[용인 핫이슈] ${title}\n${url}`;
 
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(() => { });
@@ -1009,9 +1110,9 @@ function shareArticle(btn) {
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
-      showToast('📋 기사 제목과 링크가 복사되었습니다!');
+      showToast('기사 링크가 복사되었습니다.');
     } catch (e) {
-      showToast('🔗 ' + url);
+      showToast(url);
     }
   }
 }
@@ -1063,9 +1164,14 @@ async function loadPaperForCurrentDate(forceRefresh = false) {
   const currentKey = `${currentPaperProvider}_${currentPaperDate}_${currentPaperSection}`;
   if (!hasRenderedCache && container && !container.querySelector('.issue-card')) {
     container.innerHTML = `
-      <div style="text-align:center; padding: 60px 20px; color:#64748B;">
-        <span class="spin-icon" style="font-size:24px; display:inline-block; margin-bottom:8px;">🔄</span>
-        <p style="font-weight:700;">지면 신문 데이터 수집 중...</p>
+      <div class="empty-state-wrap">
+        <div class="empty-icon-circle">
+          <svg class="spin-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+        </div>
+        <div class="empty-title">지면 신문 데이터 수집 중</div>
+        <div class="empty-desc">오늘의 최신 지면 기사를 준비하고 있습니다.</div>
       </div>
     `;
   }
@@ -1164,10 +1270,16 @@ function renderPaperView(isRestoring = false) {
 
   if (!paperData || !paperData.articles || paperData.articles.length === 0) {
     container.innerHTML = `
-      <div style="text-align:center; padding: 60px 20px; color: var(--text-sub);">
-        <p style="font-size:36px; margin-bottom:12px;">📰</p>
-        <p style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px;">${providerObj.name} 지면 기사 수집 중</p>
-        <p style="font-size:12px; color:#64748B;">선택하신 날짜(${currentPaperDate})의 지면 기사를 준비하고 있습니다.</p>
+      <div class="empty-state-wrap">
+        <div class="empty-icon-circle">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="M3 9h18"/>
+            <path d="M9 21V9"/>
+          </svg>
+        </div>
+        <div class="empty-title">${providerObj.name} 지면 기사 수집 중</div>
+        <div class="empty-desc">선택하신 날짜(${currentPaperDate})의 인쇄 지면 데이터를 불러오는 중입니다.</div>
       </div>
     `;
     container.removeAttribute('data-rendered-key');
@@ -1189,11 +1301,9 @@ function renderPaperView(isRestoring = false) {
   let articlesToRender = [];
   if (currentPaperSection === 'all') {
     // 전체 면 선택 시: 모든 분야의 기사를 최신순으로 정렬하여 표시
-    articlesToRender = [...(paperData.articles || [])].sort((a, b) => {
-      const weightA = getRecencyWeight(a.time);
-      const weightB = getRecencyWeight(b.time);
-      return weightB - weightA;
-    });
+    articlesToRender = [...(paperData.articles || [])];
+    articlesToRender.forEach(it => prepareIssueMetadata(it));
+    articlesToRender.sort((a, b) => (b._meta ? b._meta.ts : 0) - (a._meta ? a._meta.ts : 0));
   } else if (paperData.categorized && paperData.categorized[currentPaperSection]) {
     // 분야별 필터 선택 시: 해당 분야의 기존 기사 목록 표시
     articlesToRender = paperData.categorized[currentPaperSection];
@@ -1202,11 +1312,24 @@ function renderPaperView(isRestoring = false) {
   }
 
   let html = `
-    <div class="realtime-bar" style="background:#F1F5F9; border-color:#CBD5E1; color:#334155; cursor:pointer;" onclick="executeTabRefresh()" title="클릭 시 지면 신문 새로고침">
+    <div class="realtime-bar" style="background:#F8FAFC; border-color:#CBD5E1; color:#334155; cursor:pointer;" onclick="executeTabRefresh()" title="클릭 시 지면 신문 최신화">
       <div class="realtime-indicator">
-        <span>${providerObj.badge} ${providerObj.name} 지면 (${articlesToRender.length}건)</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="18" x="3" y="3" rx="2"/>
+          <path d="M3 9h18"/>
+          <path d="M9 21V9"/>
+        </svg>
+        <span>${providerObj.name} 지면 (${articlesToRender.length}건)</span>
       </div>
-      <span style="font-size: 11px; opacity: 0.8;">🔄 ${currentPaperDate} (새로고침)</span>
+      <div style="display:flex; align-items:center; gap:4px; font-size:11.5px; opacity:0.85;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M8 16H3v5"/>
+        </svg>
+        <span>${currentPaperDate}</span>
+      </div>
     </div>
   `;
 
@@ -1254,10 +1377,10 @@ function toggleSettingsModal() {
     if (badge) {
       if (apiKey) {
         badge.className = 'api-key-badge active';
-        badge.textContent = '✅ Key 등록됨';
+        badge.textContent = 'Key 등록됨';
       } else {
         badge.className = 'api-key-badge warning';
-        badge.textContent = '⚠️ 키 입력 필요';
+        badge.textContent = '키 입력 필요';
       }
     }
   }
@@ -1268,14 +1391,34 @@ function saveFactchatKey() {
   if (!input) return;
   const val = input.value.trim();
   StorageManager.saveFactChatKey(val);
-  showToast(val ? '✅ FactChat API 키가 저장되었습니다!' : 'API 키가 삭제되었습니다.');
+  showToast(val ? 'FactChat API 키가 저장되었습니다.' : 'API 키가 삭제되었습니다.');
   toggleSettingsModal();
 }
 
 function togglePasswordVisibility() {
   const input = document.getElementById('factchatApiKeyInput');
   if (!input) return;
-  input.type = (input.type === 'password') ? 'text' : 'password';
+  const isPw = input.type === 'password';
+  input.type = isPw ? 'text' : 'password';
+
+  const icon = document.getElementById('eyeIcon');
+  if (icon) {
+    if (isPw) {
+      // Eye Slash SVG
+      icon.innerHTML = `
+        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+        <line x1="2" x2="22" y1="2" y2="22"/>
+      `;
+    } else {
+      // Normal Eye SVG
+      icon.innerHTML = `
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+        <circle cx="12" cy="12" r="3"/>
+      `;
+    }
+  }
 }
 
 function showToast(msg) {
@@ -1283,17 +1426,12 @@ function showToast(msg) {
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'appToast';
-    toast.style.cssText = `
-      position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.92); color: #FFF; padding: 10px 18px;
-      border-radius: 20px; font-size: 12px; font-weight: 700; z-index: 9999;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: opacity 0.3s ease; opacity: 0; pointer-events: none;
-    `;
+    toast.className = 'app-toast';
     document.body.appendChild(toast);
   }
   toast.textContent = msg;
-  toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+  toast.classList.add('show');
+  setTimeout(() => { toast.classList.remove('show'); }, 2200);
 }
 
 function checkOnboardingGuide() {

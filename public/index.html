@@ -3,12 +3,14 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>용인 핫이슈 모니터 - 모바일 앱 시연 프로토타입</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>용인 핫이슈 모니터</title>
 
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0b132b">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#2563EB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#131B2E" media="(prefers-color-scheme: dark)">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,57 +23,35 @@
     rel="stylesheet">
 
   <!-- Modular Design System CSS -->
-  <link rel="stylesheet" href="css/styles.css?v=3100">
+  <link rel="stylesheet" href="css/styles.css?v=4000">
 </head>
 
 <body>
 
-  <div class="demo-header">
-    <h1>용인 핫이슈 모니터 <span class="badge">모바일 앱 시연</span></h1>
-    <p>용인시 · 처인구 실시간 뉴스 수집 및 AI 핵심 요약 알림 앱 프로토타입</p>
-  </div>
-
-  <!-- Mobile Frame Container -->
-  <div class="phone-container">
-    <div class="phone-notch"></div>
-
-    <!-- Status Bar -->
-    <div class="phone-status-bar">
-      <span id="liveTime">09:41</span>
-      <span>📶 5G 🔋 98%</span>
-    </div>
-
-    <!-- Simulated Push Notification Banner -->
-    <div class="push-notification" id="pushBanner">
-      <div class="push-icon">🔔</div>
-      <div class="push-content">
-        <div class="push-title">
-          <span>[속보 알림] 처인구 이슈</span>
-          <span class="push-time">방금 전</span>
-        </div>
-        <div class="push-desc">용인 처인구 반도체 클러스터 도로 확장 기본계획 최종 승인 발표!</div>
-      </div>
-    </div>
-
+  <!-- App Main Viewport -->
+  <div class="app-viewport">
     <!-- App Main Screen -->
     <div class="app-screen">
 
       <!-- Top Header -->
-      <div class="app-header">
+      <header class="app-header">
         <div class="app-title-bar">
-          <div class="app-logo">
+          <div class="app-logo" onclick="switchNavTab('feed')" style="cursor: pointer;" title="첫 화면으로 이동">
             <img src="yongin_logo.png" alt="용인특례시 로고" class="app-logo-img">
-            <div class="app-logo-text">이슈 알리미</div>
+            <span class="brand-main">핫이슈</span>
           </div>
           <div class="header-actions">
-            <button class="icon-btn" onclick="switchNavTab('bookmark', this)" title="보관함 모아보기"
-              style="position: relative;">
-              ⭐
-              <span id="headerScrapBadge"
-                style="position: absolute; top: -4px; right: -4px; background: #EF4444; color: #FFF; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 10px; display: none;">0</span>
+            <button class="icon-btn" onclick="switchNavTab('bookmark', this)" title="보관함 모아보기" aria-label="보관함">
+              <svg class="header-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+              </svg>
+              <span id="headerScrapBadge" class="header-scrap-badge" style="display: none;">0</span>
             </button>
-            <button class="icon-btn" onclick="toggleSettingsModal()" title="알림 및 키워드 설정">
-              ⚙️
+            <button class="icon-btn" onclick="toggleSettingsModal()" title="알림 및 키워드 설정" aria-label="설정">
+              <svg class="header-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
             </button>
           </div>
         </div>
@@ -80,18 +60,23 @@
         <div class="keyword-chips" id="keywordChips">
           <!-- Rendered dynamically by app.js -->
         </div>
-      </div>
+      </header>
 
       <!-- Paper View Header (Shown only on paper tab) -->
       <div class="etnews-header" id="etnewsHeader" style="display: none;">
-        <div class="paper-provider-bar" id="paperProviderChips"
-          style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px;">
+        <div class="paper-provider-bar" id="paperProviderChips">
           <!-- Paper selection chips rendered by app.js -->
         </div>
 
         <div class="etnews-date-bar">
           <div class="etnews-date-label">
-            <span>📅 지면 날짜:</span>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+              <line x1="16" x2="16" y1="2" y2="6"/>
+              <line x1="8" x2="8" y1="2" y2="6"/>
+              <line x1="3" x2="21" y1="10" y2="10"/>
+            </svg>
+            <span>지면 일자:</span>
             <input type="date" id="etnewsDatePicker" onchange="onPaperDateChange(this.value)">
           </div>
           <button class="etnews-today-btn" onclick="setPaperToday()">오늘 자</button>
@@ -102,7 +87,7 @@
       </div>
 
       <!-- Press View Header (Shown only on press tab for ministry chips) -->
-      <div class="etnews-header" id="pressHeader" style="display: none; padding-top: 10px; padding-bottom: 10px;">
+      <div class="etnews-header" id="pressHeader" style="display: none; padding-top: 8px; padding-bottom: 8px;">
         <div class="etnews-section-chips" id="pressDeptChips">
           <!-- Rendered dynamically by app.js -->
         </div>
@@ -136,83 +121,108 @@
         <!-- Rendered dynamically by app.js -->
       </div>
 
-      <!-- Bottom Navigation Bar (4 Main Content Categories) -->
-      <div class="app-bottom-nav">
+      <!-- Bottom Navigation Bar (4 Main Content Categories - High-End Minimalist) -->
+      <nav class="app-bottom-nav">
         <button class="nav-item active" data-tab="feed" onclick="switchNavTab('feed', this)">
-          <span class="nav-icon">📡</span>
+          <div class="nav-icon-box">
+            <svg class="nav-icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+              <path d="M18 14h-8"/>
+              <path d="M15 18h-5"/>
+              <path d="M10 6h8v4h-8V6Z"/>
+            </svg>
+          </div>
           <span>언론보도</span>
         </button>
         <button class="nav-item" data-tab="press" onclick="switchNavTab('press', this)">
-          <span class="nav-icon">📢</span>
+          <div class="nav-icon-box">
+            <svg class="nav-icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 11 18-5v12L3 13v-2z"/>
+              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+            </svg>
+          </div>
           <span>보도자료</span>
         </button>
         <button class="nav-item" data-tab="paper" onclick="switchNavTab('paper', this)">
-          <span class="nav-icon">🗞️</span>
+          <div class="nav-icon-box">
+            <svg class="nav-icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2"/>
+              <path d="M3 9h18"/>
+              <path d="M9 21V9"/>
+            </svg>
+          </div>
           <span>지면신문</span>
         </button>
         <button class="nav-item" data-tab="exclusive" onclick="switchNavTab('exclusive', this)">
-          <span class="nav-icon">🔍</span>
+          <div class="nav-icon-box">
+            <svg class="nav-icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polygon points="12 6 14 10 18 11 15 14 16 18 12 16 8 18 9 14 6 11 10 10 12 6"/>
+            </svg>
+          </div>
           <span>주요기사</span>
         </button>
-      </div>
+      </nav>
 
       <!-- Bottom Sheet Modal for Notification & Keyword Settings -->
       <div class="modal-overlay" id="settingsModal">
         <div class="modal-content">
           <div class="modal-head">
-            <h3>⚙️ 모니터링 & 키워드 설정</h3>
+            <h3>모니터링 & 키워드 설정</h3>
             <button class="modal-close" onclick="toggleSettingsModal()">✕</button>
           </div>
 
           <div style="margin-top: 4px;">
-            <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">📌 모니터링 키워드 관리
-            </h4>
+            <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">관심 모니터링 키워드 관리</h4>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="settingsKeywordChips">
               <!-- Dynamically rendered -->
             </div>
           </div>
 
           <!-- FactChat API Key Setting Section -->
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #E2E8F0;">
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-main);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-              <h4
-                style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
-                🔑 사내 FactChat API 개인 키 설정
+              <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
+                FactChat AI 개인 API 키 설정
               </h4>
-              <span id="factchatKeyBadge" class="api-key-badge warning">⚠️ 키 입력 필요</span>
+              <span id="factchatKeyBadge" class="api-key-badge warning">키 입력 필요</span>
             </div>
 
             <div style="display: flex; gap: 6px; margin-bottom: 6px;">
               <div style="position: relative; flex: 1;">
                 <input type="password" id="factchatApiKeyInput" value="" placeholder="사내 FactChat API 키 입력"
-                  style="width: 100%; padding: 8px 30px 8px 10px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 12px; font-family: monospace;">
-                <button type="button" onclick="togglePasswordVisibility()"
-                  style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 14px; cursor: pointer; color: #64748B;"
-                  title="키 보이기/숨기기">👁️</button>
+                  style="width: 100%; padding: 8px 32px 8px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-size: 12px; font-family: monospace;">
+                <button type="button" onclick="togglePasswordVisibility()" class="password-toggle-btn"
+                  style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center;"
+                  title="키 보이기/숨기기" aria-label="키 보이기/숨기기">
+                  <svg id="eyeIcon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
               </div>
               <button type="button" onclick="saveFactchatKey()"
-                style="background: var(--primary); color: white; border: none; padding: 0 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">저장</button>
+                style="background: var(--primary); color: white; border: none; padding: 0 14px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer;">저장</button>
             </div>
 
             <!-- Key Guidance Box -->
             <div class="api-guidance-box">
-              💡 <strong>사내 FactChat API 키가 없으신가요?</strong><br>
-              사내 포털에서 개인 발급키를 발급받아 입력하시면 AI 3줄 요약이 가동됩니다.
+              사내 포털에서 개인 발급키를 발급받아 입력하시면 AI 3줄 핵심 요약 및 리스크 분석이 가동됩니다.
             </div>
 
             <!-- Install Guide Button -->
-            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #E2E8F0; text-align: center;">
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-main); text-align: center;">
               <button type="button" onclick="openInstallModal()"
-                style="width: 100%; background: linear-gradient(135deg, #2563EB, #1D4ED8); color: white; border: none; padding: 10px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(37,99,235,0.2);">
-                📲 스마트폰 홈 화면에 바로가기 앱 추가 (가이드)
+                style="width: 100%; background: linear-gradient(135deg, #2563EB, #1D4ED8); color: white; border: none; padding: 11px 14px; border-radius: var(--radius-md); font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(37,99,235,0.25);">
+                스마트폰 홈 화면에 바로가기 앱 추가 가이드
               </button>
             </div>
 
-            <!-- Reset Cache Button for Testing First-Time Experience -->
+            <!-- Reset Cache Button -->
             <div style="margin-top: 10px; text-align: center;">
               <button type="button" onclick="resetAppCache()"
-                style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer;">
-                🧹 로컬 저장소 캐시 초기화
+                style="background: var(--border-subtle); color: var(--text-sub); border: 1px solid var(--border-main); padding: 7px 14px; border-radius: var(--radius-sm); font-size: 11.5px; font-weight: 600; cursor: pointer;">
+                로컬 저장소 캐시 초기화
               </button>
             </div>
           </div>
@@ -223,139 +233,141 @@
   </div>
 
   <!-- First-Time User Onboarding Guide Modal -->
-  <div class="modal-overlay" id="onboardingModal" style="z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
-    <div class="modal-content" style="max-width: 380px; width: 100%; padding: 22px 18px 18px; border-radius: 20px; text-align: center; max-height: 85vh; display: flex; flex-direction: column;">
+  <div class="modal-overlay center-modal" id="onboardingModal" style="z-index: 10000;">
+    <div class="modal-content" style="max-height: 85vh; display: flex; flex-direction: column; text-align: center;">
       
-      <div style="font-size: 34px; margin-bottom: 4px;">👋</div>
+      <div class="modal-brand-badge">
+        <img src="yongin_logo.png" alt="용인특례시" style="height: 22px; width: auto;">
+      </div>
       <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 2px;">용인 핫이슈 모니터</h3>
       <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 14px;">핵심 기능 1분 이용 가이드</p>
 
-      <div style="display: flex; flex-direction: column; gap: 9px; text-align: left; margin-bottom: 16px; overflow-y: auto; padding-right: 4px; flex: 1;">
+      <div style="display: flex; flex-direction: column; gap: 8px; text-align: left; margin-bottom: 14px; overflow-y: auto; padding-right: 2px; flex: 1;">
         
         <!-- 1. 언론보도 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 18px; line-height: 1;">📡</span>
+        <div class="feature-list-item">
+          <div class="step-num-badge">1</div>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">언론보도 (실시간 맞춤 이슈)</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">용인시, 처인구 등 주요 관심 키워드의 최신 언론 보도를 실시간으로 자동 모아봅니다.</div>
+            <div class="item-title">언론보도 (실시간 맞춤 이슈)</div>
+            <div class="item-desc">용인시, 처인구 등 주요 관심 키워드의 최신 언론 보도를 실시간으로 자동 모아봅니다.</div>
           </div>
         </div>
 
         <!-- 2. 보도자료 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 18px; line-height: 1;">📢</span>
+        <div class="feature-list-item">
+          <div class="step-num-badge">2</div>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">보도자료 (공식 시정 발표)</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">용인특례시청과 정부 중앙부처의 공신력 있는 <strong>공식 보도자료</strong>를 부처별로 탐색합니다.</div>
+            <div class="item-title">보도자료 (공식 시정 발표)</div>
+            <div class="item-desc">용인특례시청과 정부 중앙부처의 공신력 있는 <strong>공식 보도자료</strong>를 부처별로 탐색합니다.</div>
           </div>
         </div>
 
         <!-- 3. 지면신문 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 18px; line-height: 1;">🗞️</span>
+        <div class="feature-list-item">
+          <div class="step-num-badge">3</div>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">지면신문 (오늘의 조간 지면)</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">매일경제, 전자신문, 경향신문의 오늘자 인쇄 지면 기사를 지면/섹션별로 빠르게 읽습니다.</div>
+            <div class="item-title">지면신문 (오늘의 조간 지면)</div>
+            <div class="item-desc">매일경제, 전자신문, 경향신문의 오늘자 인쇄 지면 기사를 지면/섹션별로 빠르게 읽습니다.</div>
           </div>
         </div>
 
         <!-- 4. 주요기사 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 18px; line-height: 1;">🔍</span>
+        <div class="feature-list-item">
+          <div class="step-num-badge">4</div>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">주요기사 (단독·심층 탐사)</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">주요 언론사의 <strong>[단독]</strong> 속보와 꼭 챙겨봐야 할 핵심 주요 뉴스를 엄선하여 탐색합니다.</div>
+            <div class="item-title">주요기사 (단독·심층 탐사)</div>
+            <div class="item-desc">주요 언론사의 <strong>[단독]</strong> 속보와 꼭 챙겨봐야 할 핵심 주요 뉴스를 엄선하여 탐색합니다.</div>
           </div>
         </div>
 
         <!-- 5. FactChat AI 3줄 요약 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 18px; line-height: 1;">🤖</span>
+        <div class="feature-list-item">
+          <div class="step-num-badge">5</div>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">FactChat AI 3줄 요약 & 리스크 분석</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">기사 카드의 AI 요약 버튼 클릭 한 번으로 인공지능이 핵심 팩트 3줄과 리스크를 분석합니다.</div>
+            <div class="item-title">FactChat AI 3줄 요약 & 리스크 분석</div>
+            <div class="item-desc">기사 카드의 AI 요약 버튼 클릭 한 번으로 인공지능이 핵심 팩트 3줄과 리스크를 분석합니다.</div>
           </div>
         </div>
 
-        <!-- 6. 스크랩 & 카톡 공유 -->
-        <div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFC; padding: 9px 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 18px; line-height: 1;">⭐</span>
+        <!-- 6. 스크랩 & 공유 -->
+        <div class="feature-list-item">
+          <div class="step-num-badge">6</div>
           <div>
-            <div style="font-size: 12.5px; font-weight: 700; color: #1E293B;">스크랩 보관함 & 카카오톡 공유</div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.4;">중요 기사는 <strong>[⭐ 스크랩]</strong>으로 보관하고, <strong>[🔗 공유]</strong> 버튼으로 동료들에게 빠르게 전달합니다.</div>
+            <div class="item-title">스크랩 보관함 & 간편 공유</div>
+            <div class="item-desc">중요 기사는 <strong>[보관]</strong>으로 저장하고, <strong>[공유]</strong> 버튼으로 동료들에게 빠르게 전달합니다.</div>
           </div>
         </div>
 
       </div>
 
       <button type="button" onclick="closeOnboardingModal()"
-        style="width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
-        🚀 확인하고 시작하기
+        style="width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius-md); font-size: 13.5px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 10px rgba(37,99,235,0.25);">
+        확인하고 시작하기
       </button>
 
     </div>
   </div>
 
   <!-- Smartphone Home Screen Install Guide Modal -->
-  <div class="modal-overlay" id="installModal" style="z-index: 10001; align-items: center; justify-content: center; padding: 16px;">
-    <div class="modal-content" style="max-width: 400px; width: 100%; padding: 22px 18px 18px; border-radius: 20px; text-align: center; max-height: 88vh; display: flex; flex-direction: column;">
+  <div class="modal-overlay center-modal" id="installModal" style="z-index: 10001;">
+    <div class="modal-content" style="max-height: 86vh; display: flex; flex-direction: column; text-align: center;">
       
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <h3 style="font-size: 17px; font-weight: 800; color: var(--text-main); margin: 0;">📲 홈 화면 앱 추가 안내</h3>
-        <button type="button" onclick="closeInstallModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94A3B8;">✕</button>
+        <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin: 0;">홈 화면 앱 추가 안내</h3>
+        <button type="button" class="modal-close" onclick="closeInstallModal()">✕</button>
       </div>
 
-      <div style="display: flex; gap: 8px; margin-bottom: 14px; background: #F1F5F9; padding: 4px; border-radius: 10px;">
-        <button id="tabIosBtn" onclick="switchInstallTab('ios')" style="flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; background: white; color: #1E293B; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.06);">🍏 아이폰 (iOS)</button>
-        <button id="tabAndroidBtn" onclick="switchInstallTab('android')" style="flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; background: transparent; color: #64748B; cursor: pointer;">🤖 안드로이드 (삼성/크롬)</button>
+      <div style="display: flex; gap: 6px; margin-bottom: 12px; background: var(--border-subtle); padding: 4px; border-radius: var(--radius-md);">
+        <button id="tabIosBtn" onclick="switchInstallTab('ios')" style="flex: 1; padding: 7px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; background: white; color: var(--text-main); cursor: pointer; box-shadow: var(--shadow-sm);">아이폰 (iOS)</button>
+        <button id="tabAndroidBtn" onclick="switchInstallTab('android')" style="flex: 1; padding: 7px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; background: transparent; color: var(--text-sub); cursor: pointer;">안드로이드 (삼성/크롬)</button>
       </div>
 
       <!-- iOS Guide -->
-      <div id="installIosGuide" style="text-align: left; font-size: 12px; line-height: 1.5; color: #334155; overflow-y: auto; flex: 1; padding-right: 4px;">
-        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 10px; border-radius: 10px; margin-bottom: 10px; color: #1E40AF; font-size: 11.5px;">
-          💡 <strong>카카오톡 링크로 접속하셨나요?</strong><br>
-          우측 하단 [···] 터치 ➔ <strong>[다른 브라우저(Safari)로 열기]</strong>를 선택한 후 진행해 주세요!
+      <div id="installIosGuide" style="text-align: left; font-size: 12px; line-height: 1.5; color: var(--text-main); overflow-y: auto; flex: 1; padding-right: 2px;">
+        <div style="background: var(--primary-light); border: 1px solid var(--primary-border); padding: 9px 12px; border-radius: var(--radius-md); margin-bottom: 10px; color: #1E40AF; font-size: 11.5px;">
+          <strong>카카오톡 링크로 접속하셨나요?</strong><br>
+          우측 하단 [···] 터치 후 <strong>[다른 브라우저(Safari)로 열기]</strong>를 선택한 뒤 진행해 주세요.
         </div>
-        <div style="display: flex; flex-direction: column; gap: 9px;">
-          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
-            <span style="font-size: 20px;">1️⃣</span>
-            <div>Safari 하단 중앙 <strong>공유 버튼 (⬆️)</strong> 클릭</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="feature-list-item">
+            <div class="step-num-badge">1</div>
+            <div style="font-size: 12px;">Safari 하단 중앙 <strong>공유 버튼</strong> 클릭</div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
-            <span style="font-size: 20px;">2️⃣</span>
-            <div>메뉴를 스크롤하여 <strong>[홈 화면에 추가 ➕]</strong> 선택</div>
+          <div class="feature-list-item">
+            <div class="step-num-badge">2</div>
+            <div style="font-size: 12px;">메뉴를 스크롤하여 <strong>[홈 화면에 추가]</strong> 선택</div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
-            <span style="font-size: 20px;">3️⃣</span>
-            <div>우측 상단 <strong>[추가]</strong> 터치 ➔ 바탕화면에 앱 생성!</div>
+          <div class="feature-list-item">
+            <div class="step-num-badge">3</div>
+            <div style="font-size: 12px;">우측 상단 <strong>[추가]</strong> 터치 → 바탕화면에 바로가기 앱 생성</div>
           </div>
         </div>
       </div>
 
       <!-- Android Guide -->
-      <div id="installAndroidGuide" style="display: none; text-align: left; font-size: 12px; line-height: 1.5; color: #334155; overflow-y: auto; flex: 1; padding-right: 4px;">
-        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 10px; border-radius: 10px; margin-bottom: 10px; color: #1E40AF; font-size: 11.5px;">
-          💡 <strong>카카오톡 링크로 접속하셨나요?</strong><br>
-          우측 하단 [···] 터치 ➔ <strong>[다른 브라우저(삼성인터넷/Chrome)로 열기]</strong>를 선택해 주세요!
+      <div id="installAndroidGuide" style="display: none; text-align: left; font-size: 12px; line-height: 1.5; color: var(--text-main); overflow-y: auto; flex: 1; padding-right: 2px;">
+        <div style="background: var(--primary-light); border: 1px solid var(--primary-border); padding: 9px 12px; border-radius: var(--radius-md); margin-bottom: 10px; color: #1E40AF; font-size: 11.5px;">
+          <strong>카카오톡 링크로 접속하셨나요?</strong><br>
+          우측 하단 [···] 터치 후 <strong>[다른 브라우저(삼성인터넷/Chrome)로 열기]</strong>를 선택해 주세요.
         </div>
-        <div style="display: flex; flex-direction: column; gap: 9px;">
-          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
-            <span style="font-size: 20px;">1️⃣</span>
-            <div>브라우저 <strong>메뉴 버튼 (⋮ 또는 ≡)</strong> 클릭</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="feature-list-item">
+            <div class="step-num-badge">1</div>
+            <div style="font-size: 12px;">브라우저 <strong>메뉴 버튼 (⋮ 또는 ≡)</strong> 클릭</div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
-            <span style="font-size: 20px;">2️⃣</span>
-            <div><strong>[현재 페이지 추가]</strong> ➔ <strong>[홈 화면]</strong> (또는 <strong>[앱 설치]</strong>)</div>
+          <div class="feature-list-item">
+            <div class="step-num-badge">2</div>
+            <div style="font-size: 12px;"><strong>[현재 페이지 추가]</strong> → <strong>[홈 화면]</strong> (또는 [앱 설치])</div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
-            <span style="font-size: 20px;">3️⃣</span>
-            <div><strong>[추가]</strong> 터치 ➔ 바탕화면에 바로가기 생성!</div>
+          <div class="feature-list-item">
+            <div class="step-num-badge">3</div>
+            <div style="font-size: 12px;"><strong>[추가]</strong> 터치 → 바탕화면에 바로가기 앱 생성</div>
           </div>
         </div>
       </div>
 
       <button type="button" onclick="closeInstallModal()"
-        style="margin-top: 14px; width: 100%; background: #475569; color: white; border: none; padding: 11px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;">
+        style="margin-top: 12px; width: 100%; background: var(--border-strong); color: var(--text-main); border: none; padding: 10px; border-radius: var(--radius-md); font-size: 12.5px; font-weight: 700; cursor: pointer;">
         닫기
       </button>
 
@@ -363,9 +375,16 @@
   </div>
 
   <!-- Deep Module Scripts -->
-  <script src="js/storage.js?v=3100"></script>
-  <script src="js/api.js?v=3100"></script>
-  <script src="js/app.js?v=3200"></script>
+  <script src="js/storage.js?v=4000"></script>
+  <script src="js/api.js?v=4000"></script>
+  <script src="js/app.js?v=4000"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        for (let r of regs) { r.update(); }
+      });
+    }
+  </script>
 </body>
 
 </html>

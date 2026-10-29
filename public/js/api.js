@@ -107,13 +107,13 @@ const IssueApi = (() => {
     async fetchPaperNews(provider = 'etnews', dateStr = '') {
       const cleanProvider = String(provider || 'etnews').toLowerCase().trim();
       const endpoints = [
-        `/api/${cleanProvider}?date=${encodeURIComponent(dateStr)}&t=${Date.now()}`,
-        `/api/papernews?provider=${encodeURIComponent(cleanProvider)}&date=${encodeURIComponent(dateStr)}&t=${Date.now()}`
+        `/api/${cleanProvider}?date=${encodeURIComponent(dateStr)}`,
+        `/api/papernews?provider=${encodeURIComponent(cleanProvider)}&date=${encodeURIComponent(dateStr)}`
       ];
 
       for (const url of endpoints) {
         try {
-          const res = await fetchWithTimeout(url, {}, 2500);
+          const res = await fetchWithTimeout(url, {}, 5000);
           if (res.ok) {
             const data = await res.json();
             if (data && (data.articles || data.sections) && Array.isArray(data.articles) && data.articles.length > 0) {

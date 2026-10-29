@@ -230,11 +230,10 @@ const StorageManager = (() => {
     },
 
     getPaperCache(key) {
+      if (!key) return null;
       try {
         const stored = sessionStorage.getItem(`paper_cache_${key}`) || 
-                       localStorage.getItem(`paper_cache_${key}`) ||
-                       sessionStorage.getItem('paper_cache_latest') ||
-                       localStorage.getItem('paper_cache_latest');
+                       localStorage.getItem(`paper_cache_${key}`);
         if (stored) return JSON.parse(stored);
       } catch (e) {}
       return null;
@@ -248,12 +247,15 @@ const StorageManager = (() => {
         try { sessionStorage.setItem(`paper_cache_${key}`, str); } catch (e) {}
         try { 
           localStorage.setItem(`paper_cache_${key}`, str);
-          localStorage.setItem('paper_cache_latest', str);
+          const today = getTodayKstStr();
+          if (key.includes(today)) {
+            sessionStorage.setItem('paper_cache_latest', str);
+            localStorage.setItem('paper_cache_latest', str);
+          }
         } catch (e) {
           try {
             cleanupOldCaches();
             localStorage.setItem(`paper_cache_${key}`, str);
-            localStorage.setItem('paper_cache_latest', str);
           } catch (err) {}
         }
       } catch (e) {}

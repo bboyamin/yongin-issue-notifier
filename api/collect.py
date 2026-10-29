@@ -3,21 +3,29 @@ import json
 import urllib.parse
 import sys
 import os
-import requests
-import urllib3
-from bs4 import BeautifulSoup
 from datetime import datetime, timezone, timedelta
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# Add project root to sys.path so we can import src.local_issue_collector
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Add project root and api dir to sys.path
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+API_DIR = os.path.dirname(os.path.abspath(__file__))
+if API_DIR not in sys.path:
+    sys.path.insert(0, API_DIR)
 
 try:
     from src.local_issue_collector import collect_all_issues
 except ImportError:
-    def collect_all_issues(keywords=None):
+    def collect_all_issues(keywords=None, tab="realtime"):
         return []
+
+try:
+    from api.papernews import fetch_paper_news
+except ImportError:
+    try:
+        from papernews import fetch_paper_news
+    except ImportError:
+        fetch_paper_news = None
 
 def load_static_issues(tab="realtime"):
     file_map = {
@@ -27,8 +35,8 @@ def load_static_issues(tab="realtime"):
     }
     target_filename = file_map.get(tab, "issues.json")
     paths = [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", target_filename)),
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "data", "issues.json"))
+        os.path.join(BASE_DIR, "public", "data", target_filename),
+        os.path.join(BASE_DIR, "public", "data", "issues.json")
     ]
     for p in paths:
         if os.path.exists(p):
@@ -41,258 +49,6 @@ def load_static_issues(tab="realtime"):
                 print(f"Error loading static issues from {p}: {e}")
     return []
 
-static_issues = load_static_issues()
-
-
-def fetch_etnews_from_pdf(ymd_str):
-    urls = [
-        f"https://pdf.etnews.com/pdf_today.html?ymd={ymd_str}",
-        f"https://pdf.etnews.com/index.html?ymd={ymd_str}"
-    ]
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Referer": "https://pdf.etnews.com/",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Cache-Control": "no-cache"
-    }
-    
-    session = requests.Session()
-    html_text = None
-    for url in urls:
-        try:
-            res = session.get(url, headers=headers, verify=False, timeout=6)
-            if res.status_code == 200 and len(res.text) > 2000:
-                html_text = res.text
-                break
-        except Exception as e:
-            print(f"ETNews PDF fetch error for {url}: {e}")
-            continue
-            
-    if not html_text:
-        return None
-        
-    try:
-        soup = BeautifulSoup(html_text, "html.parser")
-        boxes = soup.find_all("div", class_="box") or soup.find_all("dl", class_="box") or soup.find_all("div", class_="pdf_box")
-        
-        if not boxes:
-            return None
-            
-        categorized = {}
-        all_articles = []
-        formatted_date = f"{ymd_str[:4]}/{ymd_str[4:6]}/{ymd_str[6:8]}" if len(ymd_str) == 8 else ymd_str
-        
-        for b_idx, box in enumerate(boxes):
-            section_title_el = box.find("dt") or box.find("strong") or box.find("h3")
-            if not section_title_el:
-                continue
-            section_title = section_title_el.text.strip()
-            if not section_title:
-                section_title = f"지면 {b_idx + 1}"
-            
-            links = box.find_all("a", target="_blank") or box.find_all("a")
-            articles = []
-            for a_idx, link in enumerate(links):
-                title = link.text.strip()
-                href = link.get("href", "")
-                if not href or href == "#" or "javascript" in href:
-                    continue
-                if href.startswith("//"):
-                    href = "https:" + href
-                elif href.startswith("/"):
-                    href = "https://pdf.etnews.com" + href
-                
-                if title and href:
-                    article_obj = {
-                        "id": f"etnews_{ymd_str}_{b_idx}_{a_idx}",
-                        "keyword": "전자신문",
-                        "type": "news",
-                        "badge": f"📰 전자신문 · {section_title}",
-                        "publisher": "전자신문",
-                        "title": title,
-                        "time": formatted_date,
-                        "url": href,
-                        "content": title,
-                        "section": section_title
-                    }
-                    articles.append(article_obj)
-                    all_articles.append(article_obj)
-                    
-            if articles:
-                if section_title in categorized:
-                    categorized[section_title].extend(articles)
-                else:
-                    categorized[section_title] = articles
-                
-        sections = list(categorized.keys())
-        if all_articles:
-            return {
-                "sections": sections,
-                "categorized": categorized,
-                "articles": all_articles
-            }
-    except Exception as e:
-        print(f"ETNews PDF parse error: {e}")
-        
-    return None
-
-def fetch_etnews_from_rss():
-    rss_url = "https://news.google.com/rss/search?q=site:etnews.com+when:3d&hl=ko&gl=KR&ceid=KR:ko"
-    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
-    try:
-        res = requests.get(rss_url, headers=headers, verify=False, timeout=8)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, "xml")
-            items = soup.find_all("item")
-            categorized = {}
-            all_articles = []
-            today_str = datetime.now().strftime("%Y/%m/%d")
-
-            for idx, item in enumerate(items):
-                raw_title = item.title.text.strip() if item.title else ""
-                clean_title = raw_title.replace(" - 전자신문", "").strip()
-                link = item.link.text.strip() if item.link else ""
-                
-                section = "전자·산업"
-                if any(k in clean_title for k in ["AI", "SW", "소프트웨어", "보안", "클라우드", "데이터"]):
-                    section = "AI·SW·보안"
-                elif any(k in clean_title for k in ["반도체", "디스플레이", "삼성", "SK", "LG", "모바일", "스마트폰"]):
-                    section = "IT·반도체"
-                elif any(k in clean_title for k in ["정부", "정책", "정치", "국회", "부처", "금융"]):
-                    section = "정치·금융·정책"
-                elif any(k in clean_title for k in ["게임", "통신", "방송", "콘텐츠", "플랫폼"]):
-                    section = "통신·방송·게임"
-
-                article_obj = {
-                    "id": f"etnews_rss_{idx}_{int(datetime.now().timestamp())}",
-                    "keyword": "전자신문",
-                    "type": "news",
-                    "badge": f"📰 전자신문 · {section}",
-                    "publisher": "전자신문",
-                    "title": clean_title,
-                    "time": today_str,
-                    "url": link,
-                    "content": clean_title,
-                    "section": section
-                }
-                all_articles.append(article_obj)
-                if section not in categorized:
-                    categorized[section] = []
-                categorized[section].append(article_obj)
-
-            sections = list(categorized.keys())
-            return {
-                "sections": sections,
-                "categorized": categorized,
-                "articles": all_articles
-            }
-    except Exception as e:
-        print("ETNews RSS fallback error:", e)
-
-    return {"sections": [], "categorized": {}, "articles": []}
-
-def fetch_etnews_from_naver():
-    client_id = (os.getenv("NAVER_CLIENT_ID") or "").strip('"\'')
-    client_secret = (os.getenv("NAVER_CLIENT_SECRET") or "").strip('"\'')
-    if not client_id or not client_secret:
-        return None
-    url = f"https://openapi.naver.com/v1/search/news.json?query={urllib.parse.quote('전자신문')}&display=30&sort=date"
-    headers = {"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret}
-    try:
-        res = requests.get(url, headers=headers, timeout=5)
-        if res.status_code == 200:
-            items = res.json().get("items", [])
-            categorized = {}
-            all_articles = []
-            today_str = datetime.now().strftime("%Y/%m/%d")
-            for idx, item in enumerate(items):
-                clean_title = BeautifulSoup(item.get("title", ""), "html.parser").text.strip()
-                link = item.get("originallink") or item.get("link")
-                section = "전자·IT 속보"
-                if any(k in clean_title for k in ["AI", "SW", "소프트웨어", "보안", "클라우드", "데이터"]):
-                    section = "AI·SW·보안"
-                elif any(k in clean_title for k in ["반도체", "디스플레이", "삼성", "SK", "LG", "모바일", "스마트폰"]):
-                    section = "IT·반도체"
-                elif any(k in clean_title for k in ["정부", "정책", "정치", "국회", "부처", "금융"]):
-                    section = "정치·금융·정책"
-                elif any(k in clean_title for k in ["게임", "통신", "방송", "콘텐츠", "플랫폼"]):
-                    section = "통신·방송·게임"
-
-                article_obj = {
-                    "id": f"etnews_naver_{idx}_{int(datetime.now().timestamp())}",
-                    "keyword": "전자신문",
-                    "type": "news",
-                    "badge": f"📰 전자신문 · {section}",
-                    "publisher": "전자신문",
-                    "title": clean_title,
-                    "time": today_str,
-                    "url": link,
-                    "content": clean_title,
-                    "section": section
-                }
-                all_articles.append(article_obj)
-                if section not in categorized:
-                    categorized[section] = []
-                categorized[section].append(article_obj)
-            if all_articles:
-                return {
-                    "sections": list(categorized.keys()),
-                    "categorized": categorized,
-                    "articles": all_articles
-                }
-    except Exception as e:
-        print("Naver ETNews fallback error:", e)
-    return None
-
-def fetch_etnews_by_date(ymd_str):
-    result = fetch_etnews_from_pdf(ymd_str)
-    if not result or not result.get("articles"):
-        try:
-            dt_obj = datetime.strptime(ymd_str, "%Y%m%d")
-            for i in range(1, 4):
-                prev_ymd = (dt_obj - timedelta(days=i)).strftime("%Y%m%d")
-                fallback = fetch_etnews_from_pdf(prev_ymd)
-                if fallback and fallback.get("articles"):
-                    result = fallback
-                    break
-        except Exception:
-            pass
-
-    if not result or not result.get("articles"):
-        result = fetch_etnews_from_rss()
-
-    if not result or not result.get("articles"):
-        nav_fallback = fetch_etnews_from_naver()
-        if nav_fallback and nav_fallback.get("articles"):
-            result = nav_fallback
-
-    return result or {"sections": [], "categorized": {}, "articles": []}
-
-def get_etnews_article_body(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Referer": "https://pdf.etnews.com/"
-    }
-    try:
-        res = requests.get(url, headers=headers, verify=False, timeout=8)
-        if res.status_code != 200:
-            return None
-            
-        soup = BeautifulSoup(res.text, "html.parser")
-        content_div = soup.find("article") or soup.find("div", class_="article_txt") or soup.find("div", class_="article_body") or soup.find("div", id="articleBody")
-        
-        if content_div:
-            for s in content_div(["script", "style", "iframe", "ins", "button"]):
-                s.extract()
-            return content_div.text.strip()
-        else:
-            return soup.text[:3000].strip()
-    except Exception as e:
-        print(f"ETNews article body fetch error: {e}")
-        return None
-
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -300,32 +56,22 @@ class handler(BaseHTTPRequestHandler):
         params = urllib.parse.parse_qs(parsed.query)
 
         # --------------------------------------------------
-        # 0. Route for Khan (경향신문 지면 기사)
+        # Paper News Fallback Delegation (100% Backward Compatible)
         # --------------------------------------------------
-        is_khan = ("khan" in path_str) or (params.get('provider', [None])[0] in ['khan', 'kyunghyang']) or (params.get('mode', [None])[0] in ['khan', 'kyunghyang'])
-        if is_khan:
-            date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
-            if not date_param:
-                kst = timezone(timedelta(hours=9))
-                date_param = datetime.now(kst).strftime("%Y%m%d")
-            
-            ymd_str = date_param.replace("-", "").strip()
-            try:
-                from api.khan import fetch_khan_by_date
-            except ImportError:
-                try:
-                    from khan import fetch_khan_by_date
-                except ImportError:
-                    fetch_khan_by_date = None
-            
-            try:
-                if fetch_khan_by_date:
-                    result = fetch_khan_by_date(ymd_str)
+        is_paper_request = any(k in path_str for k in ["papernews", "etnews", "mknews", "khan"]) or \
+                           ('provider' in params) or ('mode' in params)
+        if is_paper_request and fetch_paper_news:
+            provider = params.get('provider', [None])[0] or params.get('mode', [None])[0]
+            if not provider:
+                if "mknews" in path_str:
+                    provider = "mknews"
+                elif "khan" in path_str:
+                    provider = "khan"
                 else:
-                    result = {"sections": [], "categorized": {}, "articles": []}
-            except Exception as e:
-                print("Khan fetch in collect.py error:", e)
-                result = {"sections": [], "categorized": {}, "articles": []}
+                    provider = "etnews"
+
+            date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
+            result = fetch_paper_news(provider=provider, ymd_str=date_param)
 
             body = json.dumps(result, ensure_ascii=False).encode('utf-8')
             self.send_response(200)
@@ -338,130 +84,8 @@ class handler(BaseHTTPRequestHandler):
             return
 
         # --------------------------------------------------
-        # Route for Papernews (통합 지면 기사 API)
+        # Realtime / Press / Exclusive Issue Collection
         # --------------------------------------------------
-        is_papernews = ("papernews" in path_str)
-        if is_papernews:
-            provider = params.get('provider', ['etnews'])[0]
-            date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
-            if not date_param:
-                kst = timezone(timedelta(hours=9))
-                date_param = datetime.now(kst).strftime("%Y%m%d")
-            
-            ymd_str = date_param.replace("-", "").strip()
-            try:
-                from api.papernews import fetch_paper_news
-            except ImportError:
-                try:
-                    from papernews import fetch_paper_news
-                except ImportError:
-                    fetch_paper_news = None
-
-            try:
-                if fetch_paper_news:
-                    result = fetch_paper_news(provider=provider, ymd_str=ymd_str)
-                else:
-                    result = {"sections": [], "categorized": {}, "articles": []}
-            except Exception as e:
-                print("Papernews fetch in collect.py error:", e)
-                result = {"sections": [], "categorized": {}, "articles": []}
-
-            body = json.dumps(result, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-
-        # --------------------------------------------------
-        # 1. Route for MKNews (매일경제 지면 기사)
-        # --------------------------------------------------
-        is_mknews = ("mknews" in path_str) or (params.get('provider', [None])[0] == 'mknews') or (params.get('mode', [None])[0] == 'mknews')
-        if is_mknews:
-            date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
-            if not date_param:
-                kst = timezone(timedelta(hours=9))
-                date_param = datetime.now(kst).strftime("%Y%m%d")
-            
-            ymd_str = date_param.replace("-", "").strip()
-            try:
-                from api.mknews import fetch_mknews_by_date
-            except ImportError:
-                try:
-                    from mknews import fetch_mknews_by_date
-                except ImportError:
-                    fetch_mknews_by_date = None
-
-            try:
-                if fetch_mknews_by_date:
-                    result = fetch_mknews_by_date(ymd_str)
-                else:
-                    result = {"sections": [], "categorized": {}, "articles": []}
-            except Exception as e:
-                print("MKNews fetch in collect.py error:", e)
-                result = {"sections": [], "categorized": {}, "articles": []}
-
-            body = json.dumps(result, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-
-        # --------------------------------------------------
-        # 2. Route for ETNews (전자신문 지면 기사)
-        # --------------------------------------------------
-        is_etnews = ("etnews" in path_str) or (params.get('provider', [None])[0] == 'etnews') or (params.get('mode', [None])[0] == 'etnews')
-        if is_etnews:
-            article_url = params.get('url', [None])[0]
-            if article_url:
-                content = get_etnews_article_body(article_url)
-                response_data = {"url": article_url, "content": content or ""}
-            else:
-                date_param = params.get('date', [None])[0] or params.get('ymd', [None])[0]
-                if not date_param:
-                    kst = timezone(timedelta(hours=9))
-                    date_param = datetime.now(kst).strftime("%Y%m%d")
-                
-                ymd_str = date_param.replace("-", "").strip()
-                result = fetch_etnews_by_date(ymd_str)
-                response_data = result
-
-            body = json.dumps(response_data, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-
-        debug_mode = params.get('debug', ['false'])[0].lower() == 'true'
-        if debug_mode:
-            yt_key = (os.getenv("YOUTUBE_API_KEY") or "").strip('"\'')
-            debug_info = {
-                "youtube_key_configured": bool(yt_key),
-                "youtube_key_preview": (yt_key[:6] + "...") if yt_key else "NOT_FOUND_IN_VERCEL_ENV",
-                "server_time": datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S KST")
-            }
-            body = json.dumps(debug_info, ensure_ascii=False, indent=2).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-
-        force_refresh = params.get('force', ['false'])[0].lower() == 'true'
         tab = params.get('tab', ['realtime'])[0].lower().strip()
         kw_str = params.get('keywords', [None])[0]
         keywords = [k.strip() for k in kw_str.split(',') if k.strip()] if kw_str else None
@@ -472,15 +96,12 @@ class handler(BaseHTTPRequestHandler):
             if live_issues and len(live_issues) > 0:
                 issues = live_issues
             else:
-                current_static = load_static_issues(tab=tab)
-                issues = current_static or []
+                issues = load_static_issues(tab=tab) or []
         except Exception as e:
             print("Vercel collect error:", e)
             issues = load_static_issues(tab=tab) or []
 
         body = json.dumps(issues, ensure_ascii=False).encode('utf-8')
-
-        
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Access-Control-Allow-Origin', '*')

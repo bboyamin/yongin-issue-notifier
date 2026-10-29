@@ -70,7 +70,7 @@ def clean_base_url(url):
     return clean_base
 
 # Persistent Summary Cache file to save LLM tokens
-CACHE_FILE = os.path.join(os.path.dirname(__file__), "..", "LocalIssueNotifier", "data", "summary_cache.json")
+CACHE_FILE = os.path.join(os.path.dirname(__file__), "..", "public", "data", "summary_cache.json")
 SUMMARY_CACHE = {}
 
 if os.path.exists(CACHE_FILE):
@@ -81,6 +81,8 @@ if os.path.exists(CACHE_FILE):
         SUMMARY_CACHE = {}
 
 def save_summary_cache():
+    if os.getenv("VERCEL"):
+        return
     try:
         os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
@@ -589,7 +591,7 @@ def fetch_naver_news(keyword, limit=50):
             "id": f"naver_news_{keyword}_{idx}_{int(datetime.now().timestamp())}",
             "keyword": keyword,
             "type": "news",
-            "badge": f"📰 {publisher}",
+            "badge": publisher,
             "publisher": publisher,
             "title": clean_title,
             "time": format_pub_date(pub_date_raw),
@@ -727,7 +729,7 @@ def fetch_korea_kr_rss(limit=100):
                     "id": f"gov_press_{news_id}",
                     "keyword": "보도자료",
                     "type": "news",
-                    "badge": f"🏛️ {dept}",
+                    "badge": dept,
                     "publisher": dept,
                     "title": title,
                     "time": date_str,
@@ -802,7 +804,7 @@ def fetch_yongin_city_press_page(page, headers):
                         "id": f"yongin_press_{sn}",
                         "keyword": "용인시 보도자료",
                         "type": "news",
-                        "badge": f"🏛️ 용인시 ({dept})",
+                        "badge": f"용인시 ({dept})",
                         "publisher": "용인시",
                         "title": title,
                         "time": date_str,

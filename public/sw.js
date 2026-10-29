@@ -1,13 +1,12 @@
-const CACHE_NAME = 'yongin-issue-cache-v7800';
+const CACHE_NAME = 'yongin-issue-cache-v8400';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
   './manifest.json',
   './apple-touch-icon.png',
-  './icon-512.png'
+  './icon-512.png',
+  './yongin_logo.png'
 ];
 
-// Service Worker Install - Pre-cache shell assets
+// Service Worker Install - Pre-cache static image shell assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -18,14 +17,14 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Service Worker Activate - Clean old caches
+// Service Worker Activate - Clean all old caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(
         keyList.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[Service Worker] Removing old cache', key);
+            console.log('[Service Worker] Purging old cache', key);
             return caches.delete(key);
           }
         })
@@ -35,16 +34,32 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Intercept - Network First, ALWAYS live for json data
+// Fetch Intercept - Network First ALWAYS for live navigation & data
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // Bypass cache completely for dynamic data/issues.json
+  // Bypass cache completely for dynamic data and api endpoints
   if (url.pathname.includes('issues.json') || url.pathname.includes('/data/') || url.pathname.includes('/api/')) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Network-First for HTML/root navigation
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
