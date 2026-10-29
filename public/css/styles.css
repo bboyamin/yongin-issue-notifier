@@ -106,7 +106,12 @@ body {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  padding: 12px 16px 10px;
+  padding-top: 12px;
+  padding-top: calc(12px + constant(safe-area-inset-top, 0px));
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding-right: 16px;
+  padding-bottom: 10px;
+  padding-left: 16px;
   border-bottom: 1px solid var(--border-main);
   flex-shrink: 0;
   z-index: 50;
@@ -1127,6 +1132,11 @@ body {
     height: 100% !important;
     max-height: 100dvh !important;
     overflow: hidden !important;
+  }
+
+  .app-header {
+    padding-top: calc(12px + constant(safe-area-inset-top, 0px)) !important;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
   }
 
   .app-bottom-nav {
