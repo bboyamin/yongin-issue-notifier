@@ -101,9 +101,27 @@ body {
   background: #FFFFFF;
 }
 
+/* Dedicated iOS Status Bar Solid Plate: Eliminates WebKit Progressive Blur on Cold & Warm Launch */
+.ios-status-bar-fill {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background-color: #FFFFFF;
+  z-index: 100;
+  pointer-events: none;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
 /* App Header - Crisp, Solid, Never Blurry */
 .app-header {
   background: #FFFFFF;
+  position: relative;
   padding-top: max(8px, env(safe-area-inset-top, 0px));
   padding-right: 16px;
   padding-bottom: 8px;
@@ -111,6 +129,11 @@ body {
   border-bottom: 1px solid var(--border-main);
   flex-shrink: 0;
   z-index: 50;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  contain: paint;
 }
 
 .app-title-bar {
@@ -1182,6 +1205,10 @@ body {
   }
 
   html, body {
+    background-color: #131B2E !important;
+  }
+
+  .ios-status-bar-fill {
     background-color: #131B2E !important;
   }
 

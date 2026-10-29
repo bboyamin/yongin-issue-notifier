@@ -24,10 +24,13 @@
     rel="stylesheet">
 
   <!-- Modular Design System CSS -->
-  <link rel="stylesheet" href="css/styles.css?v=4004">
+  <link rel="stylesheet" href="css/styles.css?v=4005">
 </head>
 
 <body>
+
+  <!-- Dedicated iOS Safe Area Status Bar Solid Anchor: Blocks WebKit progressive blur on cold & warm launch -->
+  <div class="ios-status-bar-fill" aria-hidden="true"></div>
 
   <!-- App Main Viewport -->
   <div class="app-viewport">
@@ -376,9 +379,9 @@
   </div>
 
   <!-- Deep Module Scripts -->
-  <script src="js/storage.js?v=4003"></script>
-  <script src="js/api.js?v=4003"></script>
-  <script src="js/app.js?v=4003"></script>
+  <script src="js/storage.js?v=4005"></script>
+  <script src="js/api.js?v=4005"></script>
+  <script src="js/app.js?v=4005"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(regs => {

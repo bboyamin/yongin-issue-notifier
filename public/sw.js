@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yongin-issue-cache-v8404';
+const CACHE_NAME = 'yongin-issue-cache-v8405';
 const ASSETS_TO_CACHE = [
   './manifest.json',
   './apple-touch-icon.png',

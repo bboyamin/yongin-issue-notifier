@@ -1744,3 +1744,23 @@ async function executeTabRefresh() {
     }
   }
 }
+
+// iOS PWA Warm-Resume & Second Launch Status Bar Shield
+function refreshIosTopChrome() {
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  if (!isStandalone) return;
+
+  const bar = document.querySelector('.ios-status-bar-fill');
+  if (bar) {
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    bar.style.backgroundColor = isDark ? '#131B2E' : '#FFFFFF';
+  }
+}
+
+window.addEventListener('pageshow', refreshIosTopChrome);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    refreshIosTopChrome();
+  }
+});
+window.addEventListener('focus', refreshIosTopChrome);
