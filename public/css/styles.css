@@ -442,7 +442,8 @@ body {
 .ptr-banner.refreshing {
   height: 38px !important;
   opacity: 1 !important;
-  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border-main);
   color: var(--text-main);
 }
 
@@ -561,6 +562,16 @@ body {
 .realtime-bar.refreshing {
   background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
   border-color: #93C5FD;
+}
+
+.realtime-bar.neutral-bar {
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+  color: #334155;
+}
+
+.realtime-bar.neutral-bar:hover {
+  background: #F1F5F9;
 }
 
 .realtime-indicator {
@@ -1109,6 +1120,14 @@ body {
 }
 
 /* Skeleton Loading Shimmer */
+.skeleton-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  border: 1px solid var(--border-main);
+  box-shadow: var(--shadow-card);
+}
+
 .skeleton-shimmer {
   background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%);
   background-size: 200% 100%;
@@ -1427,5 +1446,78 @@ body {
 
   .empty-desc {
     color: #94A3B8;
+  }
+
+  /* Pull-to-refresh & Top Progress Banner in Dark Mode */
+  .ptr-banner {
+    background: #090D16 !important;
+    border-bottom: 1px solid var(--border-main) !important;
+    color: var(--text-sub) !important;
+  }
+
+  .ptr-banner .ptr-arrow-svg {
+    color: var(--text-muted) !important;
+  }
+
+  .ptr-banner.release .ptr-arrow-svg {
+    color: #60A5FA !important;
+  }
+
+  .ptr-banner.refreshing {
+    background: #17223B !important;
+    border-bottom: 1px solid #283756 !important;
+    color: #F8FAFC !important;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .ptr-banner.refreshing .ptr-text {
+    color: #F8FAFC !important;
+    font-weight: 600;
+  }
+
+  .ptr-banner.refreshing .ptr-spinner-svg {
+    color: #60A5FA !important;
+  }
+
+  .ptr-banner.success {
+    background: rgba(16, 185, 129, 0.18) !important;
+    border-bottom: 1px solid rgba(52, 211, 153, 0.35) !important;
+    color: #34D399 !important;
+  }
+
+  .ptr-banner.success .ptr-text {
+    color: #34D399 !important;
+    font-weight: 600;
+  }
+
+  .ptr-banner.success .ptr-check-svg {
+    color: #34D399 !important;
+  }
+
+  /* Realtime Status Bar Refreshing State */
+  .realtime-bar.refreshing {
+    background: rgba(59, 130, 246, 0.22) !important;
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    color: #BFDBFE !important;
+  }
+
+  .realtime-bar.neutral-bar {
+    background: #17223B !important;
+    border-color: #1E293B !important;
+    color: #CBD5E1 !important;
+  }
+
+  .realtime-bar.neutral-bar:hover {
+    background: #1E2B47 !important;
+  }
+
+  /* Skeleton Loading Dark Mode */
+  .skeleton-card {
+    background: #131B2E !important;
+    border-color: #1E293B !important;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, #17223B 25%, #2A3B5C 50%, #17223B 75%) !important;
   }
 }

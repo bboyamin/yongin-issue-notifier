@@ -259,26 +259,26 @@ function renderSkeletonFeed(keywordName = '용인시') {
 
   container.innerHTML = `
     <div class="skeleton-wrapper" style="padding: 4px 0;">
-      <div class="realtime-bar" style="background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8;">
+      <div class="realtime-bar">
         <div class="realtime-indicator">
-          <div class="live-dot" style="background: #2563EB;"></div>
+          <div class="live-dot"></div>
           <span># ${keywordName} 실시간 소식 동기화 중...</span>
         </div>
         <span style="font-size: 11px; opacity: 0.85;">최신 뉴스 수집</span>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div class="skeleton-card">
           <div class="skeleton-shimmer" style="height: 14px; width: 35%; border-radius: 4px; margin-bottom: 12px;"></div>
           <div class="skeleton-shimmer" style="height: 18px; width: 85%; border-radius: 4px; margin-bottom: 8px;"></div>
           <div class="skeleton-shimmer" style="height: 14px; width: 60%; border-radius: 4px;"></div>
         </div>
-        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div class="skeleton-card">
           <div class="skeleton-shimmer" style="height: 14px; width: 28%; border-radius: 4px; margin-bottom: 12px;"></div>
           <div class="skeleton-shimmer" style="height: 18px; width: 78%; border-radius: 4px; margin-bottom: 8px;"></div>
           <div class="skeleton-shimmer" style="height: 14px; width: 50%; border-radius: 4px;"></div>
         </div>
-        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div class="skeleton-card">
           <div class="skeleton-shimmer" style="height: 14px; width: 40%; border-radius: 4px; margin-bottom: 12px;"></div>
           <div class="skeleton-shimmer" style="height: 18px; width: 90%; border-radius: 4px; margin-bottom: 8px;"></div>
           <div class="skeleton-shimmer" style="height: 14px; width: 65%; border-radius: 4px;"></div>
@@ -707,7 +707,7 @@ function renderIssues() {
   // --- Bookmark View (보관함) ---
   if (currentNavTab === 'bookmark') {
     let html = `
-      <div class="realtime-bar" style="background:#F8FAFC; border-color:#E2E8F0; color:#334155;">
+      <div class="realtime-bar neutral-bar">
         <div class="realtime-indicator">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
@@ -1326,7 +1326,7 @@ function renderPaperView(isRestoring = false) {
   }
 
   let html = `
-    <div class="realtime-bar" style="background:#F8FAFC; border-color:#CBD5E1; color:#334155; cursor:pointer;" onclick="executeTabRefresh()" title="클릭 시 지면 신문 최신화">
+    <div class="realtime-bar neutral-bar" style="cursor:pointer;" onclick="executeTabRefresh()" title="클릭 시 지면 신문 최신화">
       <div class="realtime-indicator">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect width="18" height="18" x="3" y="3" rx="2"/>
