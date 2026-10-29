@@ -82,7 +82,7 @@ body {
   min-height: 100dvh;
   height: 100vh;
   height: 100dvh;
-  background: var(--bg-app);
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
   box-shadow: 0 0 50px -10px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
@@ -98,7 +98,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  background: var(--bg-app);
+  background: #FFFFFF;
 }
 
 /* App Header - Crisp, Solid, Never Blurry */
@@ -385,6 +385,7 @@ body {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  background: var(--bg-app);
   padding: 10px 14px calc(52px + max(8px, env(safe-area-inset-bottom, 0px))) 14px;
   display: flex;
   flex-direction: column;
@@ -1105,7 +1106,7 @@ body {
     height: 100% !important;
     height: 100dvh !important;
     max-width: 100% !important;
-    background-color: var(--bg-app) !important;
+    background-color: #FFFFFF !important;
     overflow: hidden !important;
   }
 
@@ -1114,6 +1115,7 @@ body {
     max-width: 100% !important;
     height: 100% !important;
     height: 100dvh !important;
+    background: #FFFFFF !important;
     box-shadow: none !important;
     border-radius: 0 !important;
   }
@@ -1121,6 +1123,7 @@ body {
   .app-screen {
     height: 100% !important;
     max-height: 100dvh !important;
+    background: #FFFFFF !important;
     overflow: hidden !important;
   }
 
@@ -1178,14 +1181,26 @@ body {
     --shadow-hover: 0 8px 24px -3px rgba(0, 0, 0, 0.6);
   }
 
+  html, body {
+    background-color: #131B2E !important;
+  }
+
   body {
-    background: #020617;
+    background: #131B2E;
     color: var(--text-main);
   }
 
   .app-viewport {
-    background: var(--bg-app);
+    background: #131B2E !important;
     box-shadow: 0 0 50px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  .app-screen {
+    background: #131B2E !important;
+  }
+
+  .feed-container {
+    background: #090D16;
   }
 
   .app-header {
